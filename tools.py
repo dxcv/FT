@@ -32,3 +32,6 @@ def convert_freq(x, freq='M', thresh=12):
     newdf=x.groupby('stkcd').apply(_convert_freq, freq, thresh)
     newdf=newdf.swaplevel().sort_index()
     return newdf
+
+def handle_duplicates(df):
+    return df[~df.index.duplicated(keep='last')]

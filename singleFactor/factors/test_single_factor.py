@@ -2,33 +2,24 @@
 # Python 3.6
 # Author:Zhang Haitao
 # Email:13163385579@163.com
-# TIME:2018-05-24  16:15
-# NAME:FT-test_sp.py
-
+# TIME:2018-05-24  16:27
+# NAME:FT-test_single_factor.py
 
 import pandas as pd
-from data.database_api import database_api as dbi
 import xiangqi.data_merge as dm
 import xiangqi.data_clean as dc
 import xiangqi.factor_test as ft
 import os
 
-from data.get_base import read_base
 
-start='2004-01-01'
-end='2018-03-01'
-name='sp'
 
-drct=r'D:\zht\database\quantDb\internship\FT\singleFactor\result'
-path=os.path.join(drct,name)
-if not os.path.exists(path):
-    os.makedirs(path)
 
-df = read_base(['cap', 'oper_rev'])
-df['sp'] = df['oper_rev'] / df['cap']
-sp=df[['sp']]
+def test(df,name):
+    drct = r'D:\zht\database\quantDb\internship\FT\singleFactor\result'
+    path = os.path.join(drct, name)
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-def test(df):
     store=pd.HDFStore(r'\\Ft-research\e\Share\Alpha\FYang\factors\test_data.h5')
     fdmt = store['fundamental_info']
     retn_1m=store['retn_1m']
@@ -36,9 +27,6 @@ def test(df):
     store.close()
 
     data=dm.factor_merge(fdmt,df)
-
-
-
     data=data.loc[:,['stkcd','trd_dt','wind_indcd','cap',name]]
     data['{}_raw'.format(name)]=data[name]
     # s_raw=data['oper_profit_raw'].describe()
