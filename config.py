@@ -8,7 +8,9 @@
 
 DFCT= r'\\Ft-research\e\Share\Alpha\FYang\factors'
 DHTZ= r'\\Ft-research\e\FT_Users\HTZhang'
-LOCAL_DB=r'D:\zht\database\quantDb\internship\FT\database'
+DRAW=r'D:\zht\database\quantDb\internship\FT\database\raw'
+DCSV=r'D:\zht\database\quantDb\internship\FT\database\csv'
+DPKL=r'D:\zht\database\quantDb\internship\FT\database\pkl'
 DCC=r'D:\zht\database\quantDb\internship\FT\TMP'
 
 
