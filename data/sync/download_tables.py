@@ -40,6 +40,7 @@ def download_from_server(tbname,database='filesync'):
     query = 'SELECT * FROM {}'.format(tbname)
     cur.execute(query)
     table = cur.fetchall()
+    cur.close()
     table = pd.DataFrame(list(table),columns=[c[0] for c in cur.description])
     table.to_csv(os.path.join(DRAW, '{}.csv'.format(tbname)))
 
