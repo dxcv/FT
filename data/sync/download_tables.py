@@ -33,7 +33,7 @@ tbnames = [
 def download_from_server(tbname,database='filesync'):
     try:
         db = pymysql.connect('192.168.1.140', 'ftresearch', 'FTResearch',
-                             database)
+                             database,charset='utf8')
     except:
         db=pymysql.connect('')
     cur = db.cursor()
