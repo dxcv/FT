@@ -35,7 +35,7 @@ def download_from_server(tbname,database='filesync'):
         db = pymysql.connect('192.168.1.140', 'ftresearch', 'FTResearch',
                              database,charset='utf8')
     except:
-        db=pymysql.connect('')
+        db=pymysql.connect('localhost','root','root',database,charset='utf8')
     cur = db.cursor()
     query = 'SELECT * FROM {}'.format(tbname)
     cur.execute(query)
@@ -46,7 +46,6 @@ def download_from_server(tbname,database='filesync'):
 
 def read_raw(tbname):
     return pd.read_csv(os.path.join(DRAW, tbname + '.csv'))
-
 
 def raw2csvpkl(tbname):
     dateFields = ['report_period', 'trd_dt', 'ann_dt', 'holder_enddate',
@@ -75,18 +74,19 @@ def raw2csvpkl(tbname):
         return x
 
     #handle duplicates,keep the last one
-    df=df[~df.duplicated(['wind_code','report_period'],keep='last')]
-    df=df.sort_values(['wind_code','report_period'])
+    #keep the first one,since in real life,we can only trade based on the first
+    #one.
+    df=df[~df.duplicated(['wind_code','report_period'],keep='first')]
     df=df.groupby('wind_code').apply(_reindex_with_qrange)
 
     df=df.drop(['object_id','s_info_windcode','wind_code'],axis=1)
     df=df.reset_index().rename(columns={'wind_code':'stkcd'})
 
-    # set ['trd_dt','stkcd'] as index
-    df=df.set_index(['trd_dt','stkcd'])
+    df=df.set_index(['stkcd','report_period'])
+    df=df.sort_index()
 
     #reorder the columns
-    newcols=['report_period']+[c for c in df.columns if c!= 'report_period']
+    newcols=['trd_dt']+[c for c in df.columns if c!= 'trd_dt']
     df=df[newcols]
 
     df.to_csv(os.path.join(DCSV,tbname+'.csv'))
@@ -105,8 +105,10 @@ def convert_raw():
     raw2csvpkl(tbname)
 
 
-download_raw()
-convert_raw()
+# download_raw()
+# convert_raw()
+#TODO: there is some invalid codes at the end of the index
+#TODO:just use these tables to calculate new indicators
 
 
 

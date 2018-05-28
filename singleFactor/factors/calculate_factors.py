@@ -7,7 +7,7 @@
 from data.dataApi import read_local
 from data.get_base import read_base
 import data.database_api.database_api as dbi
-from singleFactor.factors.test_single_factor import test
+from singleFactor.factors.test_single_factor import test_single_factor
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -21,7 +21,7 @@ def growth_yoy_df(df, col):
     name='{}_yoy'.format(col)
     df[name]=df[[col]].groupby('stkcd').apply(
         lambda x:x.pct_change(periods=4,limit=4))
-    test(df[[name]],name)
+    test_single_factor(df[[name]], name)
 
 def growth_yoy_tbname(tbname, col):
     # 同比增长率
@@ -68,7 +68,7 @@ def test_ltg1(tbname,col,name):
         lambda x:x.rolling(20).apply(lambda s:(s[-1]-s[0])/s[0]))
 
     #TODO:
-    test(df[[name]],name)
+    test_single_factor(df[[name]], name)
 
 def test_ltg(tbname,col,name):
     df=read_local(tbname,col)
@@ -84,7 +84,7 @@ def test_ltg(tbname,col,name):
         x=handle_duplicates(x)
         return x['result']
     df[name]=df.groupby('stkcd').apply(cal_ltg,col)
-    test(df[[name]],name)
+    test_single_factor(df[[name]], name)
 
 def get_earnings_ltg():
     #净利润过去 5 年历史增长率
@@ -134,7 +134,7 @@ def get_earnings_sfg():
     #           )/df['net_profit_excl_min_int_inc']
 
     df=df.set_index(['trd_dt','stkcd'])
-    test(df[[name]],name)
+    test_single_factor(df[[name]], name)
 
 
 def get_g_netcashflow():
@@ -152,7 +152,7 @@ def get_g_netProfit12Qavg():
     df['yoy']=df.groupby('stkcd').apply(lambda df:df.pct_change(periods=4))
     df[name]=df[['yoy']].groupby('stkcd').apply(
         lambda x:x.rolling(12,min_periods=12).mean())
-    test(df[[name]],name)
+    test_single_factor(df[[name]], name)
 
 def get_g_totalOperatingRevenue12Qavg():
     #过去 12 个季度营业总收入平均年增长率
@@ -163,7 +163,7 @@ def get_g_totalOperatingRevenue12Qavg():
     df['yoy'] = df.groupby('stkcd').apply(lambda df: df.pct_change(periods=4))
     df[name] = df[['yoy']].groupby('stkcd').apply(
         lambda x: x.rolling(12, min_periods=12).mean())
-    test(df[[name]], name)
+    test_single_factor(df[[name]], name)
 
 def get_g_totalAssets():
     #总资产增长率
@@ -209,7 +209,7 @@ def get_saleEarnings_sq_yoy_5():
     df[name]=df[[col]].groupby('stkcd').apply(
         lambda x:x.pct_change(periods=20)
     ) #直接求20个季度的增长率等价于5年复合增长率
-    test(df[[name]],name)
+    test_single_factor(df[[name]], name)
 
 
 def get_g_netOperateCashFlowPerShare():
@@ -224,8 +224,61 @@ def get_g_netOperateCashFlowPerShare():
     df['cash_flow_per_share']=df['net_cash_flows_oper_act']/df['cap_stk']
     growth_yoy_df(df[['cash_flow_per_share']],'cash_flow_per_share')
 
+def get_cash_rate_of_sales():
+    # 经营活动产生的现金流量净额/营业收入
+    cash_flow=dbi.get_stocks_data('equity_selected_cashflow_sheet',
+                                  ['net_cash_flows_oper_act'])
+    oper_rev=dbi.get_stocks_data('equity_selected_income_sheet',
+                                     ['oper_rev'])
 
-# ROE 增长率
+    cash_flow=handle_duplicates(cash_flow)
+    oper_rev=handle_duplicates(oper_rev)
+    df=pd.concat([cash_flow,oper_rev],axis=1)
+    df['cash_rate_of_sales']=df['net_cash_flows_oper_act']/df['oper_rev']
+    test_single_factor(df[['cash_rate_of_sales']],'cash_rate_of_sales')
+
+def get_cash_to_current_liability():
+    #经营活动产生现金流量净额/流动负债
+    cash_flow=dbi.get_stocks_data('equity_selected_cashflow_sheet',
+                                  ['net_cash_flows_oper_act'])
+    tot_cur_liab=dbi.get_stocks_data('equity_selected_balance_sheet',
+                                     ['tot_cur_liab'])
+    cash_flow=handle_duplicates(cash_flow)
+    tot_cur_liab=handle_duplicates(tot_cur_liab)
+    df=pd.concat([cash_flow,tot_cur_liab],axis=1)
+    df['cash_to_current_liability']=df['net_cash_flows_oper_act']/df['tot_cur_liab']
+    test_single_factor(df[['cash_to_current_liability']],'cash_to_current_liability')
+
+def get_cash_to_tot_liability():
+    #经营活动产生现金流量净额/负债合计
+    cash_flow=dbi.get_stocks_data('equity_selected_cashflow_sheet',
+                                  ['net_cash_flows_oper_act'])
+    tot_liab=dbi.get_stocks_data('equity_selected_balance_sheet',
+                                     ['tot_liab'])
+    cash_flow=handle_duplicates(cash_flow)
+    tot_liab=handle_duplicates(tot_liab)
+    df=pd.concat([cash_flow,tot_liab],axis=1)
+    df['cash_to_liability']=df['net_cash_flows_oper_act']/df['tot_liab']
+    test_single_factor(df[['cash_to_liability']],'cash_to_liability')
+
+def get_currentAssetToAsset():
+    #流动资产/总资产
+    cur_assets=dbi.get_stocks_data('equity_selected_balance_sheet',
+                                 ['tot_cur_assets'])
+    tot_assets=dbi.get_stocks_data('equity_selected_balance_sheet',
+                                 ['tot_assets'])
+
+    cur_assets=handle_duplicates(cur_assets)
+    tot_assets=handle_duplicates(tot_assets)
+
+    df=pd.concat([cur_assets,tot_assets],axis=1)
+    df['currentAssetToAsset']=df['tot_cur_assets']/df['tot_assets']
+    test_single_factor(df[['currentAssetToAsset']],'currentAssetToAsset')
+
+
+
+
+
 
 
 

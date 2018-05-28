@@ -14,7 +14,7 @@ import os
 
 
 
-def test(df,name):
+def test_single_factor(df, name):
     drct = r'D:\zht\database\quantDb\internship\FT\singleFactor\result'
     path = os.path.join(drct, name)
     if not os.path.exists(path):

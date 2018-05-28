@@ -34,4 +34,4 @@ def convert_freq(x, freq='M', thresh=12):
     return newdf
 
 def handle_duplicates(df):
-    return df[~df.index.duplicated(keep='last')]
+    return df[~df.index.duplicated(keep='first')]

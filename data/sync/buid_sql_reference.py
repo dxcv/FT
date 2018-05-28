@@ -10,7 +10,8 @@ import pymysql
 import pandas as pd
 import xlsxwriter
 
-directory=r'D:\zht\database\quantDb\internship\FT\documents\WIND数据字典\filesync_info'
+directory=r'D:\zht\database\quantDb\internship\FT\documents\filesync_info'
+
 
 def download_table_info():
     dir_csv = r'E:\FT_Users\HTZhang\filesync_info\csv'
@@ -42,7 +43,6 @@ def build_xlsx():
     df=df.reset_index(drop=True)
 
     def map_link(s):
-        # hp=r'external:D:\zht\database\quantDb\internship\FT\documents\WIND数据字典\filesync_info\csv\{}.csv'.format(s.split('(')[0].lower())
         hp=r'external:csv\{}.csv'.format(s.split('(')[0].lower())
         return hp
 
@@ -66,6 +66,46 @@ def build_xlsx():
                             string=s['table'],
                             cell_format=red_format)
     workbook.close()
+
+
+def combine_all_reference():
+    excel=os.path.join(directory,'目录.xlsx')
+    df=pd.read_excel(excel,header=None)
+    df.columns=['c1','c2','table']
+    df[['c1','c2']]=df[['c1','c2']].ffill()
+    df=df.dropna()
+    df=df.reset_index(drop=True)
+    df['csvName']=df['table'].map(lambda x:x.split('(')[0].lower())
+
+    path=os.path.join(directory,'csv')
+    fns=os.listdir(path)
+
+    infos=[]
+    for fn in fns:
+        info=pd.read_csv(os.path.join(path,fn),index_col=0,encoding='gbk')
+        index=df.index[df['csvName']==fn[:-4]].tolist()
+        if index:
+            index=index[0]
+            c1=df.at[index,'c1']
+            c2=df.at[index,'c2']
+            table=df.at[index,'table']
+            info['c1']=c1
+            info['c2']=c2
+            info['table']=table
+        else:
+            info['c1']=None
+            info['c2']=None
+            info['table']=None
+            info.fillna('Missing')
+            print(fn)
+        infos.append(info)
+    comb=pd.concat(infos,axis=0)
+    comb['field']=comb['field'].str.lower()
+    newOrder=['c1','c2','table','field','format','pri','comment']
+    comb=comb[newOrder]
+    comb=comb.sort_values(['c1','c2','table'])
+    comb.to_csv(os.path.join(directory,'combined.csv'),encoding='gbk')
+
 
 
 
