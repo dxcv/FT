@@ -49,7 +49,8 @@ def read_raw(tbname):
 
 def raw2csvpkl(tbname):
     dateFields = ['report_period', 'trd_dt', 'ann_dt', 'holder_enddate',
-                  'listdate']
+                  'listdate','actual_ann_dt']
+    # actual_ann_dt 指的是“更正公告的日期”
     df = pd.read_csv(os.path.join(DRAW, tbname + '.csv'), index_col=0)
 
     #adjust column format

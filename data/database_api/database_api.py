@@ -3,7 +3,7 @@ import pandas as pd
 import sqlalchemy
 
 
-def database_connect(base_name):
+def send_query(base_name, query):
     '''
     连接数据库。
     
@@ -18,9 +18,16 @@ def database_connect(base_name):
         适用于pandas连接数据库的配置引擎。
     
     '''
-    
-    addr = 'mysql+pymysql://ftresearch:FTResearch@192.168.1.140/{}?charset=utf8'.format(base_name)
-    return sqlalchemy.create_engine(addr)
+    try:
+        addr = 'mysql+pymysql://ftresearch:FTResearch@192.168.1.140/{}?charset=utf8'.format(base_name)
+        connect = sqlalchemy.create_engine(addr)
+        data = pd.read_sql_query(sql=query, con=connect)
+    except:
+        addr='mysql+pymysql://root:root@localhost/{}?charset=utf8'.format(base_name)
+        connect=sqlalchemy.create_engine(addr)
+        data = pd.read_sql_query(sql=query, con=connect)
+    return data
+
 
 
 def read_security_database(base_name, sheet_name, security_ID_field, trade_date_field, other_field, 
@@ -116,9 +123,10 @@ def read_security_database(base_name, sheet_name, security_ID_field, trade_date_
             WHERE ({0} IN {4}) AND {1}>='{5}' AND {1}<='{6}'
             '''.format(security_ID_field, trade_date_field, other_field, sheet_name, 
                        select_securities, start_date, end_date)
-    
-    connect = database_connect(base_name)
-    data = pd.read_sql_query(sql=query, con=connect)
+    else:
+        raise ValueError
+
+    data=send_query(base_name, query)
     return data
     
     
@@ -191,7 +199,7 @@ def get_stocks_data(sheet_name, field, start_date=None, end_date=None,
         所选股票代码列表。默认为None，表示选择所有股票。
     store : bool
         True-存储数据到文件，Flase-不存储数据到文件。
-    hdf_file : pd.HDFStore
+    hdf_file : str
         缓存文件名，以.h5作为扩展名。
     data_name : str
         数据名称，用作HDF文件中的key索引。
@@ -276,7 +284,7 @@ def get_futures_data(sheet_name, field, select_futures=None, start_date=None, en
         None，起始日期为数据库中可用的最新日期。
     store : bool
         True-存储数据到文件，Flase-不存储数据到文件。
-    hdf_file : pd.HDFStore
+    hdf_file : str
         缓存文件名，以.h5作为扩展名。
     data_name : str
         数据名称，用作HDF文件中的key索引。
@@ -353,11 +361,12 @@ def read_index_database(base_name, sheet_name, trade_date_field, index_names,
             FROM {2} 
             WHERE {0}>='{3}' AND {0}<='{4}'
             '''.format(trade_date_field, index_names, sheet_name, start_date, end_date)
-    
-    connect = database_connect(base_name)
-    data = pd.read_sql_query(sql=query, con=connect)
+    else:
+        raise ValueError
+
+    data = send_query(base_name, query)
     return data
-    
+
     
 def retrieve_index_data(index_names, start_date=None, end_date=None, trade_date_field='trd_dt', 
                         sheet_name='equity_selected_indice_ir', base_name='ftresearch'):
@@ -417,7 +426,7 @@ def get_index_data(index_names, start_date=None, end_date=None,
         None，起始日期为数据库中可用的最新日期。
     store : bool
         True-存储数据到文件，Flase-不存储数据到文件。
-    hdf_file : pd.HDFStore
+    hdf_file : str
         缓存文件名，以.h5作为扩展名。
     data_name : str
         数据名称，用作HDF文件中的key索引。

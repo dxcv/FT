@@ -10,12 +10,13 @@ from tools import monitor
 
 
 @monitor
-def factor_merge(df1, df2, keys=['stkcd', 'trd_dt']):
+def factor_merge(df1, df2):
     '''
     df1, df2: DataFrame
         因子购建需要的数据
     去除含有ST标记或上市不满一年的股票
     '''
+    keys = ['stkcd', 'trd_dt']
     data = pd.merge(df1, df2.reset_index(), on=keys, how='left')
     data=data[-int(data.shape[0]/20):]#TODO: use a small sample to test the codes
     data = data.groupby('stkcd').ffill().dropna() #TODO: wrong!! there should be a thresh

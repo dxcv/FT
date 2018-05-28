@@ -40,7 +40,7 @@ def level(df,x,ttm=True):
     df['result']=df[x]
     return adjust_result_format(df)
 
-def x_pct_chg(df,x,ttm=True):
+def x_pct_chg(df,x,q=1,ttm=True):
     '''
         d(x)/x
     percentage change in each accounting variable
@@ -56,7 +56,7 @@ def x_pct_chg(df,x,ttm=True):
     if ttm:
         df=ttm_adjust(df,x)
     df['result']=df[x].groupby('stkcd').apply(
-        lambda s:s.pct_change())
+        lambda s:s.pct_change(periods=q))
     return adjust_result_format(df)
 
 # base algorithm
