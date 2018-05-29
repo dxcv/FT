@@ -91,7 +91,7 @@ def factor_merge(df1, df2, keys=['stkcd', 'trd_dt']):
 # data=fdmt.join(sp,how='left')
 #
 # data=data.groupby('stkcd').ffill(limit=365).dropna()
-# data=data.groupby('stkcd').resample('M',level='trd_dt').last()
+# data=data.groupby('stkcd').resample('M',raw_level='trd_dt').last()
 #
 #
 # data = data.groupby('stkcd').resample('M', on='trd_dt').last()

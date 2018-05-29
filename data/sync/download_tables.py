@@ -4,14 +4,10 @@
 # Email:13163385579@163.com
 # TIME:2018-05-23  13:25
 # NAME:FT-download_from_ftresearch.py
-import time
 
 import pymysql
 import pandas as pd
 import os
-import numpy as np
-
-
 from config import DRAW, DCSV, DPKL
 from data.dataApi import read_raw
 

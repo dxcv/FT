@@ -39,7 +39,7 @@ def adjust_result_format(df):
     df=df.set_index(['trd_dt','stkcd']).sort_index()[['result']].dropna()
     return df
 
-def level(df, col, ttm=True):
+def raw_level(df, col, ttm=True):
     '''
     计算某个level的ttm
     df 是按季度的数据

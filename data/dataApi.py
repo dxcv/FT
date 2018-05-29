@@ -6,19 +6,8 @@
 # NAME:FT-dataApi.py
 import datetime
 import os
-import time
-
-import sqlalchemy
-
-import pymysql
 import pandas as pd
-import numpy as np
-from datetime import timedelta
-
-from config import START, END, DRAW, DPKL
-from data.database_api import database_api as dbi
-
-from data.prepare import pre_process
+from config import DRAW, DPKL
 
 
 def read_raw(tbname):
