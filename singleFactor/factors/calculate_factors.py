@@ -7,7 +7,7 @@
 from data.dataApi import read_local
 from data.get_base import read_base
 import data.database_api.database_api as dbi
-from singleFactor.factors.test_single_factor import test_single_factor
+from singleFactor.factors.check import check_factor
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -21,7 +21,7 @@ def growth_yoy_df(df, col):
     name='{}_yoy'.format(col)
     df[name]=df[[col]].groupby('stkcd').apply(
         lambda x:x.pct_change(periods=4,limit=4))
-    test_single_factor(df[[name]], name)
+    check_factor(df[[name]], name)
 
 def growth_yoy_tbname(tbname, col):
     # 同比增长率
@@ -68,7 +68,7 @@ def test_ltg1(tbname,col,name):
         lambda x:x.rolling(20).apply(lambda s:(s[-1]-s[0])/s[0]))
 
     #TODO:
-    test_single_factor(df[[name]], name)
+    check_factor(df[[name]], name)
 
 def test_ltg(tbname,col,name):
     df=read_local(tbname,col)
@@ -84,7 +84,7 @@ def test_ltg(tbname,col,name):
         x=handle_duplicates(x)
         return x['result']
     df[name]=df.groupby('stkcd').apply(cal_ltg,col)
-    test_single_factor(df[[name]], name)
+    check_factor(df[[name]], name)
 
 def get_earnings_ltg():
     #净利润过去 5 年历史增长率
@@ -134,7 +134,7 @@ def get_earnings_sfg():
     #           )/df['net_profit_excl_min_int_inc']
 
     df=df.set_index(['trd_dt','stkcd'])
-    test_single_factor(df[[name]], name)
+    check_factor(df[[name]], name)
 
 
 def get_g_netcashflow():
@@ -152,7 +152,7 @@ def get_g_netProfit12Qavg():
     df['yoy']=df.groupby('stkcd').apply(lambda df:df.pct_change(periods=4))
     df[name]=df[['yoy']].groupby('stkcd').apply(
         lambda x:x.rolling(12,min_periods=12).mean())
-    test_single_factor(df[[name]], name)
+    check_factor(df[[name]], name)
 
 def get_g_totalOperatingRevenue12Qavg():
     #过去 12 个季度营业总收入平均年增长率
@@ -163,7 +163,7 @@ def get_g_totalOperatingRevenue12Qavg():
     df['yoy'] = df.groupby('stkcd').apply(lambda df: df.pct_change(periods=4))
     df[name] = df[['yoy']].groupby('stkcd').apply(
         lambda x: x.rolling(12, min_periods=12).mean())
-    test_single_factor(df[[name]], name)
+    check_factor(df[[name]], name)
 
 def get_g_totalAssets():
     #总资产增长率
@@ -209,7 +209,7 @@ def get_saleEarnings_sq_yoy_5():
     df[name]=df[[col]].groupby('stkcd').apply(
         lambda x:x.pct_change(periods=20)
     ) #直接求20个季度的增长率等价于5年复合增长率
-    test_single_factor(df[[name]], name)
+    check_factor(df[[name]], name)
 
 
 def get_g_netOperateCashFlowPerShare():
@@ -235,7 +235,7 @@ def get_cash_rate_of_sales():
     oper_rev=handle_duplicates(oper_rev)
     df=pd.concat([cash_flow,oper_rev],axis=1)
     df['cash_rate_of_sales']=df['net_cash_flows_oper_act']/df['oper_rev']
-    test_single_factor(df[['cash_rate_of_sales']],'cash_rate_of_sales')
+    check_factor(df[['cash_rate_of_sales']], 'cash_rate_of_sales')
 
 def get_cash_to_current_liability():
     #经营活动产生现金流量净额/流动负债
@@ -247,7 +247,7 @@ def get_cash_to_current_liability():
     tot_cur_liab=handle_duplicates(tot_cur_liab)
     df=pd.concat([cash_flow,tot_cur_liab],axis=1)
     df['cash_to_current_liability']=df['net_cash_flows_oper_act']/df['tot_cur_liab']
-    test_single_factor(df[['cash_to_current_liability']],'cash_to_current_liability')
+    check_factor(df[['cash_to_current_liability']], 'cash_to_current_liability')
 
 def get_cash_to_tot_liability():
     #经营活动产生现金流量净额/负债合计
@@ -259,7 +259,7 @@ def get_cash_to_tot_liability():
     tot_liab=handle_duplicates(tot_liab)
     df=pd.concat([cash_flow,tot_liab],axis=1)
     df['cash_to_liability']=df['net_cash_flows_oper_act']/df['tot_liab']
-    test_single_factor(df[['cash_to_liability']],'cash_to_liability')
+    check_factor(df[['cash_to_liability']], 'cash_to_liability')
 
 def get_currentAssetToAsset():
     #流动资产/总资产
@@ -273,7 +273,7 @@ def get_currentAssetToAsset():
 
     df=pd.concat([cur_assets,tot_assets],axis=1)
     df['currentAssetToAsset']=df['tot_cur_assets']/df['tot_assets']
-    test_single_factor(df[['currentAssetToAsset']],'currentAssetToAsset')
+    check_factor(df[['currentAssetToAsset']], 'currentAssetToAsset')
 
 
 
