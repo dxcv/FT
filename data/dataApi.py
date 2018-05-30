@@ -23,3 +23,5 @@ def read_local(tbname, col=None):
     else: # read all columns
         return df
 
+
+# div=read_local('equity_cash_dividend')

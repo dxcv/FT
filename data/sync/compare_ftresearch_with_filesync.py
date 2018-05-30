@@ -38,5 +38,4 @@ def parse_balancesheet():
 
 
 
-#TODO:check cashflow and income sheet
-#TODO: resample quarter
+

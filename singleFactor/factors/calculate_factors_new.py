@@ -8,15 +8,35 @@
 import pandas as pd
 from data.dataApi import read_local
 from singleFactor.factors.base_function import x_pct_chg, x_compound_growth, \
-    raw_level, ratio_yoy_pct_chg
+    raw_level, ratio_yoy_pct_chg, ratio_x_y, x_history_std
 from singleFactor.factors.check import check_factor
 
-def check_raw_level(tbname,col,name):
-    df=read_local(tbname)
+def check_raw_level(x,col,name):
+    '''
+
+    Args:
+        x:str or pd.DataFrame,tbname or dataFrame
+        col:
+        name:
+
+    Returns:
+
+    '''
+    if isinstance(x,str):
+        df=read_local(x)
+    else:
+        df=x.copy()
     r_ttm=raw_level(df, col, ttm=True)
     r=raw_level(df, col, ttm=False)
     check_factor(r_ttm,'{}_ttm'.format(name))
     check_factor(r,'{}'.format(name))
+
+def check_stability(tbname,col,name,q=8):
+    df=read_local(tbname)
+    r_ttm=x_history_std(df,col,q=q,ttm=True)
+    r=x_history_std(df,col,q=q,ttm=False)
+    check_factor(r_ttm,name+'_ttm')
+    check_factor(r,name)
 
 def check_g_yoy(tbname, col, name,q=4):
     '''
@@ -51,6 +71,13 @@ def check_compound_g_yoy(tbname,col,name,q=60):
     check_factor(r_ttm,'{}_ttm'.format(name))
     check_factor(r,name)
 
+def check_ratio(tbnamex,colx,tbnamey,coly,name):
+    x=read_local(tbnamex,colx)
+    y=read_local(tbnamey,coly)
+    df=pd.concat([x,y],axis=1)
+    r=ratio_x_y(df,colx,coly,ttm=False)
+    check_factor(r,name)
+
 
 def check_ratio_yoy_pct_chg(tbnamex,colx,tbnamey,coly,name):
     '''
@@ -65,9 +92,12 @@ def check_ratio_yoy_pct_chg(tbnamex,colx,tbnamey,coly,name):
     Returns:
 
     '''
-    x=read_local(tbnamex,colx)
-    y=read_local(tbnamey,coly)
-    df=pd.concat([x,y],axis=1)
+    if tbnamex==tbnamey:
+        df=read_local(tbnamex)
+    else:
+        x=read_local(tbnamex)
+        y=read_local(tbnamey)
+        df=pd.concat([x,y],axis=1)
     r_ttm=ratio_yoy_pct_chg(df,colx,coly,ttm=True)
     r=ratio_yoy_pct_chg(df,colx,coly,ttm=False)
     check_factor(r_ttm,'{}_ttm'.format(name))
@@ -192,7 +222,7 @@ def get_cashRateOfSales():
     name='cashRateOfSales'
     tbnamex='equity_selected_income_sheet_q'
     colx='net_cash_flows_oper_act'
-    tbnamey='equity_selected_cash_sheet_q'
+    tbnamey='equity_selected_cashflow_sheet_q'
     coly='oper_rev'
     check_ratio_yoy_pct_chg(tbnamex,colx,tbnamey,coly,name)
 
@@ -240,8 +270,149 @@ def get_debtAssetsRatio():
     colx='tot_liab'
     tbnamey='equity_selected_balance_sheet'
     coly='tot_assets'
-    check_ratio_yoy_pct_chg(tbnamex, colx, tbnamey, coly, name)
+    check_ratio(tbnamex, colx, tbnamey, coly, name)
+
+def doing():
+    name='dividendCover'
+    tbnamex='equity_cash_dividend'
+    colx='cash_div'
+    tbnamey='equity_selected_income_sheet'
+    coly='net_profit_excl_min_int_inc'
+
+    check_ratio(tbnamex,colx,tbnamey,coly,name)
+
+def get_earningsStability():
+    #净利润过去 2 年的标准差
+    name='earningsStability'
+    tbname='equity_selected_income_sheet_q'
+    col='net_profit_incl_min_int_inc'
+    check_stability(tbname,col,name)
+
+def get_intanibleAssetRatio():
+    #无形资产/总资产
+    name='intangibleAssetRatio'
+    tbnamex='equity_selected_balance_sheet'
+    colx='intang_assets'
+    tbnamey='equity_selected_balance_sheet'
+    coly='tot_assets'
+    check_ratio(tbnamex,colx,tbnamey,coly,name)
+
+def get_interestCover():
+    #利息保障倍数＝息税前利润/利息费用
+    '''
+    息税前利润=净利润+所得税+财务费用'''
+    name='interestCover'
+    tbname='equity_selected_income_sheet_q'
+    col1='net_profit_excl_min_int_inc'
+    col2='inc_tax'
+    col3='fin_exp'
+    df=read_local(tbname)
+    df['x']=df[col1]+df[col2]+df[col3]
+    df['result']=df['x']/df['int_exp']
+    check_raw_level(df,'result',name)
+
+def get_netProfitTorevenue():
+    #净利润/营业总收入
+    name='netProfitToRevenue'
+    tbnamex='equity_selected_income_sheet_q'
+    colx='net_profit_excl_min_int_inc'
+    tbnamey='equity_selected_income_sheet_q'
+    coly='tot_oper_rev'
+    check_ratio(tbnamex,colx,tbnamey,coly,name)
+
+def get_netProfitToTotProfit():
+    #净利润/利润总额
+    name='netProfitToTotProfit'
+    tbnamex='equity_selected_income_sheet_q'
+    colx='net_profit_excl_min_int_inc'
+    tbnamey='equity_selected_income_sheet_q'
+    coly='oper_profit'
+    check_ratio(tbnamex,colx,tbnamey,coly,name)
+
+def get_NPCutToNetProfit():
+    #扣除非经常损益后的净利润/归属于母公司的净利润
+    name='NPCutToNetProfit'
+    tbnamex='equity_selected_income_sheet_q'
+    colx='net_profit_after_ded_nr_lp'
+    tbnamey='equity_selected_income_sheet_q'
+    coly='net_profit_excl_min_int_inc'
+    check_ratio(tbnamex,colx,tbnamey,coly,name)
+
+def get_operatingExpenseRate():
+    #销售费用/营业总收入
+    name='operatingExpenseRate'
+    tbnamex = 'equity_selected_income_sheet_q'
+    colx = 'selling_dist_exp'
+    tbnamey = 'equity_selected_income_sheet_q'
+    coly = 'tot_oper_rev'
+    check_ratio(tbnamex, colx, tbnamey, coly, name)
+
+def get_operatingCostToTOR():
+    #营业总成本/营业总收入
+    name='operatingCostToTOR'
+    tbnamex = 'equity_selected_income_sheet_q'
+    colx = 'tot_oper_rev'
+    tbnamey = 'equity_selected_income_sheet_q'
+    coly = 'tot_oper_cost'
+    check_ratio(tbnamex, colx, tbnamey, coly, name)
+
+def get_operatingProfitToAsset():
+    #营业利润/总资产
+    name='operatingProfitToAsset'
+    tbnamex='equity_selected_income_sheet_q'
+    colx='oper_profit'
+    tbnamey='equity_selected_balance_sheet'
+    coly='tot_assets'
+    check_ratio(tbnamex,colx,tbnamey,coly,name)
+
+def get_operatingProfitToEquity():
+    #营业利润/净资产
+    name='operatingProfitToEquity'
+    df1=read_local('equity_selected_income_sheet_q')
+    df2=read_local('equity_selected_balance_sheet')
+    df=pd.concat([df1,df2],axis=1)
+    df['result']=df['oper_profit']/(df['tot_assets']-df['tot_liab'])
+    check_raw_level(df,'result',name)
+
+def get_operCashInToAsset():
+    #总资产现金回收率＝经营活动产生的现金流量净额 * 2/(期初总资产+期末总资产)
+    name='operCashInToAsset'
+    df1=read_local('equity_selected_cashflow_sheet_q')
+    df2=read_local('equity_selected_balance_sheet')
+    df=pd.concat([df1,df2],axis=1)
+    df['x']=df['net_cash_flows_oper_act']*2
+    df['y']=df.groupby('stkcd').apply(lambda x:x['tot_assets']+x['tot_assets'].shift(1))
+    df['result']=df['x']/df['y']
+    check_raw_level(df,'result',name)
+
+def get_operCashInToCurrentDebt():
+    #现金流动负债比=经营活动产生的现金流量净额/流动负债
+    name='operCashInToCurrentDebt'
+    df1 = read_local('equity_selected_cashflow_sheet_q')
+    df2 = read_local('equity_selected_income_sheet_q')
+    df = pd.concat([df1, df2], axis=1)
+    df['result']=df['net_cash_flows_oper_act']/df['oper_rev']
+    check_raw_level(df,'result',name)
+
+def get_quickRatio():
+    #速动比率＝(流动资产合计-存货)/流动负债合计
+    name='quickRatio'
+    df=read_local('equity_selected_balance_sheet')
+    df['result']=(df['tot_cur_assets']-df['inventories'])/df['tot_cur_liab']
+    check_raw_level(df,'result',name)
+
+def get_receivableTopayable():
+    #应收应付比 = （应收票据+应收账款） / （应付票据+应付账款）
+    name='receivableTopayble'
+    df=read_local('equity_selected_balance_sheet')
+    df['result']=(df['notes_rcv']+df['acct_rcv'])/(df['notes_payable']+df['acct_payable'])
+    check_raw_level(df,'result',name)
+
+#总资产净利率=净利润(含少数股东损益)TTM/总资产
 
 
 
 
+
+
+#TODO: repalace the long table name with compact name
