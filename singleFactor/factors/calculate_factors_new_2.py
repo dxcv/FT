@@ -102,8 +102,10 @@ def get_dataspace(fields):
     if len(dfnames)==1:
         df=read_local(dfnames[0])
     else:
-        df=pd.concat([read_local(dn) for dn in dfnames])
+        df=pd.concat([read_local(dn) for dn in dfnames],axis=1)
     return df
+
+
 
 #=============================single field======================================
 '''
@@ -218,6 +220,9 @@ def get_g_totalOperatingRevenue12Qavg():
     df=get_dataspace(col)
     df['result']=x_history_growth_avg(df,col,q=12)
     check_raw_level(df,'result',name)
+
+get_g_totalOperatingRevenue12Qavg()
+
 
 def get_g_totalAssets():
     #总资产增长率
@@ -603,11 +608,17 @@ def get_downturnRisk():
     check_raw_level(df,'result',name)
 
 def task(f):
-    eval(f)()
-if __name__=='__main__':
-    fstrs=[f for f in locals().keys() if (f.startswith('get') and f!='get_ipython')]
-    pool=multiprocessing.Pool(4)
-    pool.map(task,fstrs)
+    try:
+        eval(f)()
+    except Exception as e:
+        with open(r'e:\a\failed.txt','a') as txt:
+            txt.write('{} ->  {}\n'.format(f,e))
+
+
+# if __name__=='__main__':
+#     fstrs=[f for f in locals().keys() if (f.startswith('get') and f!='get_ipython')]
+#     pool=multiprocessing.Pool(6)
+#     pool.map(task,fstrs)
 
 
 #TODO: repalace the long table name with compact name

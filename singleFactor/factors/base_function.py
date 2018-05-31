@@ -18,7 +18,14 @@ Notes:
 or we will get opposite value.
 
 
+
 '''
+#TODO: 计算的时候用['stkcd','report_period']作为index，在test 的时候用['stkcd',
+#TODO: 'trd_dt'] 作为index
+
+# TODO：到最后test的时候才调用 _adjust_result_format()
+
+
 
 
 def ttm_adjust(s):
@@ -27,9 +34,14 @@ def ttm_adjust(s):
 
 def _adjust_result_format(df):
     '''
-    虽然用了stkcd和report_period 作为主键，但是不同的report_period 对应的trd_dt
+        虽然用了stkcd和report_period 作为主键，但是不同的report_period 对应的trd_dt
     可能相同，比如，asharefinancialindicator 中的000002.SZ，其2006-12-31 和
     2007-12-31的trd_dt 都是 2008-03-21
+    Args:
+        df:
+
+    Returns:DataFrame,the index is ['stkcd','trd_dt']
+
     '''
     if isinstance(df['trd_dt'],pd.DataFrame):
         '''如果df里边有多个名为trd_dt的列，取日期最大的那个'''
@@ -40,7 +52,8 @@ def _adjust_result_format(df):
     df=df.reset_index().sort_values(['stkcd','trd_dt','report_period'])
     # 如果在相同的trd_dt有不同的report_period记录，取report_period较大的那条记录
     df=df[~df.duplicated(['stkcd','trd_dt'],keep='last')]
-    s=df.set_index(['trd_dt','stkcd']).sort_index()['result'].dropna()
+    s=df.set_index(['stkcd','trd_dt']).sort_index()['result'].dropna()
+
     return s
 
 
@@ -49,7 +62,7 @@ def _adjust_result_format(df):
 input must be DataFrame contained 'trd_dt',since we will set 'trd_dt' as index in 
 the function '_adjust_result_format'.
 
-the output is a series without name
+the output is a series without name,and the index is ['stkcd','report_period']
 '''
 
 def raw_level(df, col, ttm=True):
@@ -94,7 +107,7 @@ def x_history_growth_avg(df,col,q=12,ttm=False,delete_negative=True):
 
     def cal(s,q):
         pct_chg=s.pct_change()
-        return pct_chg.rolling(q,min_periods=q).mean()
+        return pct_chg.rolling(q,min_periods=int(q/2)).mean()
 
     df['result']=df.x.groupby('stkcd').apply(cal,q)
     return _adjust_result_format(df)
