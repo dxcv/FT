@@ -23,7 +23,7 @@ or we will get opposite value.
 #TODO: 计算的时候用['stkcd','report_period']作为index，在test 的时候用['stkcd',
 #TODO: 'trd_dt'] 作为index
 
-# TODO：到最后test的时候才调用 _adjust_result_format()
+# TODO：到最后test的时候才调用 _change_index()
 
 
 
@@ -32,51 +32,27 @@ def ttm_adjust(s):
     return s.groupby('stkcd').apply(
         lambda x:x.rolling(4,min_periods=4).sum())
 
-def _adjust_result_format(df):
-    '''
-        虽然用了stkcd和report_period 作为主键，但是不同的report_period 对应的trd_dt
-    可能相同，比如，asharefinancialindicator 中的000002.SZ，其2006-12-31 和
-    2007-12-31的trd_dt 都是 2008-03-21
-    Args:
-        df:
-
-    Returns:DataFrame,the index is ['stkcd','trd_dt']
-
-    '''
-    if isinstance(df['trd_dt'],pd.DataFrame):
-        '''如果df里边有多个名为trd_dt的列，取日期最大的那个'''
-        trd_dt_df=df['trd_dt']
-        df=df.drop('trd_dt',axis=1)
-        df['trd_dt']=trd_dt_df.max(axis=1)
-
-    df=df.reset_index().sort_values(['stkcd','trd_dt','report_period'])
-    # 如果在相同的trd_dt有不同的report_period记录，取report_period较大的那条记录
-    df=df[~df.duplicated(['stkcd','trd_dt'],keep='last')]
-    s=df.set_index(['stkcd','trd_dt']).sort_index()['result'].dropna()
-
-    return s
-
-
 #------------------------------------base function-----------------------------
 '''
 input must be DataFrame contained 'trd_dt',since we will set 'trd_dt' as index in 
-the function '_adjust_result_format'.
+the function '_change_index'.
 
 the output is a series without name,and the index is ['stkcd','report_period']
 '''
 
-def raw_level(df, col, ttm=True):
+def raw_level(df, col,name, ttm=True):
     '''
     计算某个level的ttm
     df 是按季度的数据
     '''
-    df['x']=df[col]
+    df[name]=df[col]
     if ttm:
-        df['x']=ttm_adjust(df.x)
-    df['result']=df['x']
-    return _adjust_result_format(df)
+        df[name]=ttm_adjust(df[name])
+    return df
 
-def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
+#TODO: test whether the raw_level function will change the data
+
+def x_pct_chg(df, col, name,q=1, ttm=True,delete_negative=True):
     '''
         d(x)/x
     percentage change in each accounting variable
@@ -90,29 +66,29 @@ def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
     Returns: df[['result']]
 
     '''
-    df['x']=df[col]
+    df[name]=df[col]
     if delete_negative:
-        df['x'][df.x<=0]=np.nan
+        df[name][df[name]<=0]=np.nan
     if ttm:
-        df.x=ttm_adjust(df.x)
-    df['result']=df.x.groupby('stkcd').apply(lambda s:s.pct_change(periods=q))
-    return _adjust_result_format(df)
+        df[name]=ttm_adjust(df[name])
+    df[name]=df[name].groupby('stkcd').apply(lambda s:s.pct_change(periods=q))
+    return df
 
-def x_history_growth_avg(df,col,q=12,ttm=False,delete_negative=True):
-    df['x']=df[col]
+def x_history_growth_avg(df,col,name,q=12,ttm=False,delete_negative=True):
+    df[name]=df[col]
     if delete_negative:
-        df['x'][df.x<=0]=np.nan
+        df[name][df[name]<=0]=np.nan
     if ttm:
-        df.x=ttm_adjust(df.x)
+        df[name]=ttm_adjust(df[name])
 
-    def cal(s,q):
+    def _cal(s,q):
         pct_chg=s.pct_change()
         return pct_chg.rolling(q,min_periods=int(q/2)).mean()
 
-    df['result']=df.x.groupby('stkcd').apply(cal,q)
-    return _adjust_result_format(df)
+    df[name]=df[name].groupby('stkcd').apply(_cal,q)
+    return df
 
-def x_history_compound_growth(df, col, q=20, ttm=True, delete_negative=True):
+def x_history_compound_growth(df, col,name, q=20, ttm=True, delete_negative=True):
     '''
     计算过去q个季度的复合增长率
     Args:
@@ -125,20 +101,20 @@ def x_history_compound_growth(df, col, q=20, ttm=True, delete_negative=True):
     Returns:
 
     '''
-    df['x']=df[col]
+    df[name]=df[col]
     if delete_negative:
-        df['x'][df.x<=0]=np.nan
+        df[name][df[name]<=0]=np.nan
     if ttm:
-        df.x=ttm_adjust(df.x)
+        df[name]=ttm_adjust(df[name])
 
     def _cal_cumulative_g(arr):
         return np.cumprod((np.diff(arr)/arr[:-1])+1)[-1]-1
 
-    df['result']=df.x.groupby('stkcd').apply(
+    df[name]=df[name].groupby('stkcd').apply(
         lambda s:s.rolling(q,min_periods=q).apply(_cal_cumulative_g))
-    return _adjust_result_format(df)
+    return df
 
-def x_history_std(df,col,q=8,ttm=True):
+def x_history_std(df,col,name,q=8,ttm=True):
     '''
     std(x,q)
     Args:
@@ -150,14 +126,14 @@ def x_history_std(df,col,q=8,ttm=True):
     Returns: pd.Series
 
     '''
-    df['x']=df[col]
+    df[name]=df[col]
     if ttm:
-        df.x=ttm_adjust(df.x)
-    df['result']=df.x.groupby('stkcd').apply(
+        df[name]=ttm_adjust(df[name])
+    df[name]=df[name].groupby('stkcd').apply(
         lambda s:s.rolling(q,min_periods=q).std())
-    return _adjust_result_format(df)
+    return df
 
-def x_history_downside_std(df,col,q=8,ttm=False):
+def x_history_downside_std(df,col,name,q=8,ttm=False):
     '''
     stddev(min(x-x(-1),0))
 
@@ -177,107 +153,106 @@ def x_history_downside_std(df,col,q=8,ttm=False):
         r = downside.rolling(q, min_periods=q).std()
         return r
 
-    df['x']=df[col]
+    df[name]=df[col]
     if ttm:
-        df.x=ttm_adjust(df.x)
-    df['result']=df.x.groupby('stkcd').apply(downside_risk,q)
-    return _adjust_result_format(df)
+        df[name]=ttm_adjust(df[name])
+    df[name]=df[name].groupby('stkcd').apply(downside_risk,q)
+    return df
 
-def ratio_x_y(df, col1, col2, ttm=True,delete_negative_y=True):
+def ratio_x_y(df, col1, col2,name,ttm=True,delete_negative_y=True):
     '''
     x/y
     financial ratio in x/y
     '''
-    df['x']=df[col1]
-    df['y']=df[col2]
+    data=df.copy()
     if delete_negative_y:
-        df['y'][df.y<=0]=np.nan
-
+        data[col2][data[col2]<=0]=np.nan
     if ttm:
-        df.x=ttm_adjust(df.x)
-        df.y=ttm_adjust(df.y)
-    df['result']=df.x/df.y
-    return _adjust_result_format(df)
+        data[col1]=ttm_adjust(data[col1])
+        data[col2]=ttm_adjust(data[col2])
+    data['x']=data[col1]
+    data['y']=data[col2]
 
-def ratio_yoy_chg(df, col1, col2, ttm=True,delete_negative_y=True):
+    data[name]=data['x']/data['y']
+    return data
+
+def ratio_yoy_chg(df, col1, col2, name,ttm=True,delete_negative_y=True):
     '''
     d(x/y)
     year-to-year change in financial ratio
     '''
-    df['x']=df[col1]
-    df['y']=df[col2]
-
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
     if delete_negative_y:
-        df['y'][df.y<=0]=np.nan
-
+        data['y'][data['y']<=0]=np.nan
     if ttm:
-        df.x=ttm_adjust(df.x)
-        df.y=ttm_adjust(df.y)
-    df['ratio']=df.x/df.y
-    df['result']=df['ratio'].groupby('stkcd').apply(
+        data['x']=ttm_adjust(data['x'])
+        data['y']=ttm_adjust(data['y'])
+    data['ratio']=data['x']/data['y']
+    data[name]=data['ratio'].groupby('stkcd').apply(
         lambda s:s-s.shift(4))
-    return _adjust_result_format(df)
+    return data
 
-def ratio_yoy_pct_chg(df, col1, col2, ttm=True,delete_negative_y=True):
+def ratio_yoy_pct_chg(df, col1, col2,name, ttm=True,delete_negative_y=True):
     '''
     d(x/y)/(x/y)
     year-to-year "percent" change in financial ratio
     '''
-    df['x']=df[col1]
-    df['y']=df[col2]
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
 
     if delete_negative_y:
-        df['y'][df.y<0]=np.nan
-
+        data['y'][data['y']<=0]=np.nan
     if ttm:
-        df.x=ttm_adjust(df.x)
-        df.y=ttm_adjust(df.y)
-    df['ratio']= df.x/df.y
-    df['result']=df['ratio'].groupby('stkcd').apply(
-        lambda s:s.pct_change(periods=4))
-    return _adjust_result_format(df)
+        data['x']=ttm_adjust(data['x'])
+        data['y']=ttm_adjust(data['y'])
+    data['ratio']= data['x']/data['y']
 
-def pct_chg_dif(df, col1, col2, ttm=True,delete_negative=True):
+    data[name]=data['ratio'].groupby('stkcd').apply(
+        lambda s:s.pct_change(periods=4))
+    return data
+
+def pct_chg_dif(df, col1, col2,name, ttm=True,delete_negative=True):
     '''
     d(x)/x -d(y)/y
     the difference between the percentage change in each accounting variable and
     the percentage change in a base variable
     '''
-    df['x']=df[col1]
-    df['y']=df[col2]
-
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
     if delete_negative:
-        df['x'][df.x<=0]=np.nan
-        df['y'][df.y<=0]=np.nan
+        data['x'][data['x']<=0]=np.nan
+        data['y'][data['y']<=0]=np.nan
     if ttm:
-        df.x=ttm_adjust(df.x)
-        df.y=ttm_adjust(df.y)
+        data['x']=ttm_adjust(data['x'])
+        data['y']=ttm_adjust(data['y'])
 
-    df['pct_chg_x']=df.x.groupby('stkcd').apply(
+    data['pct_chg_x']=data.x.groupby('stkcd').apply(
         lambda s:s.pct_change())
-    df['pct_chg_y']=df.y.groupby('stkcd').apply(
+    data['pct_chg_y']=data['y'].groupby('stkcd').apply(
         lambda s:s.pct_change())
-    df['result']=df['pct_chg_x']-df['pct_chg_y']
-    return _adjust_result_format(df)
+    data[name]=data['pct_chg_x']-data['pct_chg_y']
+    return data
 
-def ratio_x_chg_over_lag_y(df, col1, col2, ttm=True,delete_negative_y=True):
+
+def ratio_x_chg_over_lag_y(df, col1, col2,name, ttm=True,delete_negative_y=True):
     '''
     d(x)/lag(y)
     the change in each accounting variable scaled by a lagged base variable
     '''
-    df['x']=df[col1]
-    df['y']=df[col2]
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
     if delete_negative_y:
-        df['y'][df.y<=0]=np.nan
+        data['y'][data['y']<=0]=np.nan
 
     if ttm:
-        df.x=ttm_adjust(df.x)
-        df.y=ttm_adjust(df.y)
-    df['x_chg']=df.x.groupby('stkcd').apply(lambda s: s - s.shift(1))
-    df['lag_y']=df.y.groupby('stkcd').shift(1)
-    df['result']=df['x_chg']/df['lag_y']
-    return _adjust_result_format(df)
-
-
-
-
+        data['x'] = ttm_adjust(data['x'])
+        data['y'] = ttm_adjust(data['y'])
+    data['x_chg']=data['x'].groupby('stkcd').apply(lambda s: s - s.shift(1))
+    data['lag_y']=data['y'].groupby('stkcd').shift(1)
+    data[name]=data['x_chg']/data['lag_y']
+    return data

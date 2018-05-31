@@ -4,6 +4,7 @@
 # Email:13163385579@163.com
 # TIME:2018-05-31  13:02
 # NAME:FT-calculate_factors_new_2.py
+
 import multiprocessing
 import os
 import pickle
@@ -18,53 +19,53 @@ from singleFactor.factors.check import check_factor
 
 
 def check_raw_level(df,col,name):
-    r_ttm=raw_level(df, col, ttm=True)
-    r=raw_level(df, col, ttm=False)
-    check_factor(r_ttm,'{}_ttm'.format(name))
-    check_factor(r,'{}'.format(name))
+    df_ttm=raw_level(df, col, name,ttm=True)
+    df=raw_level(df, col, name,ttm=False)
+    check_factor(df_ttm,name,'{}_ttm'.format(name))
+    check_factor(df,name,'{}'.format(name))
 
 def check_stability(df,col,name,q=8):
-    r_ttm=x_history_std(df,col,q=q,ttm=True)
-    r=x_history_std(df,col,q=q,ttm=False)
-    check_factor(r_ttm,name+'_ttm')
-    check_factor(r,name)
+    r_ttm=x_history_std(df,col,name,q=q,ttm=True)
+    r=x_history_std(df,col,name,q=q,ttm=False)
+    check_factor(r_ttm,name,name+'_ttm')
+    check_factor(r,name,name)
 
 def check_g_yoy(df, col, name,q=4):
     '''
     yoy 增长率
     Args:
-        tbname:
+        df:
         col: 要检验的指标
         name: 保存的文件夹名
         q:int,q=4 表示yoy
     '''
-    r_ttm=x_pct_chg(df,col,q=q,ttm=True)
-    r=x_pct_chg(df,col,q=q,ttm=False)
-    check_factor(r_ttm,'{}_ttm'.format(name))
-    check_factor(r,name)
+    r_ttm=x_pct_chg(df,col,name,q=q,ttm=True)
+    r=x_pct_chg(df,col,name,q=q,ttm=False)
+    check_factor(r_ttm,name,'{}_ttm'.format(name))
+    check_factor(r,name,name)
 
 def check_compound_g_yoy(df,col,name,q=20):
     '''
     复合增长率
     '''
-    r_ttm=x_history_compound_growth(df, col, q=q, ttm=True)
-    r=x_history_compound_growth(df, col, q=q, ttm=False)
-    check_factor(r_ttm,'{}_ttm'.format(name))
-    check_factor(r,name)
+    r_ttm=x_history_compound_growth(df, col,name, q=q, ttm=True)
+    r=x_history_compound_growth(df, col,name, q=q, ttm=False)
+    check_factor(r_ttm,name,'{}_ttm'.format(name))
+    check_factor(r,name,name)
 
 def check_ratio(df,colx,coly,name):
     '''x/y'''
-    ratio=ratio_x_y(df,colx,coly,ttm=False)
-    check_factor(ratio,name)
+    ratio=ratio_x_y(df,colx,coly,name,ttm=False)
+    check_factor(ratio,name,name)
 
 def check_ratio_yoy_pct_chg(df,colx,coly,name):
     '''
     yoy growth rate of x/y
     '''
-    r_ttm=ratio_yoy_pct_chg(df,colx,coly,ttm=True)
-    r=ratio_yoy_pct_chg(df,colx,coly,ttm=False)
-    check_factor(r_ttm,'{}_ttm'.format(name))
-    check_factor(r,name)
+    r_ttm=ratio_yoy_pct_chg(df,colx,coly,name,ttm=True)
+    r=ratio_yoy_pct_chg(df,colx,coly,name,ttm=False)
+    check_factor(r_ttm,name,'{}_ttm'.format(name))
+    check_factor(r,name,name)
 
 #===============================indicator_api===================================
 def get_fields_map():
@@ -106,33 +107,18 @@ def get_dataspace(fields):
     return df
 
 
-
-#=============================single field======================================
-'''
-factor is based on a single field
-'''
-def with_single_field(field,func,name):
-    df=get_dataspace(field)
-    func(df,field,name)
 #===============================成长因子========================================
 def get_saleEarnings_sq_yoy():
     # 单季度营业利润同比增长率 saleEarnings_sq_yoy
     name='saleEarnings_sq_yoy'
     df=get_dataspace('oper_profit')
     check_g_yoy(df,'oper_profit',name)
-'''
-def get_saleEarnings_sq_yoy():
-    # 单季度营业利润同比增长率 saleEarnings_sq_yoy
-    field='oper_profit'
-    func=check_g_yoy
-    name='saleEarnings_sq_yoy'
-    with_single_field(field,func,name)
-'''
+
 def get_netProfit3YRAvg():
     #3 年净利润增长率的平均值
     name='netProfit3YRAvg'
     df=get_dataspace('net_profit_excl_min_int_inc')
-    df['result']=x_history_growth_avg(df,'net_profit_excl_min_int_inc',q=12)
+    df=x_history_growth_avg(df,'net_profit_excl_min_int_inc',name,q=12)
     check_raw_level(df,'result',name)
 
 def get_earnings_sq_yoy():
@@ -187,14 +173,14 @@ def get_g_operatingRevenueCAGR3():
     #营业收入 3 年复合增长率
     name='g_operatingRevenueCAGR3'
     df=get_dataspace('oper_rev')
-    df['result']=x_history_compound_growth(df, 'oper_rev', q=12)
+    df=x_history_compound_growth(df, 'oper_rev', name,q=12)
     check_raw_level(df,'result',name)
 
 def get_g_operatingRevenueCAGR5():
     #营业收入 5 年复合增长率
     name='g_operatingRevenueCAGR5'
     df=get_dataspace('oper_rev')
-    df['result']=x_history_compound_growth(df, 'oper_rev', q=20)
+    df=x_history_compound_growth(df, 'oper_rev', name,q=20)
     check_raw_level(df,'result',name)
 
 def get_g_netCashFlow():
@@ -209,7 +195,7 @@ def get_g_netProfit12Qavg():
     name='g_netProfit12Qavg'
     col = 'net_profit_excl_min_int_inc'
     df=get_dataspace(col)
-    df['result']=x_history_growth_avg(df,col,q=12)
+    df=x_history_growth_avg(df,col,name,q=12)
     check_raw_level(df,'result',name)
 
 #TODO:define a standard function for this type of indicators
@@ -218,11 +204,8 @@ def get_g_totalOperatingRevenue12Qavg():
     name='g_totalOperatingRevenue12Qavg'
     col='tot_oper_rev'
     df=get_dataspace(col)
-    df['result']=x_history_growth_avg(df,col,q=12)
+    df=x_history_growth_avg(df,col,name,q=12)
     check_raw_level(df,'result',name)
-
-get_g_totalOperatingRevenue12Qavg()
-
 
 def get_g_totalAssets():
     #总资产增长率
@@ -257,7 +240,7 @@ def get_dividend3YR():
     #股息3年复合增长率
     name='g_dividend3YR'
     df=get_dataspace('cash_div')
-    df['result']=x_history_compound_growth(df, 'cash_div', q=12, ttm=False)
+    df=x_history_compound_growth(df, 'cash_div', name,q=12, ttm=False)
     check_raw_level(df,'result',name)
 
 def get_g_NetProfit():
@@ -271,7 +254,7 @@ def get_NetProfitCAGR3():
     name='NetProfitCAGR3'
     col='net_profit_excl_min_int_inc'
     df=get_dataspace(col)
-    df['result']=x_history_compound_growth(df, col, q=12)
+    df['result']=x_history_compound_growth(df, col, name,q=12)
     check_raw_level(df,'result',name)
 
 def get_NetProfitCAGR5():
@@ -279,7 +262,7 @@ def get_NetProfitCAGR5():
     name='NetProfitCAGR5'
     col='net_profit_excl_min_int_inc'
     df=get_dataspace(col)
-    df['result']=x_history_compound_growth(df, col, q=20)
+    df=x_history_compound_growth(df, col,name, q=20)
     check_raw_level(df,'result',name)
 
 def get_g_netAssetsPerShare():
@@ -604,7 +587,7 @@ def get_downturnRisk():
     #std(min(本季度现金流-上一季度现金流,0))
     name='downturnRisk'
     df=get_dataspace('net_cash_flows_oper_act')
-    df['result']=x_history_downside_std(df,'net_cash_flows_oper_act',q=8)
+    df=x_history_downside_std(df,'net_cash_flows_oper_act',name,q=8)
     check_raw_level(df,'result',name)
 
 def task(f):
@@ -615,10 +598,10 @@ def task(f):
             txt.write('{} ->  {}\n'.format(f,e))
 
 
-# if __name__=='__main__':
-#     fstrs=[f for f in locals().keys() if (f.startswith('get') and f!='get_ipython')]
-#     pool=multiprocessing.Pool(6)
-#     pool.map(task,fstrs)
+if __name__=='__main__':
+    fstrs=[f for f in locals().keys() if (f.startswith('get') and f!='get_ipython')]
+    pool=multiprocessing.Pool(6)
+    pool.map(task,fstrs)
 
 
 #TODO: repalace the long table name with compact name
