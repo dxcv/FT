@@ -11,12 +11,11 @@ import xiangqi.data_clean as dc
 import xiangqi.factor_test as ft
 import os
 
-def check_factor(df,name):
+def check_factor(s,name):
     '''
-
+    check single factor
     Args:
-        df:pd.DataFrame,with only one column
-        col:
+        s: pd.Series
         name:
 
     Returns:
@@ -33,20 +32,22 @@ def check_factor(df,name):
     retn_1m_zz500=store['retn_1m_zz500']
     store.close()
 
-    col=df.columns[0]
+    df=s.to_frame()
+    df.columns=[name]
+
     data=dm.factor_merge(fdmt,df)
-    data=data.loc[:,['stkcd','trd_dt','wind_indcd','cap',col]]
-    data['{}_raw'.format(col)]=data[col]
+    data=data.loc[:,['stkcd','trd_dt','wind_indcd','cap',name]]
+    data['{}_raw'.format(name)]=data[name]
     # s_raw=data['oper_profit_raw'].describe()
-    data=dc.clean(data,col)
+    data=dc.clean(data,name)
 
     data=data.set_index(['trd_dt','stkcd'])
     data.index.names=['trade_date','stock_ID']
-    signal_input=data[['{}_neu'.format(col)]]
+    signal_input=data[['{}_neu'.format(name)]]
     test_data=ft.data_join(retn_1m,signal_input)
 
-    btic_des,figs1=ft.btic(test_data,col)
-    layer_des,figs2=ft.layer_result(test_data,retn_1m_zz500,col)
+    btic_des,figs1=ft.btic(test_data,name)
+    layer_des,figs2=ft.layer_result(test_data,retn_1m_zz500,name)
 
     btic_des.to_csv(os.path.join(path,'btic_des.csv'))
     layer_des.to_csv(os.path.join(path,'layer_des.csv'))

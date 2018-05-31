@@ -100,7 +100,7 @@ def adjust_ftresearch():
             lambda x:x.set_index('report_period').resample('Q').asfreq()
         )
 
-        df=df.drop(['stkcd','create_time','update_time'],axis=1)
+        # df=df.drop(['stkcd','create_time','update_time'],axis=1)
 
         df.to_csv(os.path.join(DCSV,tbname+'.csv'))
         df.to_pickle(os.path.join(DPKL,tbname+'.pkl'))
@@ -117,9 +117,23 @@ def adjust_equity_cash_dividend():
     df = df[~df.duplicated(subset=['stkcd', 'report_period'], keep='first')]
     df=df.set_index(['stkcd','report_period'])
 
-    df = df.drop(['create_time', 'update_time'], axis=1)
+    # df = df.drop(['create_time', 'update_time'], axis=1)
     df.to_csv(os.path.join(DCSV, tbname + '.csv'))
     df.to_pickle(os.path.join(DPKL, tbname + '.pkl'))
+
+def adjust_equity_fundamental_info():
+    tbname='equity_fundamental_info'
+    df=read_raw(tbname)
+    date_cols=['trd_dt','listdate']
+    for dc in date_cols:
+        if dc in df.columns:
+            df[dc]=pd.to_datetime(df[dc].map(_float2DateStr))
+    df=df.set_index(['stkcd','trd_dt']).sort_index()
+    df.to_csv(os.path.join(DCSV, tbname + '.csv'))
+    df.to_pickle(os.path.join(DPKL, tbname + '.pkl'))
+
+
+
 
 #---------------------------------adjust the format of sheet in filesync--------
 def adjust_filesync(tbname):
