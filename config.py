@@ -16,3 +16,7 @@ DCC=r'D:\zht\database\quantDb\internship\FT\TMP'
 
 START= '2004-01-01'
 END= '2018-01-31'
+
+
+#single factor
+SINGLE_D_RESULT = r'D:\zht\database\quantDb\internship\FT\singleFactor\result'

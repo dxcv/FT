@@ -137,7 +137,7 @@ def btic(test_data, factor_name):
     btic_m = beta_ic(test_data)
     des = b_t_ic_describe(btic_m, factor_name)
     figs=b_t_ic_plot(btic_m, factor_name)
-    return des,figs #, btic_m
+    return des,figs,btic_m
 
 def drawdown(x):
     '''
@@ -255,6 +255,6 @@ def layer_result(test_data, retn_mk, factor_name, quantile=10):
     layer_describe, nav, layer_retn = layer_test(test_data, retn_mk)
     fig1=nav_plot(nav, factor_name)
     fig2=ann_bar(layer_describe.loc['annual', :], factor_name)
-    return layer_describe,[fig1,fig2] #, nav, layer_retn
+    return layer_describe,[fig1,fig2],layer_retn #, nav, layer_retn
     
     

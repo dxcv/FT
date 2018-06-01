@@ -37,25 +37,22 @@ def ttm_adjust(s):
 input must be DataFrame contained 'trd_dt',since we will set 'trd_dt' as index in 
 the function '_change_index'.
 
-
-the output is a DataFrame with index as ['stkcd','report_period'],and the factor
-is stored in the column named 'target'
+the output is a series without name,and the index is ['stkcd','report_period']
 '''
 
-def raw_level(df, col,ttm=True):
+def raw_level(df, col,name, ttm=True):
     '''
     计算某个level的ttm
     df 是按季度的数据
     '''
-    df=df.copy()
+    df[name]=df[col]
     if ttm:
-        df[col]=ttm_adjust(df[col])
-    df['target']=df[col]
+        df[name]=ttm_adjust(df[name])
     return df
 
 #TODO: test whether the raw_level function will change the data
 
-def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
+def x_pct_chg(df, col, name,q=1, ttm=True,delete_negative=True):
     '''
         d(x)/x
     percentage change in each accounting variable
@@ -69,29 +66,29 @@ def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
     Returns: df[['result']]
 
     '''
-    df=df.copy()
+    df[name]=df[col]
     if delete_negative:
-        df[col][df[col]<=0]=np.nan
+        df[name][df[name]<=0]=np.nan
     if ttm:
-        df[col]=ttm_adjust(df[col])
-    df['target']=df[col].groupby('stkcd').apply(lambda s:s.pct_change(periods=q))
+        df[name]=ttm_adjust(df[name])
+    df[name]=df[name].groupby('stkcd').apply(lambda s:s.pct_change(periods=q))
     return df
 
-def x_history_growth_avg(df, col, q=12, ttm=False, delete_negative=True):
-    df=df.copy()
+def x_history_growth_avg(df,col,name,q=12,ttm=False,delete_negative=True):
+    df[name]=df[col]
     if delete_negative:
-        df[col][df[col] <= 0]=np.nan
+        df[name][df[name]<=0]=np.nan
     if ttm:
-        df[col]=ttm_adjust(df[col])
+        df[name]=ttm_adjust(df[name])
 
     def _cal(s,q):
         pct_chg=s.pct_change()
         return pct_chg.rolling(q,min_periods=int(q/2)).mean()
 
-    df['target']=df[col].groupby('stkcd').apply(_cal, q)
+    df[name]=df[name].groupby('stkcd').apply(_cal,q)
     return df
 
-def x_history_compound_growth(df, col, q=20, ttm=True, delete_negative=True):
+def x_history_compound_growth(df, col,name, q=20, ttm=True, delete_negative=True):
     '''
     计算过去q个季度的复合增长率
     Args:
@@ -104,20 +101,20 @@ def x_history_compound_growth(df, col, q=20, ttm=True, delete_negative=True):
     Returns:
 
     '''
-    df=df.copy()
+    df[name]=df[col]
     if delete_negative:
-        df[col][df[col] <= 0]=np.nan
+        df[name][df[name]<=0]=np.nan
     if ttm:
-        df[col]=ttm_adjust(df[col])
+        df[name]=ttm_adjust(df[name])
 
     def _cal_cumulative_g(arr):
         return np.cumprod((np.diff(arr)/arr[:-1])+1)[-1]-1
 
-    df['target']=df[col].groupby('stkcd').apply(
+    df[name]=df[name].groupby('stkcd').apply(
         lambda s:s.rolling(q,min_periods=q).apply(_cal_cumulative_g))
     return df
 
-def x_history_std(df, col, q=8, ttm=True):
+def x_history_std(df,col,name,q=8,ttm=True):
     '''
     std(x,q)
     Args:
@@ -129,14 +126,14 @@ def x_history_std(df, col, q=8, ttm=True):
     Returns: pd.Series
 
     '''
-    df=df.copy()
+    df[name]=df[col]
     if ttm:
-        df[col]=ttm_adjust(df[col])
-    df['target']=df[col].groupby('stkcd').apply(
+        df[name]=ttm_adjust(df[name])
+    df[name]=df[name].groupby('stkcd').apply(
         lambda s:s.rolling(q,min_periods=q).std())
     return df
 
-def x_history_downside_std(df, col, q=8, ttm=False):
+def x_history_downside_std(df,col,name,q=8,ttm=False):
     '''
     stddev(min(x-x(-1),0))
 
@@ -156,106 +153,106 @@ def x_history_downside_std(df, col, q=8, ttm=False):
         r = downside.rolling(q, min_periods=q).std()
         return r
 
-    df=df.copy()
+    df[name]=df[col]
     if ttm:
-        df[col]=ttm_adjust(df[col])
-    df['target']=df[col].groupby('stkcd').apply(downside_risk, q)
+        df[name]=ttm_adjust(df[name])
+    df[name]=df[name].groupby('stkcd').apply(downside_risk,q)
     return df
 
-def ratio_x_y(df, col1, col2,ttm=True,delete_negative_y=True):
+def ratio_x_y(df, col1, col2,name,ttm=True,delete_negative_y=True):
     '''
     x/y
     financial ratio in x/y
     '''
-    df=df.copy()
+    data=df.copy()
     if delete_negative_y:
-        df[col2][df[col2]<=0]=np.nan
+        data[col2][data[col2]<=0]=np.nan
     if ttm:
-        df[col1]=ttm_adjust(df[col1])
-        df[col2]=ttm_adjust(df[col2])
-    df['x']=df[col1]
-    df['y']=df[col2]
+        data[col1]=ttm_adjust(data[col1])
+        data[col2]=ttm_adjust(data[col2])
+    data['x']=data[col1]
+    data['y']=data[col2]
 
-    df['target']=df['x']/df['y']
-    return df
+    data[name]=data['x']/data['y']
+    return data
 
-def ratio_yoy_chg(df, col1, col2,ttm=True,delete_negative_y=True):
+def ratio_yoy_chg(df, col1, col2, name,ttm=True,delete_negative_y=True):
     '''
     d(x/y)
     year-to-year change in financial ratio
     '''
-    df=df.copy()
-    df['x']=df[col1]
-    df['y']=df[col2]
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
     if delete_negative_y:
-        df['y'][df['y']<=0]=np.nan
+        data['y'][data['y']<=0]=np.nan
     if ttm:
-        df['x']=ttm_adjust(df['x'])
-        df['y']=ttm_adjust(df['y'])
-    df['ratio']=df['x']/df['y']
-    df['target']=df['ratio'].groupby('stkcd').apply(
+        data['x']=ttm_adjust(data['x'])
+        data['y']=ttm_adjust(data['y'])
+    data['ratio']=data['x']/data['y']
+    data[name]=data['ratio'].groupby('stkcd').apply(
         lambda s:s-s.shift(4))
-    return df
+    return data
 
-def ratio_yoy_pct_chg(df, col1, col2, ttm=True,delete_negative_y=True):
+def ratio_yoy_pct_chg(df, col1, col2,name, ttm=True,delete_negative_y=True):
     '''
     d(x/y)/(x/y)
     year-to-year "percent" change in financial ratio
     '''
-    df=df.copy()
-    df['x']=df[col1]
-    df['y']=df[col2]
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
 
     if delete_negative_y:
-        df['y'][df['y']<=0]=np.nan
+        data['y'][data['y']<=0]=np.nan
     if ttm:
-        df['x']=ttm_adjust(df['x'])
-        df['y']=ttm_adjust(df['y'])
-    df['ratio']= df['x']/df['y']
+        data['x']=ttm_adjust(data['x'])
+        data['y']=ttm_adjust(data['y'])
+    data['ratio']= data['x']/data['y']
 
-    df['target']=df['ratio'].groupby('stkcd').apply(
+    data[name]=data['ratio'].groupby('stkcd').apply(
         lambda s:s.pct_change(periods=4))
-    return df
+    return data
 
-def pct_chg_dif(df, col1, col2, ttm=True,delete_negative=True):
+def pct_chg_dif(df, col1, col2,name, ttm=True,delete_negative=True):
     '''
     d(x)/x -d(y)/y
     the difference between the percentage change in each accounting variable and
     the percentage change in a base variable
     '''
-    df=df.copy()
-    df['x']=df[col1]
-    df['y']=df[col2]
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
     if delete_negative:
-        df['x'][df['x']<=0]=np.nan
-        df['y'][df['y']<=0]=np.nan
+        data['x'][data['x']<=0]=np.nan
+        data['y'][data['y']<=0]=np.nan
     if ttm:
-        df['x']=ttm_adjust(df['x'])
-        df['y']=ttm_adjust(df['y'])
+        data['x']=ttm_adjust(data['x'])
+        data['y']=ttm_adjust(data['y'])
 
-    df['pct_chg_x']=df.x.groupby('stkcd').apply(
+    data['pct_chg_x']=data.x.groupby('stkcd').apply(
         lambda s:s.pct_change())
-    df['pct_chg_y']=df['y'].groupby('stkcd').apply(
+    data['pct_chg_y']=data['y'].groupby('stkcd').apply(
         lambda s:s.pct_change())
-    df['target']=df['pct_chg_x']-df['pct_chg_y']
-    return df
+    data[name]=data['pct_chg_x']-data['pct_chg_y']
+    return data
 
 
-def ratio_x_chg_over_lag_y(df, col1, col2, ttm=True,delete_negative_y=True):
+def ratio_x_chg_over_lag_y(df, col1, col2,name, ttm=True,delete_negative_y=True):
     '''
     d(x)/lag(y)
     the change in each accounting variable scaled by a lagged base variable
     '''
-    df=df.copy()
-    df['x']=df[col1]
-    df['y']=df[col2]
+    data=df.copy()
+    data['x']=data[col1]
+    data['y']=data[col2]
     if delete_negative_y:
-        df['y'][df['y']<=0]=np.nan
+        data['y'][data['y']<=0]=np.nan
 
     if ttm:
-        df['x'] = ttm_adjust(df['x'])
-        df['y'] = ttm_adjust(df['y'])
-    df['x_chg']=df['x'].groupby('stkcd').apply(lambda s: s - s.shift(1))
-    df['lag_y']=df['y'].groupby('stkcd').shift(1)
-    df['target']=df['x_chg']/df['lag_y']
-    return df
+        data['x'] = ttm_adjust(data['x'])
+        data['y'] = ttm_adjust(data['y'])
+    data['x_chg']=data['x'].groupby('stkcd').apply(lambda s: s - s.shift(1))
+    data['lag_y']=data['y'].groupby('stkcd').shift(1)
+    data[name]=data['x_chg']/data['lag_y']
+    return data

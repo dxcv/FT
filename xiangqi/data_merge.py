@@ -18,7 +18,7 @@ def factor_merge(df1, df2):
     '''
     keys = ['stkcd', 'trd_dt']
     data = pd.merge(df1, df2.reset_index(), on=keys, how='left')
-    data=data[-int(data.shape[0]/20):]#TODO: use a small sample to test the codes
+    # data=data[-int(data.shape[0]/20):]#TODO: use a small sample to test the codes
     data = data.groupby('stkcd').ffill().dropna() #TODO: wrong!! there should be a thresh
     #TODO: warning,just use the last day to determine whether a stock is st or not is not proper
     data = data.groupby('stkcd').resample('M', on='trd_dt').last()
