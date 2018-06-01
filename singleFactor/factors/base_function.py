@@ -71,7 +71,8 @@ def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
     '''
     df=df.copy()
     if delete_negative:
-        df[col][df[col]<=0]=np.nan
+        df[col]=df[col].where(df[col]>0,np.nan)
+        # df[col][df[col]<=0]=np.nan
     if ttm:
         df[col]=ttm_adjust(df[col])
     df['target']=df[col].groupby('stkcd').apply(lambda s:s.pct_change(periods=q))
@@ -80,7 +81,8 @@ def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
 def x_history_growth_avg(df, col, q=12, ttm=False, delete_negative=True):
     df=df.copy()
     if delete_negative:
-        df[col][df[col] <= 0]=np.nan
+        df[col]=df[col].where(df[col]>0,np.nan)
+        # df[col][df[col] <= 0]=np.nan
     if ttm:
         df[col]=ttm_adjust(df[col])
 
@@ -106,7 +108,8 @@ def x_history_compound_growth(df, col, q=20, ttm=True, delete_negative=True):
     '''
     df=df.copy()
     if delete_negative:
-        df[col][df[col] <= 0]=np.nan
+        df[col]=df[col].where(df[col]>0,np.nan)
+        # df[col][df[col] <= 0]=np.nan
     if ttm:
         df[col]=ttm_adjust(df[col])
 
@@ -169,7 +172,8 @@ def ratio_x_y(df, col1, col2,ttm=True,delete_negative_y=True):
     '''
     df=df.copy()
     if delete_negative_y:
-        df[col2][df[col2]<=0]=np.nan
+        df[col2]=df[col2].where(df[col2]>0,np.nan)
+        # df[col2][df[col2]<=0]=np.nan
     if ttm:
         df[col1]=ttm_adjust(df[col1])
         df[col2]=ttm_adjust(df[col2])
@@ -188,7 +192,8 @@ def ratio_yoy_chg(df, col1, col2,ttm=True,delete_negative_y=True):
     df['x']=df[col1]
     df['y']=df[col2]
     if delete_negative_y:
-        df['y'][df['y']<=0]=np.nan
+        df['y']=df['y'].where(df['y']>0,np.nan)
+        # df['y'][df['y']<=0]=np.nan
     if ttm:
         df['x']=ttm_adjust(df['x'])
         df['y']=ttm_adjust(df['y'])
@@ -207,7 +212,8 @@ def ratio_yoy_pct_chg(df, col1, col2, ttm=True,delete_negative_y=True):
     df['y']=df[col2]
 
     if delete_negative_y:
-        df['y'][df['y']<=0]=np.nan
+        df['y']=df['y'].where(df['y']>0,np.nan)
+        # df['y'][df['y']<=0]=np.nan
     if ttm:
         df['x']=ttm_adjust(df['x'])
         df['y']=ttm_adjust(df['y'])
@@ -227,8 +233,8 @@ def pct_chg_dif(df, col1, col2, ttm=True,delete_negative=True):
     df['x']=df[col1]
     df['y']=df[col2]
     if delete_negative:
-        df['x'][df['x']<=0]=np.nan
-        df['y'][df['y']<=0]=np.nan
+        df['x']=df['x'].where(df['x']>0,np.nan)
+        df['y']=df['y'].where(df['y']>0,np.nan)
     if ttm:
         df['x']=ttm_adjust(df['x'])
         df['y']=ttm_adjust(df['y'])
@@ -240,7 +246,6 @@ def pct_chg_dif(df, col1, col2, ttm=True,delete_negative=True):
     df['target']=df['pct_chg_x']-df['pct_chg_y']
     return df
 
-
 def ratio_x_chg_over_lag_y(df, col1, col2, ttm=True,delete_negative_y=True):
     '''
     d(x)/lag(y)
@@ -250,8 +255,7 @@ def ratio_x_chg_over_lag_y(df, col1, col2, ttm=True,delete_negative_y=True):
     df['x']=df[col1]
     df['y']=df[col2]
     if delete_negative_y:
-        df['y'][df['y']<=0]=np.nan
-
+        df['y']=df['y'].where(df['y']>0,np.nan)
     if ttm:
         df['x'] = ttm_adjust(df['x'])
         df['y'] = ttm_adjust(df['y'])

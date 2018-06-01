@@ -175,8 +175,6 @@ def get_g_operatingRevenueCAGR3():
     df=x_history_compound_growth(df, 'oper_rev', q=12)
     check_raw_level(df,'target',name)
 
-# get_g_operatingRevenueCAGR3()
-
 def get_g_operatingRevenueCAGR5():
     #营业收入 5 年复合增长率
     name='g_operatingRevenueCAGR5'
@@ -239,7 +237,6 @@ def get_roe_growth_rate():
     col='s_fa_roe'
     df=get_dataspace(col)
     check_g_yoy(df,col,name)
-
 
 def get_dividend3YR():
     #股息3年复合增长率
@@ -355,7 +352,6 @@ def get_interestCover():#TODO:数据缺失严重
     df['target']=df['x']/df['int_exp']
     check_raw_level(df,'target',name)
 
-
 def get_netProfitTorevenue():
     #净利润/营业总收入
     name='netProfitToRevenue'
@@ -379,8 +375,6 @@ def get_NPCutToNetProfit():
     coly='net_profit_excl_min_int_inc' #TODO:此数据缺失严重
     df=get_dataspace([colx,coly])
     check_ratio(df,colx,coly,name)
-
-
 
 def get_operatingExpenseRate():
     #销售费用/营业总收入
@@ -602,15 +596,20 @@ def task(f):
     try:
         eval(f)()
     except Exception as e:
-        with open(r'D:\zht\database\quantDb\internship\FT\singleFactor\failed.txt','a') as txt:
+        with open(r'D:\zht\database\quantDb\internship\FT\singleFactor\failed1.txt','a') as txt:
             txt.write('{} ->  {}\n'.format(f,e))
 
 
-if __name__=='__main__':
-    fstrs=[f for f in locals().keys() if (f.startswith('get') and f!='get_ipython')]
-    # fstrs=[l.split(' ')[0] for l in open(r'D:\zht\database\quantDb\internship\FT\singleFactor\failed.txt').read().split('\n')]
-    pool=multiprocessing.Pool(4)
-    pool.map(task,fstrs)
+
+
+
+# if __name__=='__main__':
+#     # fstrs=[f for f in locals().keys() if (f.startswith('get') and f!='get_ipython')]
+#     fstrs=[l.split(' ')[0] for l in open(r'D:\zht\database\quantDb\internship\FT\singleFactor\failed.txt').read().split('\n')]
+#     pool=multiprocessing.Pool(4)
+#     pool.map(task,fstrs)
+
+
 
 
 #TODO: repalace the long table name with compact name
