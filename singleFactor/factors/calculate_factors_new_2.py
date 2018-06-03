@@ -11,7 +11,7 @@ import pickle
 
 import pandas as pd
 from config import DCC
-from data.dataApi import read_local
+from data.dataApi import read_local_pkl
 from singleFactor.factors.base_function import raw_level, x_history_std, \
     x_pct_chg, x_history_compound_growth, ratio_x_y, ratio_yoy_pct_chg, \
     x_history_growth_avg, ttm_adjust, x_history_downside_std
@@ -80,7 +80,7 @@ def get_fields_map():
     shared_cols=['stkcd','trd_dt','ann_dt','report_period']
     fields_map={}
     for tbname in tbnames:
-        df=read_local(tbname)
+        df=read_local_pkl(tbname)
         indicators=[col for col in df.columns if col not in shared_cols]
         for ind in indicators:
             if ind not in fields_map.keys():
@@ -101,9 +101,9 @@ def get_dataspace(fields):
         fields_map=pickle.load(f)
     dfnames=list(set([fields_map[f] for f in fields]))
     if len(dfnames)==1:
-        df=read_local(dfnames[0])
+        df=read_local_pkl(dfnames[0])
     else:
-        df=pd.concat([read_local(dn) for dn in dfnames],axis=1)
+        df=pd.concat([read_local_pkl(dn) for dn in dfnames], axis=1)
     return df
 
 #===============================成长因子========================================
@@ -541,8 +541,8 @@ def get_mlev(): #TODO:
     长期负债=非流动负债=长期借款+应付债券+长期应付款
     '''
     name='mlev'
-    df1=read_local('equity_fundamental_info')
-    df2=read_local('equity_selected_balance_sheet')
+    df1=read_local_pkl('equity_fundamental_info')
+    df2=read_local_pkl('equity_selected_balance_sheet')
     df2=df2.reset_index().sort_values(['stkcd','trd_dt','report_period'])
     df2=df2[~df2.duplicated(subset=['stkcd','trd_dt'],keep='last')].set_index(['stkcd','trd_dt'])
     df=pd.concat([df2,df1],join='inner',axis=1).reset_index()

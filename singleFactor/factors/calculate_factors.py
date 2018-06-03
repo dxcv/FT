@@ -4,7 +4,7 @@
 # Email:13163385579@163.com
 # TIME:2018-05-24  14:55
 # NAME:FT-calculate_factors.py
-from data.dataApi import read_local
+from data.dataApi import read_local_pkl
 import data.database_api.database_api as dbi
 from singleFactor.factors.check import check_factor
 import pandas as pd
@@ -69,7 +69,7 @@ def test_ltg1(tbname,col,name):
     check_factor(df[[name]], name)
 
 def test_ltg(tbname,col,name):
-    df=read_local(tbname,col)
+    df=read_local_pkl(tbname, col)
 
     def cal_ltg(x,col):
         x=x.reset_index()

@@ -19,13 +19,15 @@ def send_query(base_name, query):
     
     '''
     try:
-        addr = 'mysql+pymysql://ftresearch:FTResearch@192.168.1.140/{}?charset=utf8'.format(base_name)
-        connect = sqlalchemy.create_engine(addr)
-        data = pd.read_sql_query(sql=query, con=connect)
-    except:
         addr='mysql+pymysql://root:root@localhost/{}?charset=utf8'.format(base_name)
         connect=sqlalchemy.create_engine(addr)
         data = pd.read_sql_query(sql=query, con=connect)
+    except:
+        addr = 'mysql+pymysql://ftresearch:FTResearch@192.168.1.140/{}?charset=utf8'.format(
+            base_name)
+        connect = sqlalchemy.create_engine(addr)
+        data = pd.read_sql_query(sql=query, con=connect)
+
     return data
 
 

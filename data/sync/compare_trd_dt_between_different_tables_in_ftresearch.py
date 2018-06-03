@@ -4,7 +4,7 @@
 # Email:13163385579@163.com
 # TIME:2018-05-30  11:29
 # NAME:FT-compare_trd_dt_between_different_tables_in_ftresearch.py
-from data.dataApi import read_local, read_raw
+from data.dataApi import read_local_pkl, read_raw
 import pandas as pd
 
 def compare_():
@@ -13,8 +13,8 @@ def compare_():
 
     # tb2='equity_selected_balance_sheet'
 
-    df1=read_local(tb1)['trd_dt']
-    df2=read_local(tb2)['trd_dt']
+    df1=read_local_pkl(tb1)['trd_dt']
+    df2=read_local_pkl(tb2)['trd_dt']
 
     df=pd.concat([df1,df2],axis=1,keys=['date1','date2'])
 

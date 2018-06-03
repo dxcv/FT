@@ -5,19 +5,19 @@
 # TIME:2018-05-24  09:35
 # NAME:FT-get_base.py
 from config import DCC
-from data.dataApi import read_local
+from data.dataApi import read_local_pkl
 import os
 import pandas as pd
 import pickle
 
 def get_index():
-    index=read_local('equity_selected_trading_data').index
+    index=read_local_pkl('equity_selected_trading_data').index
     # with open(os.path.join(DCC,'index.pkl'),'wb') as f:
     #     pickle.dump(index,f)
     return index
 
 def parse_ftmt():
-    fdmt=read_local('equity_fundamental_info')
+    fdmt=read_local_pkl('equity_fundamental_info')
     fdmt['type_st']=fdmt['type_st'].fillna(0) # nan is not rallowed in fdmt
     index=get_index()
     fdmt=fdmt.reindex(index)
@@ -34,7 +34,7 @@ def parse_others():
                ]
     index = get_index()
     for tbname in tbnames:
-        df = read_local(tbname).reindex(index)
+        df = read_local_pkl(tbname).reindex(index)
         for col in df.columns:
             df[[col]].to_pickle(os.path.join(DCC, col + '.pkl'))
         print(tbname)

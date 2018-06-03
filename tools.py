@@ -35,3 +35,11 @@ def convert_freq(x, freq='M', thresh=12):
 
 def handle_duplicates(df):
     return df[~df.index.duplicated(keep='first')]
+
+def number2dateStr(x):
+    if isinstance(x,(int,float)):
+        x=str(x)
+
+    if '.' in x:
+        x=x.split('.')[0]
+    return x
