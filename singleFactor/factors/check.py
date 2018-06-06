@@ -128,3 +128,4 @@ def check_factor1(df, name):
 
     for i,fig in enumerate(figs1+figs2):
         fig.savefig(os.path.join(path,'fig{}.png'.format(i)))
+
