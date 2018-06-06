@@ -30,7 +30,7 @@ def _check(df,projName):
     '''
     check single factor
     Args:
-        df: pd.DataFrame,with only one column
+        df: pd.DataFrame,with only one column,the index is ['stkcd','trd_dt']
 
     Returns:
 
@@ -75,7 +75,7 @@ def _change_index(df):
     2007-12-31的trd_dt 都是 2008-03-21
     Args:
         df:pd.DataFrame,with the index as ['stkcd','report_period'],and there
-        should be a column named 'trd_dt'
+        should be a column named 'trd_dt' and a column named 'target'
 
     Returns:DataFrame,with only one column and the index is ['stkcd','trd_dt']
 
@@ -93,38 +93,16 @@ def _change_index(df):
     return df
 
 def check_factor(df,projName):
+    '''
+
+    Args:
+        df:pd.DataFrame,there must be a column named 'target' and  a column named 'trd_dt'
+            and the index is ['stkcd','report_period']
+        projName:
+
+    Returns:
+
+    '''
     df=_change_index(df)
     _check(df,projName)
 
-
-def check_factor1(df, name):
-    drct = r'D:\zht\database\quantDb\internship\FT\singleFactor\result'
-    path = os.path.join(drct, name)
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    store=pd.HDFStore(r'\\Ft-research\e\Share\Alpha\FYang\factors\test_data.h5')
-    fdmt = store['fundamental_info']
-    retn_1m=store['retn_1m']
-    retn_1m_zz500=store['retn_1m_zz500']
-    store.close()
-
-    data=dm.factor_merge(fdmt,df)
-    data=data.loc[:,['stkcd','trd_dt','wind_indcd','cap',name]]
-    data['{}_raw'.format(name)]=data[name]
-    # s_raw=data['oper_profit_raw'].describe()
-    data=dc.clean(data,name)
-
-    data=data.set_index(['trd_dt','stkcd'])
-    data.index.names=['trade_date','stock_ID']
-    signal_input=data[['{}_neu'.format(name)]]
-    test_data=ft.data_join(retn_1m,signal_input)
-
-    btic_des,figs1=ft.btic(test_data,name)
-    layer_des,figs2=ft.layer_result(test_data,retn_1m_zz500,name)
-
-    btic_des.to_csv(os.path.join(path,'btic_des.csv'))
-    layer_des.to_csv(os.path.join(path,'layer_des.csv'))
-
-    for i,fig in enumerate(figs1+figs2):
-        fig.savefig(os.path.join(path,'fig{}.png'.format(i)))

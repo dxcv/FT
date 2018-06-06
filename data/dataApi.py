@@ -47,6 +47,8 @@ def read_local_sql(tbname,cols=None,database='ft_zht'):
     data = cur.fetchall()
     cur.close()
     df = pd.DataFrame(list(data),columns=[c[0] for c in cur.description])
+    df.columns=[c.lower() for c in df.columns]
+
     if cols is None:
         return df
     elif isinstance(cols,str):

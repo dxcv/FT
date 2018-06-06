@@ -26,8 +26,6 @@ or we will get opposite value.
 # TODO：到最后test的时候才调用 _change_index()
 
 
-
-
 def ttm_adjust(s):
     return s.groupby('stkcd').apply(
         lambda x:x.rolling(4,min_periods=4).sum())
@@ -54,6 +52,13 @@ def raw_level(df, col,ttm=True):
     return df
 
 #TODO: test whether the raw_level function will change the data
+
+def raw_square(df,col,ttm=False):
+    df=df.copy()
+    if ttm:
+        df[col]=ttm_adjust(df[col])
+    df['target']=df[col]*df[col]
+    return df
 
 def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
     '''

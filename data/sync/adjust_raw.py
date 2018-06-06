@@ -16,8 +16,6 @@ from tools import number2dateStr
 from sqlalchemy import create_engine
 from sqlalchemy.types import VARCHAR
 
-# filesync_engine = create_engine('mysql+pymysql://ftresearch:FTResearch@192.168.1.140/filesync?charset=utf8')
-
 
 def save_df(df,name):
     '''
@@ -97,12 +95,13 @@ def convert_asharefinancialindicator():
     adjust_filesync(tbname)
 
 #-------------------------------parse financial report-------------------------
-def adjust_dtypes(df):
+def _adjust_dtypes(df):
     #TODO: how about using mysql to determine the dtypes？
     df=df.apply(pd.to_numeric,errors='ignore')
 
+    df['opdate']=pd.to_datetime(df['opdate'],unit='ns')
     dateFields = ['report_period', 'trd_dt', 'ann_dt', 'holder_enddate',
-                  'listdate','actual_ann_dt','opdate']
+                  'listdate','actual_ann_dt']
 
     for dcol in dateFields:
         if dcol in df.columns:
@@ -110,14 +109,17 @@ def adjust_dtypes(df):
     return df
 
 
-def adjust_ann_dt_for_balancesheet(df):
+def _adjust_ann_dt(df, q=False):
     #使用合并报表
-    df = df[df['statement_type'].isin(
-        [408001000, 408004000, 408005000, 4080050000])]
+    #[1000,4000,5000] for accumulative value,[2000,3000] for single quarter value
+    #累积数据
+    if q:
+        df = df[df['statement_type'].isin([408002000, 408003000])]
+    else:
+        df = df[df['statement_type'].isin([408001000, 408004000, 408005000, 4080050000])]
     df = df.sort_values(['wind_code', 'report_period', 'actual_ann_dt'],
                         ascending=True)
-
-    #TODO: 直接去最小日期也有问题，有的1000 和500 由相同的最小日期，还要确定具体取那个statement_type
+    #TODO: 直接去最小日期也有问题，有的1000 和5000 由相同的最小日期，还要确定具体取哪个statement_type
     df = df[~df.duplicated(subset=['wind_code', 'report_period'],
                            keep='first')]  # 取最早的那条数据，并且使用实际公告日，而不是ann_dt
     '''
@@ -137,28 +139,13 @@ def adjust_ann_dt_for_balancesheet(df):
     '''
     return df
 
-def adjust_ann_dt_for_incomesheet(df,q=True):
-    #[1000,4000,5000] for accumulative value,[2000,3000] for single quarter value
-
-    #累积数据
-    if q:
-        df = df[df['statement_type'].isin([408002000, 408003000])]
-    else:
-        df=df[df['statement_type'].isin([408001000,408004000,408005000])]
-    df = df.sort_values(['wind_code', 'report_period', 'actual_ann_dt'],
-                        ascending=True)
-    df = df[~df.duplicated(subset=['wind_code', 'report_period'],
-                           keep='first')]  # 取最早的那条数据，并且使用实际公告日，而不是ann_dt
-    return df
-
-
-def add_trd_dt(df):
+def _add_trd_dt(df):
     calendar=read_raw('asharecalendar')
     trd_dt=pd.to_datetime(calendar['TRADE_DAYS'].map(str)).drop_duplicates().sort_values()
     df['trd_dt']=df['actual_ann_dt'].map(lambda x:trd_dt.values[trd_dt.searchsorted(x)[0]])
     return df
 
-def fill_report_period(df):
+def _fill_report_period(df):
     # reindex with qrange
     def _reindex_with_qrange(x):
         x = x.set_index('report_period')
@@ -169,12 +156,12 @@ def fill_report_period(df):
     df=df.groupby('wind_code').apply(_reindex_with_qrange)
     return df
 
-def delete_unuseful_cols(df):
+def _delete_unuseful_cols(df):
     unuseful_cols=['object_id','s_info_windcode','wind_code','ann_dt']
     df=df.drop(labels=unuseful_cols,axis=1)
     return df
 
-def adjust_df(df):
+def _adjust_df(df):
     #reorder the columns
     df=df.rename(columns={'actual_ann_dt':'ann_dt'}) #adjust actual_ann_dt 与ftresearch的命名方式一致
     hd=['trd_dt','ann_dt']
@@ -183,69 +170,50 @@ def adjust_df(df):
     df.index.names=['stkcd','report_period'] # replace 'wind_code' with 'stkcd',与ftresearch 的命名保持一致
     return df
 
-def parse_asharebalancesheet():
-    #TODO： copy that of ashareincome
-    name='asharebalancesheet'
-    df = pd.read_csv(r'e:\{}.csv'.format(name), sep='\t', header=None)
-    info=pd.read_csv(r'D:\zht\database\quantDb\internship\FT\documents\filesync_info\csv\{}.csv'.format(name),index_col=0,encoding='gbk')
-    #adjust data type
-    df.columns=info['field'].str.lower()
-    df=df.replace(r'\N',np.nan)
-
-
-    df = adjust_dtypes(df)
-    df=adjust_ann_dt_for_balancesheet(df)
-    #TODO: what's "opdate" and "opmode"?
-    df = fill_report_period(df)
-    df = add_trd_dt(df)
-    df = delete_unuseful_cols(df)
-    df = adjust_df(df)
-    save_df(df,name)
-
-def parse_ashareincome(q=True):
-    name='ashareincome'
-    df = read_local_sql(name, database='filesync')
-    df.columns = [c.lower() for c in df.columns]
-
+def _parse(name, q=False):
+    df=read_local_sql(name,database='filesync')
     #adjust data type
     # refer to this link:https://stackoverflow.com/questions/15891038/change-data-type-of-columns-in-pandas
     df=df.apply(pd.to_numeric,errors='ignore')
 
-    df = adjust_dtypes(df)
-    df=adjust_ann_dt_for_incomesheet(df,q)
-    df = fill_report_period(df)
-    df = add_trd_dt(df)
-    df = delete_unuseful_cols(df)
-    df = adjust_df(df)
+    df = _adjust_dtypes(df)
+    df=_adjust_ann_dt(df, q)
+    df = _fill_report_period(df)
+    df = _add_trd_dt(df)
+    df = _delete_unuseful_cols(df)
+    df = _adjust_df(df)
     if q:
         name=name+'_q'
     save_df(df,name)
 
-# parse_asharebalancesheet()
-parse_ashareincome(q=True)
-# parse_ashareincome(q=False)
+def parse_three_reports():
+    names=['asharebalancesheet','ashareincome','asharecashflow']
+    for name in names:
+        _parse(name, q=False)
+    for name in names[1:]:
+        _parse(name, q=True)
+
+# parse_three_reports()
 
 
+def calculate_q_sheet():
+    #calculate myself q sheet
 
+    ac=read_local_pkl('ashareincome')
 
-#calculate myself q sheet
+    df=ac.reset_index()
 
-# ac=read_local_pkl('ashareincome')
-#
-# df=ac.reset_index()
-#
-# def _adjust(x):
-#     cols=['stkcd','report_period','trd_dt','ann_dt','statement_type','crncy_code',
-#           'comp_type_code','s_info_compcode','opdate','opmode']
-#     indicators=[c for c in x.columns if c not in cols]
-#     if x.shape[0]==4:
-#         x[indicators]=x[indicators].apply(lambda s:s-s.shift(1).fillna(0))
-#         return x
-#
-#     #TODO: float type rather than str
-#
-#
-# single_q=df.groupby(['stkcd',df['report_period'].dt.year]).apply(_adjust)
+    def _adjust(x):
+        cols=['stkcd','report_period','trd_dt','ann_dt','statement_type','crncy_code',
+              'comp_type_code','s_info_compcode','opdate','opmode']
+        indicators=[c for c in x.columns if c not in cols]
+        if x.shape[0]==4:
+            x[indicators]=x[indicators].apply(lambda s:s-s.shift(1).fillna(0))
+            #TODO: wrong ,有缺失数据的时候会出错
+            return x
+
+        #TODO: float type rather than str
+    single_q=df.groupby(['stkcd',df['report_period'].dt.year]).apply(_adjust)
 
 
 

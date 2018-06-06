@@ -52,36 +52,35 @@ def summarize_result():
     tb_des.to_csv(os.path.join(D_RESULT,'tb_des.csv'))
     tb_ret.to_csv(os.path.join(D_RESULT,'tb_ret.csv'))
 
-
-summarize_result()
-
-tb_des=pd.read_csv(os.path.join(D_RESULT,'tb_des.csv'),index_col=0,parse_dates=True)
-tb_ret=pd.read_csv(os.path.join(D_RESULT,'tb_ret.csv'),index_col=0,parse_dates=True)
+def get_prominent_factors():
+    tb_des=pd.read_csv(os.path.join(D_RESULT,'tb_des.csv'),index_col=0,parse_dates=True)
+    tb_ret=pd.read_csv(os.path.join(D_RESULT,'tb_ret.csv'),index_col=0,parse_dates=True)
 
 
-non_ttm=[ind for ind in tb_des.index if not ind.endswith('_ttm')]
-nl=tb_des.loc[non_ttm]['sharpe'].nlargest(10).index
-ns=tb_des.loc[non_ttm]['sharpe'].nsmallest(10).index
+    non_ttm=[ind for ind in tb_des.index if not ind.endswith('_ttm')]
+    nl=tb_des.loc[non_ttm]['sharpe'].nlargest(10).index
+    ns=tb_des.loc[non_ttm]['sharpe'].nsmallest(10).index
 
-df_nl=tb_ret[nl.tolist()].dropna()
-df_ns=tb_ret[ns.tolist()].dropna()
+    df_nl=tb_ret[nl.tolist()].dropna()
+    df_ns=tb_ret[ns.tolist()].dropna()
 
-# df_nl=tb_ret[nl.tolist()+['zz500']].dropna()
-# df_ns=tb_ret[ns.tolist()+['zz500']].dropna()
-
-
-figsize=(20,6)
-
-fig1=plt.figure()
-cp=(df_nl+1).cumprod()
-cp.plot(figsize=figsize)
-plt.savefig(os.path.join(D_RESULT,'positive_cumprod.png'))
+    # df_nl=tb_ret[nl.tolist()+['zz500']].dropna()
+    # df_ns=tb_ret[ns.tolist()+['zz500']].dropna()
 
 
-plt.figure()
-cp=(df_ns+1).cumprod()
-cp.plot(figsize=figsize)
-plt.savefig(os.path.join(D_RESULT,'negative_cumprod.png'))
+    figsize=(20,6)
+
+    fig1=plt.figure()
+    cp=(df_nl+1).cumprod()
+    cp.plot(figsize=figsize)
+    plt.savefig(os.path.join(D_RESULT,'positive_cumprod.png'))
+
+
+    plt.figure()
+    cp=(df_ns+1).cumprod()
+    cp.plot(figsize=figsize)
+    plt.savefig(os.path.join(D_RESULT,'negative_cumprod.png'))
+
 
 
 

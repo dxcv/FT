@@ -80,3 +80,15 @@ def adjust_equity_fundamental_info():
     df=df.set_index(['stkcd','trd_dt']).sort_index()
     df.to_csv(os.path.join(DCSV, tbname + '.csv'))
     df.to_pickle(os.path.join(DPKL, tbname + '.pkl'))
+
+def adjust_equity_selected_trading_data():
+    tbname='equity_selected_trading_data'
+    df=read_raw(tbname)
+    df['trd_dt']=pd.to_datetime(df['trd_dt'].map(str))
+    df=df.set_index(['stkcd','trd_dt'])
+    df=df.sort_index()
+    df.to_csv(os.path.join(DCSV,tbname+'.csv'))
+    df.to_pickle(os.path.join(DPKL,tbname+'.pkl'))
+
+#TODO: read directly from sql rather than using read_raw
+
