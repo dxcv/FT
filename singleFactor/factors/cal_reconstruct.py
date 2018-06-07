@@ -133,9 +133,6 @@ def x_pct_chg(df, col, q=1, ttm=True,delete_negative=True):
     return df
 
 
-
-
-
 #========================================cal_tools.py==============================
 def check_g_yoy(df, col, name,q=4):
     '''
@@ -150,9 +147,6 @@ def check_g_yoy(df, col, name,q=4):
     r=x_pct_chg(df,col,q=q,ttm=False)
     check_factor(r_ttm,'{}_ttm'.format(name))
     check_factor(r,name)
-
-
-
 
 
 #==========================================calculate_excel.py===================
