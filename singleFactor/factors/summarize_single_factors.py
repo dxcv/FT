@@ -20,7 +20,8 @@ def summarize_result():
     layer_des_dfs=[]
     for fn in fnames:
         path=os.path.join(SINGLE_D_RESULT,fn)
-        btic_des=pd.read_csv(os.path.join(path,'btic_des.csv'),index_col=0).rename(columns={'target':fn})
+        btic_des=pd.read_csv(os.path.join(path,'btic_des.csv'),index_col=0)
+        btic_des.columns=[fn]
         btic_m=pd.read_csv(os.path.join(path,'btic_m.csv'),index_col=0)
         layer_retn=pd.read_csv(os.path.join(path,'layer_retn.csv'),index_col=0)
         layer_des=pd.read_csv(os.path.join(path,'layer_des.csv'),index_col=0)
@@ -75,16 +76,12 @@ def get_prominent_factors():
     cp.plot(figsize=figsize)
     plt.savefig(os.path.join(D_RESULT,'positive_cumprod.png'))
 
-
     plt.figure()
     cp=(df_ns+1).cumprod()
     cp.plot(figsize=figsize)
     plt.savefig(os.path.join(D_RESULT,'negative_cumprod.png'))
 
-
-
-
-
+# summarize_result()
 
 
 

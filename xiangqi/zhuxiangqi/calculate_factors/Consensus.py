@@ -21,7 +21,7 @@ cp = dbi.get_stocks_data('equity_selected_trading_data', ['close'], '2011-01-01'
 cons = pd.merge(cons, cp, on=['stkcd', 'trd_dt'], how='left')
 cons_m = cons.groupby('stkcd').resample('M', on='trd_dt').last()
 cons_m['Fore_EPS'] = cons_m['est_net_profit_FTTM'] / cons_m['est_baseshare_FTTM'] / 10000
-factors = ['rating_avg_30', 'Fore_EPS', 'est_oper_revenue_FTTM', 'est_net_profit_FTTM'] 
+factors = ['rating_avg_30', 'Fore_EPS', 'est_oper_revenue_FTTM', 'est_net_profit_FTTM']
 for factor in factors:
     cons_m[factor + '_p_1m'] = cons_m.groupby('stkcd')[factor].shift(1)
     cons_m[factor + '_p_3m'] = cons_m.groupby('stkcd')[factor].shift(3)

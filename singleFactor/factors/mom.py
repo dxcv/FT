@@ -58,6 +58,8 @@ def get_mom_1dc1m():
 
 #===================================technical===================================
 def get_sucess():
+    #Success=1-过去一个月的收益率排名/股票总数
+    name='T_sucess'
     trading_m=read_local_pkl('trading_m')
 
     def func(x):
@@ -67,14 +69,16 @@ def get_sucess():
         return x['sucess']
 
     trading_m=trading_m.swaplevel()
-    trading_m['sucess']=trading_m.groupby(level='month_end').apply(func)
+    trading_m[name]=trading_m.groupby(level='month_end').apply(func)
     trading_m=trading_m.reset_index().set_index(['stkcd','trd_dt'])
-    _check(trading_m[['sucess']],'sucess')
+    _check(trading_m[[name]],name)
 
 def get_pm_1d():
+    #过去 1 日收益率
+    name='T_pm_1d'
     trading_d=read_local_pkl('equity_selected_trading_data')
-    trading_d['ret_d']=trading_d['adjclose'].groupby('stkcd').pct_change()
-    _check(trading_d[['ret_d']],'pm_1d')
+    trading_d[name]=trading_d['adjclose'].groupby('stkcd').pct_change()
+    _check(trading_d[[name]],name)
 
 
 if __name__ == '__main__':

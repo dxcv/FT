@@ -122,7 +122,6 @@ def get_roe_growth_rate():#TODO: add indicators
     df=get_dataspace(col)
     check_g_yoy(df,col,name)
 
-# get_roe_growth_rate()
 
 #TODO: add equity_cash_dividend to get_dataspace
 def get_dividend3YR():
@@ -170,9 +169,6 @@ def get_g_operatingRevenueCAGR3():
     df=x_history_compound_growth(df, 'oper_rev', q=12)
     check_raw_level(df,'target',name)
 
-get_g_operatingRevenueCAGR3()
-
-
 def get_g_operatingRevenueCAGR5():
     #营业收入 5 年复合增长率
     name='G_operatingRevenueCAGR5'
@@ -196,18 +192,23 @@ def get_netProfit3YRAvg():
 
 #===================================质量因子====================================
 def get_artRate(): #TODO: use asharefinancialindicator
+    return
     # 应收账款周转率
     name='Q_artRate'
     tbname = 'asharefinancialindicator'
     col='s_fa_arturn'
     check_raw_level(tbname,col,name)
 
+
+#TODO: 注意 除法 容易出现inf 和 -inf
 def get_cashDividendCover():
     #现金股利保障倍数＝经营活动产生的现金流量净额/累计合计派现金额
     name='Q_cashDividendCover'
     df=get_dataspace(['net_cash_flows_oper_act','cash_div'])
-    df['target']=df['net_cash_flow_oper_act']/df['cash_div']
+    df['target']=df['net_cash_flows_oper_act']/df['cash_div']
     check_raw_level(df,'target',name)
+
+# get_cashDividendCover()
 
 def get_cashRateOfSales():
     # 经营活动产生的现金流量净额/营业收入
@@ -257,7 +258,7 @@ def get_dividendCover(): #TODO: dividend
     name='Q_dividendCover'
     df=get_dataspace(['net_profit_excl_min_int_inc','cash_div'])
     df['target'] = df['net_profit_excl_min_int_inc'] / df['cash_div']
-    check_raw_level(df, 'target', name)
+    check_raw_level(df, 'target', name,ttm=False)
 
 def get_earningsStability():
     #净利润过去 2 年的标准差
@@ -307,10 +308,13 @@ def get_intanibleAssetRatio():
     df=get_dataspace(cols)
     check_ratio(df,cols[0],cols[1],name)
 
-def get_interestCover():#TODO:数据缺失严重
+def get_interestCover():
+    return
+    #TODO:int_exp 数据缺失严重
     #利息保障倍数＝息税前利润/利息费用
     '''
-    息税前利润=净利润+所得税+财务费用'''
+    息税前利润=净利润+所得税+财务费用
+    '''
     name='Q_interestCover'
     col1='net_profit_excl_min_int_inc'
     col2='inc_tax'
@@ -394,9 +398,10 @@ def get_netProfitToTotProfit():
 
 def get_NPCutToNetProfit():
     #扣除非经常损益后的净利润/归属于母公司的净利润
+    return
     name='Q_NPCutToNetProfit'
-    colx='net_profit_after_ded_nr_lp'
-    coly='net_profit_excl_min_int_inc' #TODO:此数据缺失严重
+    colx='net_profit_after_ded_nr_lp' #TODO: 数据缺失严重
+    coly='net_profit_excl_min_int_inc'
     df=get_dataspace([colx,coly])
     check_ratio(df,colx,coly,name)
 

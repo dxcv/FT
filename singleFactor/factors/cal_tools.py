@@ -18,11 +18,30 @@ from singleFactor.factors.base_function import raw_level, x_history_std, \
 from singleFactor.factors.check import check_factor
 
 
-def check_raw_level(df,col,name):
-    df_ttm=raw_level(df, col,ttm=True)
-    df=raw_level(df, col,ttm=False)
-    check_factor(df_ttm,'{}_ttm'.format(name))
-    check_factor(df,name)
+def check_raw_level(df,col,name,ttm='both'):
+    '''
+
+    Args:
+        df:
+        col:
+        name:
+        ttm:{'both',True,False}
+
+    Returns:
+
+    '''
+    if ttm=='both':
+        df_ttm=raw_level(df, col,ttm=True)
+        df=raw_level(df, col,ttm=False)
+        check_factor(df_ttm,'{}_ttm'.format(name))
+        check_factor(df,name)
+    elif ttm:
+        df_ttm=raw_level(df, col,ttm=True)
+        check_factor(df_ttm,'{}_ttm'.format(name))
+    else:
+        df=raw_level(df, col,ttm=False)
+        check_factor(df,name)
+
 
 def check_level_square(df,col,name):
     df_ttm=raw_square(df,col,ttm=True)
@@ -81,6 +100,8 @@ def _get_fields_map():
     'equity_selected_cashflow_sheet_q',
     # 'equity_selected_income_sheet',
     'equity_selected_income_sheet_q',
+    'equity_cash_dividend',
+    'asharefinancialindicator'
     ]
 
     shared_cols=['stkcd','trd_dt','ann_dt','report_period']
@@ -113,12 +134,12 @@ def read_fields_map(refresh=False):
 
     return fields_map
 
+# read_fields_map(refresh=True)
 
 def get_dataspace(fields):
     fields_map=read_fields_map()
     if isinstance(fields,str): #only one field
         fields=[fields]
-
 
     dfnames=list(set([fields_map[f] for f in fields]))
     if len(dfnames)==1:
@@ -126,3 +147,13 @@ def get_dataspace(fields):
     else:
         df=pd.concat([read_local_pkl(dn) for dn in dfnames], axis=1)
     return df
+
+
+
+#TODO: how to combine mixed frequency dataframe?
+'''
+combine all the data in one df and set index as ['stkcd','trd_dt'],
+
+
+'''
+

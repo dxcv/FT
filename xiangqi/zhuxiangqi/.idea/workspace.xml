@@ -12,7 +12,7 @@
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/zhuxiangqi$Momentum.coverage" NAME="Momentum Coverage Results" MODIFIED="1528101328070" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/calculate_factors" />
     <SUITE FILE_PATH="coverage/zhuxiangqi$NCFP_TTM.coverage" NAME="NCFP_TTM Coverage Results" MODIFIED="1528091127827" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/calculate_factors" />
-    <SUITE FILE_PATH="coverage/zhuxiangqi$Consensus.coverage" NAME="Consensus Coverage Results" MODIFIED="1528165770833" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/calculate_factors" />
+    <SUITE FILE_PATH="coverage/zhuxiangqi$Consensus.coverage" NAME="Consensus Coverage Results" MODIFIED="1528357393258" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/calculate_factors" />
     <SUITE FILE_PATH="coverage/zhuxiangqi$BP.coverage" NAME="BP Coverage Results" MODIFIED="1528103607037" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/calculate_factors" />
   </component>
   <component name="FileEditorManager">
@@ -20,8 +20,8 @@
       <file leaf-file-name="Consensus.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/calculate_factors/Consensus.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="171">
-              <caret line="19" column="73" selection-start-line="19" selection-start-column="73" selection-end-line="19" selection-end-column="73" />
+            <state relative-caret-position="475">
+              <caret line="25" column="71" lean-forward="true" selection-start-line="25" selection-start-column="71" selection-end-line="25" selection-end-column="71" />
               <folding>
                 <element signature="e#85#104#0" expanded="true" />
               </folding>
@@ -78,17 +78,16 @@
     <packageJsonPaths />
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-9" />
-    <option name="y" value="-9" />
-    <option name="width" value="1938" />
-    <option name="height" value="1060" />
+    <option name="x" value="-5" />
+    <option name="y" value="-1088" />
+    <option name="width" value="1936" />
+    <option name="height" value="1066" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -105,6 +104,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -251,20 +251,20 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-7" y="-7" width="1550" height="848" extended-state="6" />
+    <frame x="-5" y="-1088" width="1936" height="1066" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.6427567" visible="true" weight="0.17895442" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.6427567" weight="0.14392324" />
       <window_info anchor="bottom" id="TODO" order="7" sideWeight="0.49262735" weight="0.39044943" />
       <window_info anchor="bottom" id="Docker" order="3" show_stripe_button="false" />
       <window_info anchor="bottom" id="Event Log" order="5" sideWeight="0.50268096" side_tool="true" weight="0.55133617" />
       <window_info anchor="right" id="Run" order="6" sideWeight="0.53792137" side_tool="true" weight="0.4886059" />
       <window_info anchor="right" id="Version Control" order="8" show_stripe_button="false" sideWeight="0.59129214" side_tool="true" weight="0.36930296" />
       <window_info anchor="right" x="31" y="248" width="1474" height="337" id="Python Console" order="9" sideWeight="0.4364224" weight="0.39392325" />
-      <window_info active="true" anchor="right" x="593" y="178" width="869" height="592" id="SciView" order="5" sideWeight="0.42696628" side_tool="true" visible="true" weight="0.24664879" />
+      <window_info anchor="right" x="593" y="178" width="869" height="592" id="SciView" order="5" sideWeight="0.42780173" side_tool="true" visible="true" weight="0.37899786" />
       <window_info anchor="right" id="Structure" order="10" sideWeight="0.58848315" side_tool="true" weight="0.35924932" />
       <window_info anchor="right" id="Terminal" order="7" sideWeight="0.33286518" side_tool="true" weight="0.49061662" />
-      <window_info anchor="right" id="Debug" order="4" sideWeight="0.5730337" weight="0.36729223" />
+      <window_info anchor="right" id="Debug" order="4" sideWeight="0.5721983" visible="true" weight="0.37899786" />
       <window_info id="Favorites" order="1" sideWeight="0.35724333" side_tool="true" weight="0.1494638" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="2" weight="0.4" />
@@ -292,11 +292,26 @@
           <line>24</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/calculate_factors/Consensus.py</url>
+          <line>20</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
       </breakpoints>
-      <option name="time" value="10" />
+      <option name="time" value="11" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/calculate_factors/Consensus.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="19" column="73" selection-start-line="19" selection-start-column="73" selection-end-line="19" selection-end-column="73" />
+          <folding>
+            <element signature="e#85#104#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/calculate_factors/Consensus.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="171">
@@ -511,8 +526,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/calculate_factors/Consensus.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="171">
-          <caret line="19" column="73" selection-start-line="19" selection-start-column="73" selection-end-line="19" selection-end-column="73" />
+        <state relative-caret-position="475">
+          <caret line="25" column="71" lean-forward="true" selection-start-line="25" selection-start-column="71" selection-end-line="25" selection-end-column="71" />
           <folding>
             <element signature="e#85#104#0" expanded="true" />
           </folding>
