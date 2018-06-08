@@ -165,8 +165,6 @@ def layer_test(test_data, retn_mk, quantile=10):
     quantile: int
         层数
     '''
-    # delete those month with too small sample
-    test_data=test_data.groupby('trade_date').filter(lambda x:x.shape[0]>50)
     test_data['layer'] = test_data.groupby('trade_date', group_keys=False).apply(
              lambda x: pd.qcut(x.iloc[:, 1], quantile, labels=False))
     layer_retn = test_data.groupby(['trade_date', 'layer'])['retn_1m'].mean()

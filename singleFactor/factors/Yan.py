@@ -14,8 +14,49 @@ from singleFactor.factors.base_function import x_pct_chg, ratio_x_y, \
     ratio_x_y_history_std, x_history_std, x_history_downside_std, \
     ratio_x_y_history_downside_std, x_history_growth_avg, x_history_growth_std, \
     x_history_growth_downside_std
+from singleFactor.factors.check import check_factor
 
 dirtmp=r'e:\tmp'
+proj_bi = r'E:\test_yan\indicators\bivariate'
+proj_sg = r'e:\test_yan\indicators\single'
+
+base_variables1=['tot_assets', # total assets
+                'tot_cur_assets',# total current assets
+                'inventories',#inventory
+                '',# property,plant,and equipment
+                'tot_liab',#total liabilities
+                'tot_cur_liab',# total current liabilities
+                'tot_non_cur_liab',# long-term debt
+                '' # total common equity = total assets - total liablities
+                'tot_shrhldr_eqy_excl_min_int', # stockholders' equity
+                'cap_stk',# total invested capital
+                'oper_rev',# total sale
+                'less_oper_cost', # cost of goods sold
+                '',# selling,general,and administrative cost
+                '',# number of employees,s_info_totalemployees in ashareintroduction
+                '',# market capitalization
+                '' # refer to the excel for other indicators as denominator
+                ]
+
+base_variables=[
+                'tot_assets',
+                'tot_cur_assets',
+                'inventories',
+                'tot_cur_liab',
+                'tot_non_cur_liab',
+                'tot_liab',
+                'cap_stk',
+                'tot_shrhldr_eqy_excl_min_int',
+                'tot_shrhldr_eqy_incl_min_int',
+                'tot_oper_rev',
+                'oper_rev',
+                'tot_oper_cost',
+                'tot_profit',
+                'net_profit_incl_min_int_inc',
+                'net_profit_excl_min_int_inc',
+                'ebit',
+                'ebitda',
+                ]
 
 def get_financial_sheets():
     # bs=read_local_sql('asharebalancesheet',database='ft_zht')
@@ -79,8 +120,6 @@ def combine_financial_sheet():
     data.to_pickle(os.path.join(dirtmp,'data.pkl'))
 
 
-
-
 def gen_with_x_y(df, var, base_var):
     # TODO: do not use ttm with q data,how about using ttm method and use accumulative data?
     # x,y
@@ -130,8 +169,9 @@ def gen_with_x(df,var):
 #TODO: add other operator
 #TODO: delete indicators with too small sample
 
+#TODO: add ttm at this place
+
 def gen_indicators2(data,base_variables,var):
-    proj_bi=r'E:\test_yan\bivariate'
     directory=os.path.join(proj_bi,var)
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -141,61 +181,49 @@ def gen_indicators2(data,base_variables,var):
         print(var,base_var)
 
 def gen_indicators1(data, var):
-    proj_sg=r'e:\test_yan\single'
     sg_ind=gen_with_x(data,var)
     sg_ind.to_csv(os.path.join(proj_sg,var+'.csv'))
     print(var)
 
-
-base_variables1=['tot_assets', # total assets
-                'tot_cur_assets',# total current assets
-                'inventories',#inventory
-                '',# property,plant,and equipment
-                'tot_liab',#total liabilities
-                'tot_cur_liab',# total current liabilities
-                'tot_non_cur_liab',# long-term debt
-                '' # total common equity = total assets - total liablities
-                'tot_shrhldr_eqy_excl_min_int', # stockholders' equity
-                'cap_stk',# total invested capital
-                'oper_rev',# total sale
-                'less_oper_cost', # cost of goods sold
-                '',# selling,general,and administrative cost
-                '',# number of employees,s_info_totalemployees in ashareintroduction
-                '',# market capitalization
-                '' # refer to the excel for other indicators as denominator
-                ]
-
-base_variables=[
-                'tot_assets',
-                'tot_cur_assets',
-                'inventories',
-                'tot_cur_liab',
-                'tot_non_cur_liab',
-                'tot_liab',
-                'cap_stk',
-                'tot_shrhldr_eqy_excl_min_int',
-                'tot_shrhldr_eqy_incl_min_int',
-                'tot_oper_rev',
-                'oper_rev',
-                'tot_oper_cost',
-                'tot_profit',
-                'net_profit_incl_min_int_inc',
-                'net_profit_excl_min_int_inc',
-                'ebit',
-                'ebitda',
-                ]
-
-if __name__ == '__main__':
+def check():
     data = pd.read_pickle(os.path.join(dirtmp, 'data.pkl'))
     data = data.set_index(['stkcd', 'report_period'])
+    vars=os.listdir(proj_bi)
+    fps=[]
+    for var in vars:
+        fns=os.listdir(os.path.join(proj_bi,var))
+        fps+=[os.path.join(proj_bi,var,fn) for fn in fns]
 
-    unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
-    variables = [col for col in data.columns if
-                 col not in unuseful_cols + base_variables]
+    fps+=[os.path.join(proj_sg,fn) for fn in os.listdir(proj_sg)]
+
+    for fp in fps:
+        df=pd.read_csv(fp,index_col=[0,1],parse_dates=True)
+        df['trd_dt']=data['trd_dt']
+        for col in [c for c in df.columns if c!='trd_dt']:
+            subdf=df[['trd_dt',col]]
+            subdf.columns=['trd_dt','target']
+            check_factor(subdf,col)
+        print(fp)
 
 
-    pool=multiprocessing.Pool(4)
-    pool.map(partial(gen_indicators2,data,base_variables),variables)
+check()
+
+
+
+
+
+
+# if __name__ == '__main__':
+#     data = pd.read_pickle(os.path.join(dirtmp, 'data.pkl'))
+#     data = data.set_index(['stkcd', 'report_period'])
+#
+#     unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
+#     variables = [col for col in data.columns if
+#                  col not in unuseful_cols + base_variables]
+#
+#
+#     pool=multiprocessing.Pool(4)
+#     pool.map(partial(gen_indicators2,data,base_variables),variables)
 
     # pool=multiprocessing.Pool(4)
     # pool.map(partial(gen_indicators1,data),variables+base_variables)
@@ -203,7 +231,7 @@ if __name__ == '__main__':
 
 
 
-#TODO: add ttm at this place
+
 
 
 

@@ -26,6 +26,8 @@ def factor_merge(df1, df2):
     data = data.groupby('stkcd').resample('M', on='trd_dt').last()
 #    data = data.set_index(['stkcd', 'trd_dt'], drop=False)
     data = data[(data.type_st == 0) & (data.year_1 == 0)]
+    #TODO： 涨跌停剔除，
+
     return data
 
 # 利用公司测试框架需要的数据格式

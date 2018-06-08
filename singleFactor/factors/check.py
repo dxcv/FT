@@ -13,9 +13,7 @@ import os
 
 from config import SINGLE_D_RESULT
 
-SINGLE_D_RESULT=r'e:\test_yan'
-
-
+SINGLE_D_RESULT=r'e:\test_yan\result' #TODO:
 
 def prepare():
     store = pd.HDFStore(r'D:\zht\database\quantDb\internship\FT\test_data.h5')
@@ -34,7 +32,7 @@ def _check(df,projName):
     '''
     check single factor
     Args:
-        df: pd.DataFrame,with only one column,and the index is ['stkcd','report_period']
+        df: pd.DataFrame,with only one column,and the index is ['stkcd','trd_dt']
 
     Returns:
 
@@ -55,22 +53,25 @@ def _check(df,projName):
     signal_input=data[['{}_neu'.format(col)]]
     test_data=ft.data_join(retn_1m,signal_input)
 
-    btic_des,figs1,btic_m=ft.btic(test_data,col)
-    layer_des,figs2,layer_retn=ft.layer_result(test_data,retn_1m_zz500,col)
+    # delete those month with too small sample
+    test_data=test_data.groupby('trade_date').filter(lambda x:x.shape[0]>50)
+    if test_data.shape[0]>0:
+        btic_des,figs1,btic_m=ft.btic(test_data,col)
+        layer_des,figs2,layer_retn=ft.layer_result(test_data,retn_1m_zz500,col)
 
-    path = os.path.join(SINGLE_D_RESULT, projName)
-    if not os.path.exists(path):
-        os.makedirs(path)
+        path = os.path.join(SINGLE_D_RESULT, projName)
+        if not os.path.exists(path):
+            os.makedirs(path)
 
-    df.to_csv(os.path.join(path,projName+'.csv'))
+        df.to_csv(os.path.join(path,projName+'.csv'))
 
-    btic_m.to_csv(os.path.join(path,'btic_m.csv'))
-    btic_des.to_csv(os.path.join(path,'btic_des.csv'))
-    layer_des.to_csv(os.path.join(path,'layer_des.csv'))
-    layer_retn.to_csv(os.path.join(path,'layer_retn.csv'))
+        btic_m.to_csv(os.path.join(path,'btic_m.csv'))
+        btic_des.to_csv(os.path.join(path,'btic_des.csv'))
+        layer_des.to_csv(os.path.join(path,'layer_des.csv'))
+        layer_retn.to_csv(os.path.join(path,'layer_retn.csv'))
 
-    for i,fig in enumerate(figs1+figs2):
-        fig.savefig(os.path.join(path,'fig{}.png'.format(i)))
+        for i,fig in enumerate(figs1+figs2):
+            fig.savefig(os.path.join(path,'fig{}.png'.format(i)))
 
 def _change_index(df):
     '''

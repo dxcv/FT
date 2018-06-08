@@ -422,6 +422,7 @@ def get_operatingProfitToAsset():
     check_ratio(df,colx,coly,name)
 
 def get_operatingProfitToEquity():
+    #TODO: 所有者权益
     #营业利润/净资产
     name='Q_operatingProfitToEquity'
     df=get_dataspace(['oper_profit','tot_assets','tot_liab'])
@@ -488,7 +489,7 @@ def get_roe_ebit():
 
 def get_roa_ebit():
     #归属于母公司的净利润/归属于母公司的股东权益
-    name='Q_roa_ebit'
+    name='Q_roe'
     colx='net_profit_excl_min_int_inc'
     coly='tot_shrhldr_eqy_excl_min_int'
     df=get_dataspace([colx,coly])
@@ -620,3 +621,8 @@ def task(f):
 #     pool.map(task,fstrs)
 
 
+
+
+'''
+1. 统计每个时间截面的样本量
+'''

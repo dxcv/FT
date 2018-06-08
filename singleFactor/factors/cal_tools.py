@@ -154,6 +154,5 @@ def get_dataspace(fields):
 '''
 combine all the data in one df and set index as ['stkcd','trd_dt'],
 
-
 '''
 
