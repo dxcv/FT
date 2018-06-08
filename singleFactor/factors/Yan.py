@@ -4,11 +4,16 @@
 # Email:13163385579@163.com
 # TIME:2018-05-31  16:06
 # NAME:FT-Yan.py
-from functools import reduce
+from functools import partial
 
-from data.dataApi import read_local_sql
+import multiprocessing
 import os
 import pandas as pd
+from singleFactor.factors.base_function import x_pct_chg, ratio_x_y, \
+    ratio_yoy_chg, ratio_yoy_pct_chg, ratio_x_chg_over_lag_y, pct_chg_dif, \
+    ratio_x_y_history_std, x_history_std, x_history_downside_std, \
+    ratio_x_y_history_downside_std, x_history_growth_avg, x_history_growth_std, \
+    x_history_growth_downside_std
 
 dirtmp=r'e:\tmp'
 
@@ -66,13 +71,83 @@ def combine_financial_sheet():
     del data['unconfirmed_invest_loss']
     data['unconfirmed_invest_loss']=pr_new
 
+    cols_to_delete=['ann_dt','crncy_code','statement_type','comp_type_code',
+                    's_info_compcode','opdate','opmode']
+    for col in cols_to_delete:
+        del data[col]
+
     data.to_pickle(os.path.join(dirtmp,'data.pkl'))
 
-data=pd.read_pickle(os.path.join(dirtmp,'data.pkl'))
 
 
 
-base_variables=['tot_assets', # total assets
+def gen_with_x_y(df, var, base_var):
+    # TODO: do not use ttm with q data,how about using ttm method and use accumulative data?
+    # x,y
+    ind1=ratio_x_y(df, var, base_var, ttm=False, delete_negative_y=True)['target']
+    ind1.name='ratio_x_y___{}_{}'.format(var,base_var)
+
+    ind2=ratio_yoy_chg(df, var, base_var, ttm=False, delete_negative_y=True)['target']
+    ind2.name='ratio_yoy_chg___{}_{}'.format(var,base_var)
+
+    ind3=ratio_yoy_pct_chg(df, var, base_var, ttm=False, delete_negative_y=True)['target']
+    ind3.name='ratio_yoy_pct_chg___{}_{}'.format(var,base_var)
+
+    ind4=ratio_x_chg_over_lag_y(df, var, base_var, ttm=False, delete_negative_y=True)['target']
+    ind4.name='ratio_x_chg_over_lag_y___{}_{}'.format(var,base_var)
+
+    ind5=pct_chg_dif(df, var, base_var, ttm=False, delete_negative=True)['target']
+    ind5.name='pct_chg_dif___{}_{}'.format(var,base_var)
+
+    #devariate
+    ind6=ratio_x_y_history_std(df, var, base_var, q=8, delete_negative_y=True)['target']
+    ind6.name='ratio_x_y_history_std___{}_{}'.format(var,base_var)
+
+    ind7=ratio_x_y_history_downside_std(df, var, base_var, q=12, delete_negative_y=True)['target']
+    ind7.name='ratio_x_y_history_downside_std___{}_{}'.format(var,base_var)
+
+    return pd.concat([ind1,ind2,ind3,ind4,ind5,ind6,ind7],axis=1)
+
+
+
+def gen_with_x(df,var):
+    # TODO:base bariable
+    # single var :   base_variables + variables
+    ind8 = x_pct_chg(df, var, q=1, ttm=False, delete_negative=True)['target']
+    ind8.name = 'x_pct_chg___{}'.format(var)
+
+    ind9=x_history_growth_avg(df,var,q=12,ttm=False,delete_negative=True)['target']
+    ind9.name='x_history_growth___{}'.format(var)
+
+    ind10=x_history_growth_std(df,var,q=12,delete_negative=True)['target']
+    ind10.name='x_history_growth___{}'.format(var)
+
+    ind11=x_history_growth_downside_std(df,var,q=12,delete_negative=True)['target']
+    ind11.name='x_history_growth_downside_std___{}'.format(var)
+
+    return pd.concat([ind8,ind9,ind10,ind11],axis=1)
+
+#TODO: add other operator
+#TODO: delete indicators with too small sample
+
+def gen_indicators2(data,base_variables,var):
+    proj_bi=r'E:\test_yan\bivariate'
+    directory=os.path.join(proj_bi,var)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    for base_var in base_variables:
+        bi_ind=gen_with_x_y(data, var, base_var)
+        bi_ind.to_csv(os.path.join(directory,base_var+'.csv'))
+        print(var,base_var)
+
+def gen_indicators1(data, var):
+    proj_sg=r'e:\test_yan\single'
+    sg_ind=gen_with_x(data,var)
+    sg_ind.to_csv(os.path.join(proj_sg,var+'.csv'))
+    print(var)
+
+
+base_variables1=['tot_assets', # total assets
                 'tot_cur_assets',# total current assets
                 'inventories',#inventory
                 '',# property,plant,and equipment
@@ -89,6 +164,46 @@ base_variables=['tot_assets', # total assets
                 '',# market capitalization
                 '' # refer to the excel for other indicators as denominator
                 ]
+
+base_variables=[
+                'tot_assets',
+                'tot_cur_assets',
+                'inventories',
+                'tot_cur_liab',
+                'tot_non_cur_liab',
+                'tot_liab',
+                'cap_stk',
+                'tot_shrhldr_eqy_excl_min_int',
+                'tot_shrhldr_eqy_incl_min_int',
+                'tot_oper_rev',
+                'oper_rev',
+                'tot_oper_cost',
+                'tot_profit',
+                'net_profit_incl_min_int_inc',
+                'net_profit_excl_min_int_inc',
+                'ebit',
+                'ebitda',
+                ]
+
+if __name__ == '__main__':
+    data = pd.read_pickle(os.path.join(dirtmp, 'data.pkl'))
+    data = data.set_index(['stkcd', 'report_period'])
+
+    unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
+    variables = [col for col in data.columns if
+                 col not in unuseful_cols + base_variables]
+
+
+    pool=multiprocessing.Pool(4)
+    pool.map(partial(gen_indicators2,data,base_variables),variables)
+
+    # pool=multiprocessing.Pool(4)
+    # pool.map(partial(gen_indicators1,data),variables+base_variables)
+
+
+
+
+#TODO: add ttm at this place
 
 
 

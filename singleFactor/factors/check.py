@@ -13,6 +13,10 @@ import os
 
 from config import SINGLE_D_RESULT
 
+SINGLE_D_RESULT=r'e:\test_yan'
+
+
+
 def prepare():
     store = pd.HDFStore(r'D:\zht\database\quantDb\internship\FT\test_data.h5')
     fdmt = store['fundamental_info']
@@ -30,7 +34,7 @@ def _check(df,projName):
     '''
     check single factor
     Args:
-        df: pd.DataFrame,with only one column
+        df: pd.DataFrame,with only one column,and the index is ['stkcd','report_period']
 
     Returns:
 
@@ -93,6 +97,16 @@ def _change_index(df):
     return df
 
 def check_factor(df,projName):
+    '''
+
+    Args:
+        df: pd.DataFrame,with the index as ['stkcd','report_period'],and there should
+            be a column named 'trd_dt'
+        projName:
+
+    Returns:
+
+    '''
     df=_change_index(df)
     _check(df,projName)
 

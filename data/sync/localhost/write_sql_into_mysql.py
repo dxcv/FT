@@ -8,7 +8,8 @@ import time
 from os import system
 import os
 
-from tools import monitor
+import pymysql
+import multiprocessing
 
 
 def run_sql(fp):
@@ -21,18 +22,35 @@ def run_sql(fp):
     system(command)
     print(fp)
 
+# if __name__ == '__main__':
+#     run()
 
-def run():
+def get_existed_tables():
+    db = pymysql.connect('localhost', 'root', 'root', 'filesync',
+                         charset='utf8')
+    cur = db.cursor()
+    q_showtables = 'show tables'
+    cur.execute(q_showtables)
+    tables = cur.fetchall()
+    cur.close()
+    tables = [t[0] for t in tables]
+    return tables
+
+def get_fps():
     directory=r'E:\filesync'
     fps=[os.path.join(directory,fn) for fn in os.listdir(directory)]
     fps=sorted(fps,key=os.path.getsize)
 
-    with open(r'e:\write_sql_into_mysql.log','w') as f:
-        for fp in fps:
-            run_sql(fp)
-            info='{}-> {}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S'),fp)
-            f.write(info)
-            print(info)
+    tables=get_existed_tables()
+    fps=[fp for fp in fps if os.path.basename(fp).split('_')[1][:-4] not in tables]
+    return fps
+
+def task(fp):
+    run_sql(fp)
+    info='{}-> {}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S'),fp)
+    print(info)
 
 if __name__ == '__main__':
-    run()
+    fps=get_fps()
+    pool=multiprocessing.Pool(4)
+    pool.map(task,fps)

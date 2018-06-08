@@ -170,6 +170,29 @@ def x_history_downside_std(df, col, q=8, ttm=False):
     df['target']=df[col].groupby('stkcd').apply(downside_risk, q)
     return df
 
+def x_history_growth_std(df,col,q=12,delete_negative=True):
+    df=df.copy()
+    if delete_negative:
+        df[col]=df[col].where(df[col]>0,np.nan)
+        # df[col][df[col]<=0]=np.nan
+    df['g']=df[col].groupby('stkcd').apply(lambda s:s.pct_change())
+    df['target']=df['g'].groupby('stkcd').apply(lambda s:s.rolling(q).std())
+    return df
+
+def x_history_growth_downside_std(df,col,q=12,delete_negative=True):
+    df = df.copy()
+    if delete_negative:
+        df[col]=df[col].where(df[col]>0,np.nan)
+    df['g']=df[col].groupby('stkcd').apply(lambda s:s.pct_change())
+
+    def downside_risk(s, q):
+        dev = s - s.shift(1)
+        downside = dev.where(dev < 0, 0)
+        r = downside.rolling(q, min_periods=q).std()
+        return r
+    df['target']=df['g'].groupby('stkcd').apply(downside_risk, q)
+    return df
+
 def ratio_x_y(df, col1, col2,ttm=True,delete_negative_y=True):
     '''
     x/y
@@ -228,6 +251,36 @@ def ratio_yoy_pct_chg(df, col1, col2, ttm=True,delete_negative_y=True):
         lambda s:s.pct_change(periods=4))
     return df
 
+def ratio_x_y_history_std(df,col1,col2,q=8,delete_negative_y=True):
+    df=df.copy()
+    df['x']=df[col1]
+    df['y']=df[col2]
+    if delete_negative_y:
+        df['y']=df['y'].where(df['y']>0,np.nan)
+    df['ratio']= df['x']/df['y']
+
+    df['target']=df['ratio'].groupby('stkcd').apply(
+        lambda s:s.rolling(q,min_periods=q).std())
+
+    return df
+
+def ratio_x_y_history_downside_std(df,col1,col2,q=12,delete_negative_y=True):
+    df = df.copy()
+    df['x'] = df[col1]
+    df['y'] = df[col2]
+    if delete_negative_y:
+        df['y'] = df['y'].where(df['y'] > 0, np.nan)
+    df['ratio'] = df['x'] / df['y']
+
+
+    def downside_risk(s, q):
+        dev = s - s.shift(1)
+        downside = dev.where(dev < 0, 0)
+        r = downside.rolling(q, min_periods=q).std()
+        return r
+    df['target']=df['ratio'].groupby('stkcd').apply(downside_risk, q)
+    return df
+
 def pct_chg_dif(df, col1, col2, ttm=True,delete_negative=True):
     '''
     d(x)/x -d(y)/y
@@ -268,3 +321,4 @@ def ratio_x_chg_over_lag_y(df, col1, col2, ttm=True,delete_negative_y=True):
     df['lag_y']=df['y'].groupby('stkcd').shift(1)
     df['target']=df['x_chg']/df['lag_y']
     return df
+
