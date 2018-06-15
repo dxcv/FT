@@ -3,13 +3,13 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-02  16:31
-# NAME:FT-adjust_raw.py
+# NAME:FT-adjust_raw_from_filesync.py
 
 import os
 import pandas as pd
 import numpy as np
 
-from config import DRAW, DCSV, DPKL
+from config import DRAW, DCSV, DPKL, D_FILESYNC_ADJ
 from data.dataApi import read_raw, read_local_pkl, read_local_sql
 from tools import number2dateStr
 
@@ -29,7 +29,7 @@ def save_df(df,name):
 
     '''
     # df.to_csv(os.path.join(DCSV, name + '.csv'))
-    df.to_pickle(os.path.join(DPKL, name + '.pkl'))
+    df.to_pickle(os.path.join(D_FILESYNC_ADJ, name + '.pkl'))
     '''
     https://techjourney.net/mysql-error-1170-42000-blobtext-column-used-in-key-specification-without-a-key-length/
     https://stackoverflow.com/questions/45285184/python3-pandas-and-mysql-index-issue
@@ -84,13 +84,13 @@ def adjust_filesync(tbname):
     newcols=['trd_dt']+[c for c in df.columns if c!= 'trd_dt']
     df=df[newcols]
 
-    df.to_csv(os.path.join(DCSV,tbname+'.csv'))
-    df.to_pickle(os.path.join(DPKL,tbname+'.pkl'))
+    # df.to_csv(os.path.join(DCSV,tbname+'.csv'))
+    df.to_pickle(os.path.join(D_FILESYNC_ADJ, tbname + '.pkl'))
 
     #TODO:notice that do not apply sort and dropna on df
     #TODO:notice that there are some NaT in index
 
-def convert_asharefinancialindicator():
+def adjust_asharefinancialindicator():
     tbname='asharefinancialindicator'
     adjust_filesync(tbname)
 
@@ -214,6 +214,9 @@ def calculate_q_sheet():
 
         #TODO: float type rather than str
     single_q=df.groupby(['stkcd',df['report_period'].dt.year]).apply(_adjust)
+
+
+# calculate_q_sheet()
 
 
 

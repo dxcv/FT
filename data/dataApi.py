@@ -8,11 +8,28 @@ import datetime
 import os
 import pandas as pd
 import pymysql
-from config import DRAW, DPKL
+from config import DRAW, DPKL, D_FT_ADJ, D_FILESYNC_ADJ
 
 
 def read_raw(tbname):
     return pd.read_csv(os.path.join(DRAW, tbname + '.csv'),index_col=0)
+
+def read_local(tbname,col=None,src='ftresearch'):
+    if src=='ftresearch':
+        df=pd.read_pickle(os.path.join(D_FT_ADJ,tbname+'.pkl'))
+    elif src=='filesync':
+        df=pd.read_pickle(os.path.join(D_FILESYNC_ADJ,tbname+'.pkl'))
+    else:
+        raise ValueError
+
+    if col:
+        if isinstance(col, str):# read only one column
+            return df[[col]]
+        else: #read multiple columns
+            return df[col]
+    else: # read all columns
+        return df
+
 
 def read_local_pkl(tbname, col=None):
     df=pd.read_pickle(os.path.join(DPKL,tbname+'.pkl'))
@@ -25,7 +42,7 @@ def read_local_pkl(tbname, col=None):
         return df
 
 
-def download_from_server(tbname,database='filesync'):
+def read_from_sql(tbname, database='filesync'):
     try:
         db = pymysql.connect('192.168.1.140', 'ftresearch', 'FTResearch',
                              database,charset='utf8')
@@ -37,7 +54,7 @@ def download_from_server(tbname,database='filesync'):
     table = cur.fetchall()
     cur.close()
     table = pd.DataFrame(list(table),columns=[c[0] for c in cur.description])
-    table.to_csv(os.path.join(DRAW, '{}.csv'.format(tbname)))
+    return table
 
 def read_local_sql(tbname,cols=None,database='ft_zht'):
     db = pymysql.connect('localhost', 'root', 'root', database, charset='utf8')

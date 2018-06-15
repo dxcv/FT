@@ -11,7 +11,7 @@ import pickle
 import pandas as pd
 
 from config import DCC
-from data.dataApi import read_local_pkl
+from data.dataApi import read_local_pkl, read_local
 from singleFactor.factors.base_function import raw_level, x_history_std, \
     x_pct_chg, x_history_compound_growth, ratio_x_y, ratio_yoy_pct_chg, \
     raw_square
@@ -143,9 +143,9 @@ def get_dataspace(fields):
 
     dfnames=list(set([fields_map[f] for f in fields]))
     if len(dfnames)==1:
-        df=read_local_pkl(dfnames[0])
+        df=read_local(dfnames[0])
     else:
-        df=pd.concat([read_local_pkl(dn) for dn in dfnames], axis=1)
+        df=pd.concat([read_local(dn) for dn in dfnames], axis=1)
     return df
 
 

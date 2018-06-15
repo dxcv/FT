@@ -37,9 +37,10 @@ def handle_duplicates(df):
     return df[~df.index.duplicated(keep='first')]
 
 def number2dateStr(x):
-    if isinstance(x,(int,float)):
-        x=str(x)
+    if x:
+        if isinstance(x,(int,float)):
+            x=str(x)
 
-    if '.' in x:
-        x=x.split('.')[0]
-    return x
+        if '.' in x:
+            x=x.split('.')[0]
+        return x

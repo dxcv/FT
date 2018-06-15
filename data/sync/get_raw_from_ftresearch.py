@@ -8,10 +8,7 @@
 import pymysql
 import pandas as pd
 import os
-import numpy as np
 from config import DRAW, DCSV, DPKL
-from data.dataApi import read_raw
-from tools import number2dateStr
 
 
 def download_from_server(tbname,database='filesync'):
