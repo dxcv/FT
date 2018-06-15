@@ -136,7 +136,7 @@ def read_fields_map(refresh=False):
 
 # read_fields_map(refresh=True)
 
-def get_dataspace(fields):
+def get_dataspace_old(fields):
     fields_map=read_fields_map()
     if isinstance(fields,str): #only one field
         fields=[fields]

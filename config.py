@@ -15,12 +15,12 @@ DCC=r'D:\zht\database\quantDb\internship\FT\TMP'
 
 D_FT_RAW=r'D:\zht\database\quantDb\internship\FT\database\ftresearch_based\raw\pkl'
 D_FT_ADJ= r'D:\zht\database\quantDb\internship\FT\database\ftresearch_based\adjusted\pkl'
-D_FT_DRV=r'D:\zht\database\quantDb\internship\FT\database\ftresearch_based\adjusted\derivatives'
 
 
 D_FILESYNC_RAW= r'D:\zht\database\quantDb\internship\FT\database\filesync_based\raw'
 D_FILESYNC_ADJ= r'D:\zht\database\quantDb\internship\FT\database\filesync_based\adjusted'
 
+D_DRV=r'D:\zht\database\quantDb\internship\FT\database\derivatives'
 
 START= '2004-01-01'
 END= '2018-01-31'
