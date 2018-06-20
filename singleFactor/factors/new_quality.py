@@ -9,7 +9,7 @@ import os
 
 from config import SINGLE_D_INDICATOR
 from data.dataApi import get_dataspace
-from singleFactor.factors.new_operators import ratio_x_y, x_history_std, x_ttm, \
+from singleFactor.factors.new_operators import ratio, x_history_std, x_ttm, \
     x_history_downside_std
 
 
@@ -24,7 +24,7 @@ def get_cashDividendCover():
     col1='net_cash_flows_oper_act'
     col2='cash_div'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_cashRateOfSales():
@@ -33,7 +33,7 @@ def get_cashRateOfSales():
     col1='net_cash_flows_oper_act'
     col2='oper_rev'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_cashToCurrentLiability():
@@ -42,7 +42,7 @@ def get_cashToCurrentLiability():
     col1='net_cash_flows_oper_act'
     col2='tot_cur_liab'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_cashToLiability():
@@ -51,7 +51,7 @@ def get_cashToLiability():
     col1='net_cash_flows_oper_act'
     col2='tot_liab'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_currentAssetsToAsset():
@@ -60,7 +60,7 @@ def get_currentAssetsToAsset():
     col1='tot_cur_assets'
     col2='tot_assets'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_currentRatio():
@@ -69,7 +69,7 @@ def get_currentRatio():
     col1='tot_cur_assets'
     col2='tot_cur_liab'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_debtAssetsRatio():
@@ -78,7 +78,7 @@ def get_debtAssetsRatio():
     col1='tot_liab'
     col2='tot_assets'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_intanibleAssetRatio():
@@ -87,7 +87,7 @@ def get_intanibleAssetRatio():
     col1='intang_assets'
     col2='tot_assets'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_dividendCover(): #TODO: dividend
@@ -96,7 +96,7 @@ def get_dividendCover(): #TODO: dividend
     col1='net_profit_excl_min_int_inc'
     col2='cash_div'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_equityToAsset():
@@ -105,7 +105,7 @@ def get_equityToAsset():
     col1='tot_shrhldr_eqy_excl_min_int'
     col2='tot_assets'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 '''
@@ -120,7 +120,7 @@ def get_equityTurnover():
     col3='tot_liab'
     df=get_dataspace([col1,col2,col3])
     df['y']=df[col2]-df[col3]
-    df[name]=ratio_x_y(df,col1,'y',smooth=True)
+    df[name]=ratio(df, col1, 'y', smooth=True)
     save_indicator(df,name)
 
 def get_fixedAssetTurnover():
@@ -129,7 +129,7 @@ def get_fixedAssetTurnover():
     col1='tot_oper_rev'
     col2='fix_assets'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2,smooth=True)
+    df[name]=ratio(df, col1, col2, smooth=True)
     save_indicator(df,name)
 
 
@@ -140,7 +140,7 @@ def get_grossIncomeRatio():
     col2='oper_cost'
     df=get_dataspace([col1,col2])
     df['x']=df[col1]-df[col2]
-    df[name]=ratio_x_y(df,'x',col1)
+    df[name]=ratio(df, 'x', col1)
     save_indicator(df,name)
 
 def get_inventoryTurnover():
@@ -149,7 +149,7 @@ def get_inventoryTurnover():
     col1='oper_rev'
     col2='inventories'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2,smooth=True)
+    df[name]=ratio(df, col1, col2, smooth=True)
     save_indicator(df,name)
 
 def get_mlev(): #TODO:
@@ -183,7 +183,7 @@ def get_netProfitCashCover():
     col1='net_cash_flows_oper_act'
     col2='net_profit_excl_min_int_inc'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_interestCover():
@@ -207,7 +207,7 @@ def get_NPCutToNetRevenue():#TODO:数据缺失
     col1='net_profit_after_ded_nr_lp'
     col2='tot_oper_rev'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_netProfitRatio():
@@ -216,7 +216,7 @@ def get_netProfitRatio():
     col1='net_profit_incl_min_int_inc'
     col2='tot_oper_rev'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_netProfitTorevenue():
@@ -225,7 +225,7 @@ def get_netProfitTorevenue():
     col1='net_profit_excl_min_int_inc'
     col2='tot_oper_rev'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_netProfitToTotProfit():
@@ -234,7 +234,7 @@ def get_netProfitToTotProfit():
     col1='net_profit_excl_min_int_inc'
     col2='oper_profit'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_NPCutToNetProfit():
@@ -243,7 +243,7 @@ def get_NPCutToNetProfit():
     col1='net_profit_after_ded_nr_lp' #TODO: 数据缺失严重
     col2='net_profit_excl_min_int_inc'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_operatingExpenseRate():
@@ -252,7 +252,7 @@ def get_operatingExpenseRate():
     col1 = 'selling_dist_exp'
     col2 = 'tot_oper_rev'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_operatingProfitToAsset():
@@ -261,7 +261,7 @@ def get_operatingProfitToAsset():
     col1='oper_profit'
     col2='tot_assets'
     df = get_dataspace([col1, col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_operatingProfitToEquity():
@@ -281,7 +281,7 @@ def get_operCashInToAsset():
     col1='net_cash_flows_oper_act'
     col2='tot_assets'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2,smooth=True)
+    df[name]=ratio(df, col1, col2, smooth=True)
     save_indicator(df,name)
 
 def get_operCashInToCurrentDebt():
@@ -290,7 +290,7 @@ def get_operCashInToCurrentDebt():
     col1='net_cash_flows_oper_act'
     col2='oper_rev'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_periodCostsRate():
@@ -351,7 +351,7 @@ def get_roa_ebit():
     col1='net_profit_excl_min_int_inc'
     col2='tot_shrhldr_eqy_excl_min_int'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_operatingCostToTOR():
@@ -360,7 +360,7 @@ def get_operatingCostToTOR():
     col1 = 'tot_oper_rev'
     col2 = 'tot_oper_cost'
     df=get_dataspace([col1,col2])
-    df[name] = ratio_x_y(df, col1, col2)
+    df[name] = ratio(df, col1, col2)
     save_indicator(df, name)
 
 def get_downturnRisk():

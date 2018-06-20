@@ -7,7 +7,7 @@
 from config import SINGLE_D_INDICATOR
 from data.dataApi import get_dataspace
 import os
-from singleFactor.factors.new_operators import x_pct_chg, ratio_yoy_pct_chg, \
+from singleFactor.factors.new_operators import x_pct_chg, ratio_pct_chg, \
     x_history_growth_avg, x_history_compound_growth
 
 
@@ -185,7 +185,7 @@ def get_G_esp1Ygrowth_yoy():
     x='net_profit_excl_min_int_inc'
     y='cap_stk'
     df=get_dataspace([x,y])
-    df[name]=ratio_yoy_pct_chg(df,x,y)
+    df[name]=ratio_pct_chg(df, x, y, q=4)
     save_indicator(df,name)
 
 def get_netOperateCashFlowPerShare():
@@ -194,7 +194,7 @@ def get_netOperateCashFlowPerShare():
     x='net_cash_flows_oper_act'
     y='cap_stk'
     df=get_dataspace([x, y])
-    df[name]=ratio_yoy_pct_chg(df,x,y)
+    df[name]=ratio_pct_chg(df, x, y)
     save_indicator(df,name)
 
 def get_g_netAssetsPerShare():

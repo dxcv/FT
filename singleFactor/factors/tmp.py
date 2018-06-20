@@ -8,7 +8,7 @@ import os
 
 from config import SINGLE_D_INDICATOR
 from data.dataApi import get_dataspace
-from singleFactor.factors.new_operators import ratio_x_y, \
+from singleFactor.factors.new_operators import ratio, \
     x_history_compound_growth, x_square
 
 

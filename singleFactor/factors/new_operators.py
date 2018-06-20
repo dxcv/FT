@@ -99,7 +99,7 @@ def x_history_growth_downside_std(s,q=12,delete_negative=True):
     return x_history_downside_std(x_pct_chg(s,q=1),q=q)
 
 #----------------with two indicators-------------------------------------------
-def ratio_x_y(df,x,y,delete_negative_y=True,smooth=False,handle_inf=True):
+def ratio(df, x, y, delete_negative_y=True, smooth=False, handle_inf=True):
     '''
         x/y
     Args:
@@ -122,7 +122,7 @@ def ratio_x_y(df,x,y,delete_negative_y=True,smooth=False,handle_inf=True):
         ratio=ratio.where(-np.inf<ratio<np.inf,np.nan)#TODO: 注意 除法 容易出现inf 和 -inf
     return ratio
 
-def ratio_yoy_chg(df,x,y,delete_negative_y=True):
+def ratio_chg(df, x, y, q=4, delete_negative_y=True):
     '''
         d(x/y)
     Args:
@@ -132,21 +132,23 @@ def ratio_yoy_chg(df,x,y,delete_negative_y=True):
         delete_negative_y:
 
     Returns:
-
     '''
-    return x_chg(ratio_x_y(df,x,y,delete_negative_y),q=4)
+    return x_chg(ratio(df, x, y, delete_negative_y), q=q)
 
-def ratio_yoy_pct_chg(df,x,y,delete_negative_y=True):
+def ratio_pct_chg(df, x, y, q=4, delete_negative_y=True):
     '''
         d(x/y)/(x/y)
     '''
-    return x_pct_chg(ratio_x_y(df,x,y,delete_negative_y),q=4)
+    return x_pct_chg(ratio(df, x, y, delete_negative_y), q=q)
 
 def ratio_history_std(df,x,y,q=8,delete_negative_y=True):
-    return x_history_std(ratio_x_y(df,x,y,delete_negative_y),q=q)
+    return x_history_std(ratio(df, x, y, delete_negative_y), q=q)
+
+def ratio_history_compound_growth(df,x,y,q=8,delete_negative_y=True):
+    return x_history_compound_growth(ratio(df,x,y,delete_negative_y),q=q)
 
 def ratio_history_downside_std(df,x,y,q=8,delete_negative_y=True):
-    return x_history_downside_std(ratio_x_y(df,x,y,delete_negative_y),q=q)
+    return x_history_downside_std(ratio(df, x, y, delete_negative_y), q=q)
 
 def pct_chg_dif(df,x,y,q=1,delete_negative=True):
     '''

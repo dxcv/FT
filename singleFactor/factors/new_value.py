@@ -8,7 +8,7 @@ import os
 
 from config import SINGLE_D_INDICATOR
 from data.dataApi import get_dataspace
-from singleFactor.factors.new_operators import ratio_x_y, \
+from singleFactor.factors.new_operators import ratio, \
     x_history_compound_growth, x_square
 
 
@@ -21,7 +21,7 @@ def get_bp():
     col1='tot_shrhldr_eqy_excl_min_int'
     col2='tot_assets'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_ep():
@@ -30,7 +30,7 @@ def get_ep():
     col1='net_profit_excl_min_int_inc'
     col2='tot_assets'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_sp():
@@ -39,7 +39,7 @@ def get_sp():
     col1='oper_rev'
     col2='tot_assets'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_cfp():
@@ -48,7 +48,7 @@ def get_cfp():
     col1='net_cash_flows_oper_act'
     col2='tot_assets'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_sales_EV():
@@ -68,7 +68,7 @@ def get_ebitda_p():
     col1='ebitda'
     col2='cap'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_peg_nY():
@@ -86,7 +86,7 @@ def get_dp_new():
     col1='cash_div'
     col2='tot_assets'
     df=get_dataspace([col1,col2])
-    df[name]=ratio_x_y(df,col1,col2)
+    df[name]=ratio(df, col1, col2)
     save_indicator(df,name)
 
 def get_p_square():#TODO: add cap to dataspace,compare with get_mlev
