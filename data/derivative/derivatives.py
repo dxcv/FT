@@ -55,6 +55,63 @@ def cal_ebitda():
 
     df[['trd_dt','ebit','ebitda']].to_pickle(os.path.join(D_DRV, 'ebit.pkl'))
 
+def cal_netAsset():
+    name='netAsset'
+    col1='tot_assets'
+    col2='tot_liab'
+    df=get_dataspace([col1,col2])
+    df[name]=df[col1]-df[col2]
+    df[['trd_dt',name]].to_pickle(os.path.join(D_DRV,'{}.pkl'.format(name)))
+
+def cal_netNonOI():
+    name='netNonOI'
+    col1='non_oper_rev'
+    col2='non_oper_exp'
+    df=get_dataspace([col1,col2])
+    df[name]=df[col1]-df[col2]
+    df[['trd_dt',name]].to_pickle(os.path.join(D_DRV,'{}.pkl'.format(name)))
+
+def cal_periodCost():
+    name='periodCost'
+    col1='oper_cost'
+    col2='gerl_admin_exp'
+    col3='fin_exp'
+    df=get_dataspace([col1,col2,col3])
+    df[name]=df[col1]+df[col2]+df[col3]
+    df[['trd_dt', name]].to_pickle(os.path.join(D_DRV, '{}.pkl'.format(name)))
+
+def cal_receivable():
+    name='receivable'
+    col1='notes_rcv'
+    col2='acct_rcv'
+    df=get_dataspace([col1,col2])
+    df[name]=df[col1]+df[col2]
+    df[['trd_dt', name]].to_pickle(os.path.join(D_DRV, '{}.pkl'.format(name)))
+
+def cal_payable():
+    name='payable'
+    col1='notes_payable'
+    col2='acct_payable'
+    df=get_dataspace([col1,col2])
+    df[name]=df[col1]+df[col2]
+    df[['trd_dt', name]].to_pickle(os.path.join(D_DRV, '{}.pkl'.format(name)))
+
+def cal_grossIncome():
+    name='grossIncome'
+    col1='oper_rev'
+    col2='oper_cost'
+    df = get_dataspace([col1, col2])
+    df[name] = df[col1] - df[col2]
+    df[['trd_dt', name]].to_pickle(os.path.join(D_DRV, '{}.pkl'.format(name)))
+
+# cal_netAsset()
+# cal_netNonOI()
+# cal_periodCost()
+# cal_receivable()
+# cal_payable()
+# cal_grossIncome()
+
+
 
 def daily2monthly(x):
     ohlc_dict={

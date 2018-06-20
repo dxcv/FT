@@ -166,12 +166,12 @@ def _get_fields_map():
     # 'equity_selected_income_sheet',
     'equity_selected_income_sheet_q',
     'equity_cash_dividend',
-    'ebit',
     'shr_and_cap'
     ]
+    tbs_derivatives=[f[:-4] for f in os.listdir(D_DRV)]
+    tbs_ftresearch+=tbs_derivatives
 
     tbs_filesync=['asharefinancialindicator']
-
     shared_cols=['stkcd','trd_dt','ann_dt','report_period']
     fields_map={}
     for tbname in tbs_ftresearch+tbs_filesync:
@@ -209,6 +209,7 @@ def get_dataspace(fields):
     if isinstance(fields,str): #only one field
         fields=[fields]
 
+
     dfnames=list(set([fields_map[f] for f in fields]))
     if len(dfnames)==1:
         df=read_local(dfnames[0])
@@ -221,8 +222,6 @@ def get_dataspace(fields):
         df=df.drop('trd_dt',axis=1)
         df['trd_dt']=trd_dt_df.max(axis=1)
     return df[['trd_dt']+fields]
-
-
 
 def check_dfs():
     for d in [D_FT_ADJ,D_FILESYNC_ADJ,D_DRV]:

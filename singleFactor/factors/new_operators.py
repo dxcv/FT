@@ -119,7 +119,7 @@ def ratio(df, x, y, delete_negative_y=True, smooth=False, handle_inf=True):
     else:
         ratio=df[x]/df[y]
     if handle_inf:
-        ratio=ratio.where(-np.inf<ratio<np.inf,np.nan)#TODO: 注意 除法 容易出现inf 和 -inf
+        ratio=ratio.where((-np.inf<ratio)&(ratio<np.inf),np.nan)#TODO: 注意 除法 容易出现inf 和 -inf
     return ratio
 
 def ratio_chg(df, x, y, q=4, delete_negative_y=True):
