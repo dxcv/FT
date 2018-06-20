@@ -20,7 +20,6 @@ from singleFactor.factors.check import check_factor
 
 def check_raw_level(df,col,name,ttm='both'):
     '''
-
     Args:
         df:
         col:
@@ -147,7 +146,6 @@ def get_dataspace_old(fields):
     else:
         df=pd.concat([read_local(dn) for dn in dfnames], axis=1)
     return df
-
 
 
 #TODO: how to combine mixed frequency dataframe?

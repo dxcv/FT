@@ -203,6 +203,8 @@ def read_fields_map(refresh=True):
     return fields_map
 
 def get_dataspace(fields):
+    #TODO: how to combine shr_and_cap,dequity_selected_trading_data
+    # their index are ['stkcd','trd_dt']
     fields_map=_get_fields_map()
     if isinstance(fields,str): #only one field
         fields=[fields]
@@ -221,4 +223,11 @@ def get_dataspace(fields):
     return df[['trd_dt']+fields]
 
 
-# set(fields_map.values())
+
+def check_dfs():
+    for d in [D_FT_ADJ,D_FILESYNC_ADJ,D_DRV]:
+        fns=os.listdir(d)
+        for fn in fns:
+            df=pd.read_pickle(os.path.join(d,fn))
+            print(fn,df.index.names)
+
