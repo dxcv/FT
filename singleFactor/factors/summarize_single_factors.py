@@ -41,26 +41,24 @@ def summarize_result():
     fig1=plt.figure()
     tb_cret1=(tb_ret+1).cumprod()
     tb_cret1.plot(figsize=(20,6))
-    plt.savefig(os.path.join(D_RESULT,'cumprod.pdf'))
+    plt.savefig(os.path.join(D_RESULT,'cumprod.png'))
 
     fig2=plt.figure()
     tb_cret2=tb_ret.cumsum()
     tb_cret2.plot(figsize=(20,6))
-    plt.savefig(os.path.join(D_RESULT,'cumsum.pdf'))
+    plt.savefig(os.path.join(D_RESULT,'cumsum.png'))
 
     bt_des.to_csv(os.path.join(D_RESULT,'bt_des.csv'))
     ic_corr.to_csv(os.path.join(D_RESULT,'ic_corr.csv'))
     tb_des.to_csv(os.path.join(D_RESULT,'tb_des.csv'))
     tb_ret.to_csv(os.path.join(D_RESULT,'tb_ret.csv'))
 
-def get_prominent_factors():
+def get_prominent_factors(criterion='sharpe',n=10):
     tb_des=pd.read_csv(os.path.join(D_RESULT,'tb_des.csv'),index_col=0,parse_dates=True)
     tb_ret=pd.read_csv(os.path.join(D_RESULT,'tb_ret.csv'),index_col=0,parse_dates=True)
 
-
-    non_ttm=[ind for ind in tb_des.index if not ind.endswith('_ttm')]
-    nl=tb_des.loc[non_ttm]['sharpe'].nlargest(10).index
-    ns=tb_des.loc[non_ttm]['sharpe'].nsmallest(10).index
+    nl=tb_des[criterion].nlargest(n).index
+    ns=tb_des[criterion].nsmallest(n).index
 
     df_nl=tb_ret[nl.tolist()].dropna()
     df_ns=tb_ret[ns.tolist()].dropna()
@@ -68,20 +66,22 @@ def get_prominent_factors():
     # df_nl=tb_ret[nl.tolist()+['zz500']].dropna()
     # df_ns=tb_ret[ns.tolist()+['zz500']].dropna()
 
-
     figsize=(20,6)
 
-    fig1=plt.figure()
+    plt.figure()
     cp=(df_nl+1).cumprod()
     cp.plot(figsize=figsize)
     plt.savefig(os.path.join(D_RESULT,'positive_cumprod.png'))
 
     plt.figure()
-    cp=(df_ns+1).cumprod()
+    cp=(-df_ns+1).cumprod()
     cp.plot(figsize=figsize)
     plt.savefig(os.path.join(D_RESULT,'negative_cumprod.png'))
 
-# summarize_result()
+
+if __name__ == '__main__':
+    # summarize_result()
+    get_prominent_factors()
 
 
 

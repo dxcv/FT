@@ -72,8 +72,13 @@ def x_history_std(s, q=8):
     '''
     std(x,q)
     '''
+    #TODO：市值处理？
     return s.groupby('stkcd').apply(
         lambda x:x.rolling(q,min_periods=q).std())
+
+#TODO: 覆盖度
+
+
 
 def x_history_downside_std(s,q=8):
     '''
