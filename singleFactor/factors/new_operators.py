@@ -33,7 +33,7 @@ def x_pct_chg(s,q=1,delete_negative=True):
 
     '''
     if delete_negative:
-        s[s<=0]=np.nan
+        s=s.where(s>0,np.nan)
     return s.groupby('stkcd').apply(lambda x:x.pct_change(periods=q))
 
 def x_history_growth_avg(s, q=12, delete_negative=True):

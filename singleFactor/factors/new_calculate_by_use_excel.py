@@ -133,7 +133,7 @@ def cal_growth():
     path = r'D:\app\python36\zht\internship\FT\singleFactor\factors\indicators.xlsx'
     df = pd.read_excel(path, sheet_name='growth', index_col=0)
     indicators=df['indicator']
-    for _,s in df.iterrows():
+    for _,s in df.dropna().iterrows():
         func=s['function']
         kwarg=parse_args(s['kwarg'])
         for indicator in indicators:

@@ -4,6 +4,8 @@
 # Email:13163385579@163.com
 # TIME:2018-06-20  09:11
 # NAME:FT-new_check_factors.py
+import multiprocessing
+
 from config import SINGLE_D_INDICATOR, SINGLE_D_RESULT
 import os
 import pandas as pd
@@ -11,7 +13,7 @@ import pandas as pd
 import xiangqi.data_merge as dm
 import xiangqi.data_clean as dc
 import xiangqi.factor_test as ft
-
+from zht.utils.sysu import monitor
 
 
 def _change_index(df):
@@ -92,12 +94,16 @@ def _check(df):
             fig.savefig(os.path.join(path,'fig{}.png'.format(i)))
 
 
-
+@monitor
 def check_factors():
     fns=os.listdir(os.path.join(SINGLE_D_INDICATOR))
     fns=[fn for fn in fns if fn.endswith('.pkl')]
+    for fn in fns:
+        df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
+        df=change_index(df)
+        _check(df)
 
-    fn=fns[0]
+def task(fn):
     df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
     df=change_index(df)
     _check(df)
@@ -105,4 +111,7 @@ def check_factors():
 
 
 if __name__ == '__main__':
-    check_factors()
+    fns=os.listdir(os.path.join(SINGLE_D_INDICATOR))
+    fns=[fn for fn in fns if fn.endswith('.pkl')]
+    pool=multiprocessing.Pool(2)
+    pool.map(task,fns)
