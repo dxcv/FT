@@ -102,8 +102,11 @@ def clean(x, f, indcd='wind_indcd'):
     f:
         因子名称
     '''
-    x[f + '_out'] = x[f].groupby('month_end').apply(outlier)
-    x[f + '_zsc'] = x[f + '_out'].groupby('month_end').apply(z_score)
+    x[f+'_out']=x.groupby('month_end')[f].apply(outlier)
+    # x[f + '_out'] = x[f].groupby('month_end').apply(outlier)
+    x[f+'_zsc']=x.groupby('month_end')[f+'_out'].apply(z_score)
+
+    # x[f + '_zsc'] = x[f + '_out'].groupby('month_end').apply(z_score)
     x['wind_2'] = x[indcd].apply(str).str.slice(0, 6) # wind 2 级行业代码
     x = x.join(pd.get_dummies(x['wind_2'], drop_first=True))
     x['ln_cap'] = np.log(x['cap'])
