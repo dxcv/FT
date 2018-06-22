@@ -65,13 +65,13 @@ def outlier(x, k=4.5):
 def z_score(x):
     return (x - np.mean(x)) / np.std(x)
 
-def neutralize(x, factor, ind, cap='ln_cap'):
+def neutralize(x, factor, industry, cap='ln_cap'):
     '''
     Parameters
     ===========
     x:
         包含标准化后的因子值的DataFrame
-    ind: str
+    industry: str
         排除第一行业代码后的m-1个行业代码
     
     Returns
@@ -79,7 +79,7 @@ def neutralize(x, factor, ind, cap='ln_cap'):
     res:
         标准化因子对行业哑变量矩阵和对数市值回归后的残差
     '''
-    a = np.array(x.loc[:, ind + [cap]])
+    a = np.array(x.loc[:, industry + [cap]])
     A = np.hstack([a, np.ones([len(a), 1])])
     y = x.loc[:, factor]
     beta = np.linalg.lstsq(A, y)[0]
@@ -93,7 +93,7 @@ def neutralize(x, factor, ind, cap='ln_cap'):
 #    return r
 
 @monitor
-def clean(x, f, lv=1, indcd='wind_indcd'):
+def clean(x, f, indcd='wind_indcd'):
     '''
     Parameters
     ==========
@@ -102,13 +102,13 @@ def clean(x, f, lv=1, indcd='wind_indcd'):
     f:
         因子名称
     '''
-    x[f + '_out'] = x[f + '_raw'].groupby(level=lv).apply(outlier)
-    x[f + '_zsc'] = x[f + '_out'].groupby(level=lv).apply(z_score)
-    x['wind_2'] = x[indcd].apply(str).str.slice(0, 6)
+    x[f + '_out'] = x[f].groupby('month_end').apply(outlier)
+    x[f + '_zsc'] = x[f + '_out'].groupby('month_end').apply(z_score)
+    x['wind_2'] = x[indcd].apply(str).str.slice(0, 6) # wind 2 级行业代码
     x = x.join(pd.get_dummies(x['wind_2'], drop_first=True))
     x['ln_cap'] = np.log(x['cap'])
-    ind = list(np.sort(x['wind_2'].unique()))[1:] #TODO: [1:]?
-    x[f + '_neu'] = x.groupby(level=lv).apply(neutralize, f + '_zsc', ind)
+    industry = list(np.sort(x['wind_2'].unique()))[1:]
+    x[f + '_neu'] = x.groupby('month_end').apply(neutralize, f + '_zsc', industry)
 #    x['retn'] = retn(x['adjclose'])
 #    x = x.dropna()
     return x

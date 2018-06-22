@@ -4,6 +4,7 @@
 # Email:13163385579@163.com
 # TIME:2018-06-15  09:30
 # NAME:FT-adjust.py
+from datetime import timedelta
 
 import pymysql
 import pandas as pd
@@ -12,6 +13,7 @@ import os
 from config import D_FT_ADJ, D_FT_RAW
 from data.dataApi import read_from_sql
 from tools import number2dateStr
+import numpy as np
 
 
 def create_cache():
@@ -105,7 +107,14 @@ def adjust_equity_fundamental_info():
     for dc in date_cols:
         if dc in df.columns:
             df[dc]=pd.to_datetime(df[dc].map(number2dateStr))
+    # df=df.set_index(['stkcd','trd_dt']).sort_index()
+    # adjust type_st,True means st,
+    df['type_st']=df['type_st'].replace(1.0,True)
+    df['type_st']=df['type_st'].fillna(False)
+
+    df['young_1year']=np.where(df.trd_dt <= df.listdate + timedelta(days=365), True,False)
     df=df.set_index(['stkcd','trd_dt']).sort_index()
+    df=df.drop(['create_time','update_time'],axis=1)
     df.to_pickle(os.path.join(D_FT_ADJ, tbname + '.pkl'))
 
 def adjust_equity_selected_trading_data():
@@ -116,10 +125,25 @@ def adjust_equity_selected_trading_data():
     df=df.sort_index()
     df.to_pickle(os.path.join(D_FT_ADJ,tbname+'.pkl'))
 
+def adjust_equity_selected_indice_ir():
+    tbname='equity_selected_indice_ir'
+    df=read_cache(tbname)
+    df['trd_dt']=pd.to_datetime(df['trd_dt'].map(str))
+    df['sz50_ret_d']=df['sz50'].pct_change()
+    df['hs300_ret_d']=df['hs300'].pct_change()
+    df['zz500_ret_d']=df['zz500'].pct_change()
+    df=df.set_index('trd_dt')
+    df.to_pickle(os.path.join(D_FT_ADJ,tbname+'.pkl'))
 
-if __name__ == '__main__':
+# adjust_equity_selected_indice_ir()
+
+
+
+
+
+# if __name__ == '__main__':
     # adjust_three_sheets()
-    adjust_equity_cash_dividend()
-    adjust_equity_fundamental_info()
-    adjust_equity_selected_trading_data()
+    # adjust_equity_cash_dividend()
+    # adjust_equity_fundamental_info()
+    # adjust_equity_selected_trading_data()
 
