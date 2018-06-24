@@ -7,9 +7,8 @@
 import pandas as pd
 
 import os
-from config import D_DRV
+from config import D_DRV,D_FILESYNC_ADJ
 from data.dataApi import read_local, get_dataspace
-from config import D_FILESYNC_ADJ
 import numpy as np
 
 
@@ -129,7 +128,7 @@ def _daily2monthly(x):
                'adjlow':'min',
                'adjclose':'last',
                # 'avgprice':'mean',
-               'trd_dt':'last' # resample 日期变成了日历日，应该是交易日。所以，此处保留了trd_dt 在后边再换回trd_dt
+               'trd_dt':'last' # trick:resample 日期变成了日历日，应该是交易日。所以，此处保留了trd_dt 在后边再换回trd_dt
                }
 
     monthly=x.resample('M',on='trd_dt',closed='right',label='right').apply(ohlc_dict)
@@ -171,9 +170,8 @@ def get_monthly_cap():
     monthly=daily[['stkcd','trd_dt','tot_shr','float_a_shr','freeshares','cap',
                    'freefloat_cap']].groupby('stkcd').apply(
         lambda x:x.resample('M',on='trd_dt',closed='right',label='right').last())
-
+    monthly.index.names=['stkcd','month_end'] #trick:take care resmaple,it will get calendar month end rather business month end
     monthly.to_pickle(os.path.join(D_FILESYNC_ADJ,'shr_and_cap.pkl'))
-
 
 def get_monthly_indice_ir():
     daily=read_local('equity_selected_indice_ir')

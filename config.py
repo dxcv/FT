@@ -29,3 +29,5 @@ END= '2018-01-31'
 #single factor
 SINGLE_D_RESULT = r'D:\zht\database\quantDb\internship\FT\singleFactor\result'
 SINGLE_D_INDICATOR=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators'
+SINGLE_D_CHECK=r'D:\zht\database\quantDb\internship\FT\singleFactor\check'
+

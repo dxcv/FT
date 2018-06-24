@@ -105,7 +105,7 @@ def parse_equation(equation):
     else:# for example, "tot_assets"
         return get_dataspace(equation)[equation]
 
-def cal_excel():
+def cal_sheet_equation():
     path=r'D:\app\python36\zht\internship\FT\singleFactor\factors\indicators.xlsx'
     df=pd.read_excel(path,sheet_name='equation',index_col=0)
     for _,s in df.iterrows():
@@ -125,7 +125,7 @@ def cal_excel():
         save_indicator(df,name)
         print(name)
 
-def cal_growth():
+def cal_sheet_growth():
     func_id={'x_pct_chg':'pct',
              'x_history_compound_growth':'hcg',
              'x_history_std':'std'}
@@ -143,6 +143,6 @@ def cal_growth():
             save_indicator(df,name)
             print(func,indicator,kwarg['q'])
 
-if __name__ == '__main__':
-    cal_excel()
-    cal_growth()
+# if __name__ == '__main__':
+#     cal_sheet_equation()
+#     cal_sheet_growth()

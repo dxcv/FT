@@ -48,7 +48,6 @@ def change_index(df):
     df=df.set_index(['stkcd','trd_dt']).dropna()
     return df
 
-
 def filter_sample(df1, df2):
     '''
     df1, df2: DataFrame
@@ -65,6 +64,8 @@ def filter_sample(df1, df2):
     data = data.groupby('stkcd').resample('M', on='trd_dt').last().dropna(how='all')
     data.index.names=['stkcd','month_end']
     #trick:resample 得到的是calendar date,mont_end,注意此处的index使用的是month_end 而不是trd_dt
+    #trick:但是我们也只有在calendar date 对应的交易日才能得到所有的数据，所以，新的交易日，应该
+    #trick:是由month_end 转化日来，否则直接用dataframe 里的trd_dt 就会引入未来函数。
     del data['stkcd']
     data =data.reset_index().set_index(['stkcd','trd_dt']) #trick: keep month_end
     return data
@@ -84,9 +85,9 @@ def _check(df):
 
     col=df.columns[0]
     data=filter_sample(fdmt, df)
-    
+
     data=data[['month_end','wind_indcd','cap',col]].dropna()
-    data=data.groupby('month_end').filter(lambda x:x.shape[0]>100) #review:100？
+    data=data.groupby('month_end').filter(lambda x:x.shape[0]>50) #review:100？
 
     if data.shape[0]>0:
         data=dc.clean(data,col) # 去极值，标准化，中性化
@@ -130,11 +131,7 @@ def task(fn):
     _check(df)
 
 
-fns=os.listdir(SINGLE_D_INDICATOR)
-for fn in fns:
-    task(fn)
-    print(fn)
-
+task(fn)
 
 # if __name__ == '__main__':
 #     fns=os.listdir(SINGLE_D_INDICATOR)

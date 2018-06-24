@@ -75,15 +75,15 @@ def adjust_three_sheets():
                 df[dc]=pd.to_datetime(df[dc].map(number2dateStr))
 
         df=df.sort_values(['stkcd','report_period','trd_dt'])
-        df=df[~df.duplicated(subset=['stkcd','report_period'],keep='first')]
+        df=df[~df.duplicated(subset=['stkcd','report_period'],keep='last')]#trick:keep the latest item
         df=df.groupby('stkcd').apply(
             lambda x:x.set_index('report_period').resample('Q').asfreq()
         )
 
         df=df.drop(['stkcd','create_time','update_time'],axis=1)
-
         df.to_pickle(os.path.join(D_FT_ADJ, tbname + '.pkl'))
 
+adjust_three_sheets()
 
 def adjust_equity_cash_dividend():
     tbname='equity_cash_dividend'

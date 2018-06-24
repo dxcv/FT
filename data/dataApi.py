@@ -6,6 +6,8 @@
 # NAME:FT-dataApi.py
 import datetime
 import os
+from functools import reduce
+
 import pandas as pd
 import pickle
 import pymysql
@@ -202,6 +204,32 @@ def read_fields_map(refresh=True):
 
     return fields_map
 
+
+def mix_dfs(dfs):
+    '''combine dfs,different df may have different frequency
+    For example:
+        when we combine 'shr_and_cap' (monthly) with 'equity_selected_balance_sheet' (quartly),
+        the frequency of the returned df will be quarterly. And the index names will
+        become ['stkcd','report_period']
+    '''
+    df=pd.concat(dfs,axis=1,join='inner')
+    trd_dt_df=df['trd_dt']
+    dt=trd_dt_df.max(axis=1)
+    del df['trd_dt']
+    df['trd_dt']=dt
+
+    names=[]
+    for a in dfs:
+        for name in a.index.names:
+            if name not in names:
+                names.append(name)
+
+    if 'report_period' in names:
+        df.index.names=['stkcd','report_period']
+
+    #TODO: other situations?
+    return df
+
 def get_dataspace(fields):
     #TODO: how to combine shr_and_cap,dequity_selected_trading_data
     # their index are ['stkcd','trd_dt']
@@ -209,18 +237,11 @@ def get_dataspace(fields):
     if isinstance(fields,str): #only one field
         fields=[fields]
 
-
     dfnames=list(set([fields_map[f] for f in fields]))
     if len(dfnames)==1:
         df=read_local(dfnames[0])
     else:
-        df=pd.concat([read_local(dn) for dn in dfnames], axis=1)
-
-    if isinstance(df['trd_dt'],pd.DataFrame):
-        '''如果df里边有多个名为trd_dt的列，取日期最大的那个'''
-        trd_dt_df=df['trd_dt']
-        df=df.drop('trd_dt',axis=1)
-        df['trd_dt']=trd_dt_df.max(axis=1)
+        df=mix_dfs([read_local(dn) for dn in dfnames])
     return df[['trd_dt']+fields]
 
 def check_dfs():
@@ -229,4 +250,28 @@ def check_dfs():
         for fn in fns:
             df=pd.read_pickle(os.path.join(d,fn))
             print(fn,df.index.names)
+
+
+#-------------------------------20180622---------------------------------------
+
+
+
+
+
+#get_mould
+
+# fp1=r'D:\zht\database\quantDb\internship\FT\database\filesync_based\adjusted\trading_m.pkl'
+# fp2=r'D:\zht\database\quantDb\internship\FT\database\filesync_based\adjusted\shr_and_cap.pkl'
+# fp3=r'D:\zht\database\quantDb\internship\FT\database\ftresearch_based\adjusted\pkl\equity_cash_dividend.pkl'
+#
+# df1=pd.read_pickle(fp1)
+# df2=pd.read_pickle(fp2)
+# df3=pd.read_pickle(fp3)
+#
+# dfs=[df.reset_index() for df in [df1,df2,df3]]
+#
+# df_merged=reduce(lambda left,right:pd.merge(left,right,on=['stkcd','trd_dt'],
+#                                             how='outer'),dfs)
+#
+#
 

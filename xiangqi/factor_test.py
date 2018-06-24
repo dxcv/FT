@@ -19,6 +19,8 @@ def data_join(retn, factor_value):
     factor_value: DataFrame
         因子值
     '''
+
+    #review:month_end or trd_dt?
     data = retn.join(factor_value, how='left').dropna()
     data_loss = 1 - len(data) / (len(factor_value) - 3000)
     print('data loss : %.4f%%' % (data_loss * 100))
@@ -172,7 +174,7 @@ def layer_test(test_data, retn_mk, quantile=10):
     layer_retn = layer_retn.unstack()
     layer_retn['t_b'] = layer_retn.iloc[:, -1] - layer_retn.iloc[:, 0]
     layer_retn = layer_retn.join(retn_mk, how='left').dropna()
-    
+
     nav = (1 + layer_retn).cumprod()
     hpy = nav.iloc[-1, :] - 1
     annual = (nav.iloc[-1, :]) ** (12 / len(layer_retn)) - 1
