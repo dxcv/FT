@@ -4,18 +4,38 @@
 # Email:13163385579@163.com
 # TIME:2018-06-23  21:11
 # NAME:FT-new_check_factors_0623.py
+import multiprocessing
+import pickle
 from math import floor, ceil, sqrt
 
 from data.dataApi import read_local
 import pandas as pd
 import os
-from config import SINGLE_D_INDICATOR, SINGLE_D_CHECK
+from config import SINGLE_D_INDICATOR, SINGLE_D_CHECK, DCC, FORWARD_TRADING_DAY
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
+from tools import monitor
 
 G = 10
 
+
+#review: alternative method
+'''
+idea:
+    1. build a mould by use daily trading data
+    2. put all the data into the mould
+      dfs to put in mould:
+        1) three sheet
+        2) trading data
+        3) div_cash data
+    3. ffill with a limit
+    4. calculate new indicator
+    5. filter with st and young_1year
+    6. output
+
+
+'''
 
 def change_index(df):
     df = df.reset_index().sort_values(['stkcd', 'trd_dt', 'report_period'])
@@ -25,6 +45,36 @@ def change_index(df):
     df=df.set_index(['stkcd','trd_dt']).dropna()
     return df
 
+def get_cover_rate_old(fn,df,fdmt):
+    '''
+    计算指标覆盖率
+    '''
+    base = pd.pivot_table(fdmt, values='cap', index='trd_dt', columns='stkcd')
+    base_monthly = base.resample('M').last()
+
+    table = pd.pivot_table(df, values=fn[:-4], index='trd_dt', columns='stkcd')
+    table = table.reindex(base.index)
+    table = table.ffill(limit=FORWARD_TRADING_DAY)
+    monthly = table.resample('M').last()
+
+    total = base_monthly.notnull().sum(axis=1)
+    covered = monthly.notnull().sum(axis=1)
+    cover_rate = covered / total
+    return cover_rate
+
+def get_cover_rate(data,col):
+    df = data[['stkcd', 'trd_dt', 'cap', col]]
+    monthly = df.groupby('stkcd').resample('M', on='trd_dt').last()
+    monthly.index.names = ['stkcd', 'month_end']
+    monthly['g'] = monthly.groupby('month_end', group_keys=False).apply(
+        lambda x: pd.qcut(x['cap'], G,
+                          labels=['g{}'.format(i) for i in range(1, G + 1)]))
+
+    cover_rate = monthly.groupby(['month_end', 'g']).apply(
+        lambda x: x[col].notnull().sum() / x.shape[0])
+    cover_rate = cover_rate.unstack('g') / G
+    cover_rate = cover_rate[['g{}'.format(i) for i in range(1, G + 1)]]
+    return cover_rate
 
 def outlier(x, k=4.5):
     '''
@@ -43,7 +93,6 @@ def outlier(x, k=4.5):
 
 def z_score(x):
     return (x - np.mean(x)) / np.std(x)
-
 
 def neutralize(df, col, industry, cap='ln_cap'):
     '''
@@ -65,7 +114,6 @@ def neutralize(df, col, industry, cap='ln_cap'):
     beta = np.linalg.lstsq(A, y,rcond=None)[0]
     res = y - np.dot(A, beta)
     return res
-
 
 def clean(df, col):
     '''
@@ -106,7 +154,6 @@ def get_beta_t_ic(df,col_factor,col_ret):
     ic = stats.spearmanr(df)[0]
     return pd.Series([beta,tvalue,ic],index=['beta','tvalue','ic'])
 
-
 def beta_t_ic_describe(beta_t_ic):
     '''
     beta_t_ic: DataFrame
@@ -125,7 +172,6 @@ def beta_t_ic_describe(beta_t_ic):
     describe=pd.Series(describe)
     return describe
 
-
 def plot_beta_t_ic(beta_t_ic):
     fig = plt.figure(figsize=(16, 8))
     ax1 = plt.subplot(311)
@@ -142,7 +188,6 @@ def plot_beta_t_ic(beta_t_ic):
     ax3.bar(beta_t_ic.index, beta_t_ic['ic'], width=20)
     ax3.set_title('ic')
     return fig
-
 
 def drawdown(x):
     '''
@@ -184,53 +229,46 @@ def g_ret_describe(g_ret):
                 'rela_ret_IR': rela_retn_IR,
                 'rela_max_drdw': rela_max_drdw})
 
-
-def plot_g_ret(g_ret):
-    cumprod=(1 + g_ret).cumprod()
-    xz = list(range(len(cumprod)))
-    xn = cumprod.index.strftime('%Y-%m')
-    fig_layer = plt.figure(figsize=(10, 5))
-
+def plot_layer_analysis(g_ret, g_ret_des,cover_rate):
+    fig = plt.figure(figsize=(16, 8))
+    ax1 = plt.subplot(221)
+    cumprod = (1 + g_ret).cumprod()
     for col in cumprod.columns:
-        if col=='g{}_g1'.format(G):
-            plt.plot(xz, cumprod[col], 'r', label=col, alpha=1, linewidth=1)
-        elif col=='zz500':
-            plt.plot(xz, cumprod[col], 'b', label=col, alpha=1, linewidth=1)
+        if col == 'g{}_g1'.format(G):
+            ax1.plot(g_ret.index, cumprod[col], 'r', label=col, alpha=1,
+                     linewidth=1.5)
+        elif col == 'zz500':
+            ax1.plot(g_ret.index, cumprod[col], 'b', label=col, alpha=1,
+                     linewidth=1.5)
         else:
-            plt.plot(xz, cumprod[col], label=col, alpha=0.8, linewidth=0.5)
-    plt.legend()
-    plt.title('cumprod')
-    plt.xlim(xz[0] - 1, xz[-1] + 1)
-    plt.ylim(0, cumprod.max().max() + 1)
-    plt.xticks(xz[0:-1:12], xn[0:-1:12])
-    return fig_layer
+            ax1.plot(g_ret.index, cumprod[col], label=col, alpha=0.8,
+                     linewidth=0.5)
+    ax1.set_title('cumprod')
+    ax1.legend()
 
+    ax2 = plt.subplot(223)
+    ax2.bar(g_ret.index, g_ret['g10_g1'].values, width=20, alpha=1,color='b')
+    ax2.set_xlabel('month_end')
+    ax2.set_ylabel('return bar', color='b')
+    [tl.set_color('b') for tl in ax2.get_yticklabels()]
+    ax2.set_title('top minus bottom')
 
-def plot_annual_bar(g_ret_des):
-    annual=g_ret_des['annual']
-    fig = plt.figure(figsize=(10, 5))
-    xz = list(range(G + 2))
-    plt.bar(xz,annual, label='Annualized Return')
-    plt.legend()
-    plt.xlim(- 1, G + 2)
-    plt.ylim(annual.min() - 0.01, annual.max() + 0.01)
-    xn = annual.index.tolist()
-    plt.xticks(xz, xn)
+    ax3 = ax2.twinx()
+    ax3.plot(g_ret.index, cumprod['g{}_g1'.format(G)], 'r-')
+    ax3.set_ylabel('cumprod', color='r')
+    [tl.set_color('r') for tl in ax3.get_yticklabels()]
+
+    ax4 = plt.subplot(222)
+    barlist = ax4.bar(range(g_ret_des['annual'].shape[0]), g_ret_des['annual'],
+                      tick_label=g_ret_des.index, color='b')
+    barlist[list(g_ret_des.index).index('g{}_g1'.format(G))].set_color('r')
+    ax4.set_title('annual return')
+
+    ax5=plt.subplot(224)
+    ax5.stackplot(cover_rate.index,cover_rate.T.values,alpha=0.7)
+    ax5.set_title('cover rate')
+
     return fig
-
-
-def plot_tmb(g_ret):
-    fig_tmb, ax1 = plt.subplots(figsize=(16, 8))
-    ax1.bar(g_ret.index, g_ret['g10_g1'].values, width=20, alpha=1)
-    ax1.set_xlabel('month_end')
-    ax1.set_ylabel('return bar', color='b')
-    [tl.set_color('b') for tl in ax1.get_yticklabels()]
-
-    ax2 = ax1.twinx()
-    ax2.plot(g_ret.index, (1 + g_ret['g10_g1']).cumprod(), 'r-')
-    ax2.set_ylabel('cumprod', color='r')
-    [tl.set_color('r') for tl in ax2.get_yticklabels()]
-    return fig_tmb
 
 def get_result(df,ret_1m,fdmt,zz500_ret_1m):
     col=df.columns[0]
@@ -238,122 +276,106 @@ def get_result(df,ret_1m,fdmt,zz500_ret_1m):
     # merge and filter sample
     data=pd.merge(fdmt.reset_index(),df.reset_index(),on=['stkcd','trd_dt'],how='left')
     data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
-    data = data.groupby('stkcd').ffill(limit=400) # review: 向前填充最最多400个交易日
+    data = data.groupby('stkcd').ffill(limit=FORWARD_TRADING_DAY) # review: 向前填充最最多400个交易日
+
+    cover_rate=get_cover_rate(data,col)
 
     #resample monthly to ease the calculation,but remember that resample will convert the trading date to calendar date(month end).
     monthly=data.groupby('stkcd').resample('M',on='trd_dt').last().dropna()
-    del monthly['trd_dt']#trick: trd_dt is no longer useful,we should get it
+    del monthly['trd_dt']
     monthly.index.names=['stkcd','month_end']
+
+    # data.to_pickle(r'e:\a\data.pkl')
+    # monthly.to_pickle(r'e:\a\monthly.pkl')
+
     monthly=monthly.groupby('month_end').filter(lambda x:x.shape[0]>300) #trick: filter,因为后边要进行行业中性化，太少的样本会出问题
-    monthly=clean(monthly, col) # outlier,z_score,nutrualize
+    if monthly.shape[0]>0:#review
+        monthly=clean(monthly, col) # outlier,z_score,nutrualize
 
-    #cross sectional analyse and layers test
-    comb=pd.concat([ret_1m,monthly[col]],axis=1,join='inner').dropna()
-    comb=comb.groupby('month_end').filter(lambda x:x.shape[0]>=50)#Trick:后边要进行分组分析，数据样本太少的话没法做
-    if comb.shape[0]>0:
-        # cross section    beta tvalue ic
-        beta_t_ic=comb.groupby('month_end').apply(get_beta_t_ic,col,'ret_1m')
+        #cross sectional analyse and layers test
+        comb=pd.concat([ret_1m,monthly[col]],axis=1,join='inner').dropna()
+        comb=comb.groupby('month_end').filter(lambda x:x.shape[0]>=50)#Trick:后边要进行分组分析，数据样本太少的话没法做
+        if comb.shape[0]>0:
+            # cross section    beta tvalue ic
+            beta_t_ic=comb.groupby('month_end').apply(get_beta_t_ic,col,'ret_1m')
 
-        #layer test
-        comb['g']=comb.groupby('month_end',group_keys=False).apply(
-            lambda x:pd.qcut(x[col],G,labels=['g{}'.format(i) for i in range(1,G+1)]))
-        g_ret=comb.groupby(['month_end','g'])['ret_1m'].mean().unstack('g')
-        g_ret.columns=g_ret.columns.tolist()
-        g_ret['g{}_g1'.format(G)]=g_ret['g{}'.format(G)]-g_ret['g1']#top minus bottom
-        g_ret['zz500']=zz500_ret_1m
-        g_ret=g_ret.dropna()
-        return beta_t_ic,g_ret
+            #layer test
+            comb['g']=comb.groupby('month_end',group_keys=False).apply(
+                lambda x:pd.qcut(x[col],G,labels=['g{}'.format(i) for i in range(1,G+1)]))
+            g_ret=comb.groupby(['month_end','g'])['ret_1m'].mean().unstack('g')
+            g_ret.columns=g_ret.columns.tolist()
+            g_ret['g{}_g1'.format(G)]=g_ret['g{}'.format(G)]-g_ret['g1']#top minus bottom
+            g_ret['zz500']=zz500_ret_1m
+            g_ret=g_ret.dropna()
+            return beta_t_ic,g_ret,cover_rate
 
+def get_cache():
+    #load relevant DataFrame
+    fdmt = read_local('equity_fundamental_info')[
+        ['cap', 'type_st', 'wind_indcd', 'young_1year']]
 
+    ret_1m = read_local('trading_m')['ret_1m']
+    ret_1m = ret_1m.reset_index().groupby('stkcd').resample(
+        'M',on='trd_dt').last().dropna()[['ret_1m']]
+    ret_1m.index.names = ['stkcd', 'month_end']
 
-
-
-# fn='Q__mlev.pkl'
-#
-# fdmt = read_local('equity_fundamental_info')[
-#     ['cap', 'type_st', 'wind_indcd', 'young_1year']]
-#
-# ret_1m = read_local('trading_m')['ret_1m']  # review : trading date
-# ret_1m = ret_1m.reset_index().groupby('stkcd').resample(
-#     'M',on='trd_dt').last().dropna()[['ret_1m']]
-# ret_1m.index.names = ['stkcd', 'month_end']
-#
-# zz500_ret_1m=read_local('indice_m')['zz500_ret_1m'] #review:trading date
-# zz500_ret_1m=zz500_ret_1m.resample('M').last()
-# zz500_ret_1m.index.name='month_end'
-#
-#
-# df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
-# df=change_index(df)
-# # df=df[:int(df.shape[0]/20)]#review
-# beta_t_ic,g_ret=get_result(df,ret_1m,fdmt,zz500_ret_1m)
-#
-# col=df.columns[0]
-# directory=os.path.join(SINGLE_D_CHECK,col)
-# if not os.path.exists(directory):
-#     os.makedirs(directory)
-# beta_t_ic.to_csv(os.path.join(directory,'beta_t_ic.csv'))
-# g_ret.to_csv(os.path.join(directory,'g_ret.csv'))
+    zz500_ret_1m=read_local('indice_m')['zz500_ret_1m']
+    zz500_ret_1m=zz500_ret_1m.resample('M').last()
+    zz500_ret_1m.index.name='month_end'
+    with open(os.path.join(DCC,'frz.pkl'),'wb') as f:
+        pickle.dump((fdmt,ret_1m,zz500_ret_1m),f)
 
 
+# get_cache()
+with open(os.path.join(DCC,'frz.pkl'),'rb') as f:
+    fdmt, ret_1m, zz500_ret_1m=pickle.load(f)
 
 
-#-------------------------present results--------------------------------------
-directory=r'D:\zht\database\quantDb\internship\FT\singleFactor\check\Q__mlev'
-beta_t_ic=pd.read_csv(os.path.join(directory,'beta_t_ic.csv'),index_col=0,encoding='utf8',parse_dates=True)
-g_ret=pd.read_csv(os.path.join(directory,'g_ret.csv'),index_col=0,encoding='utf8',parse_dates=True)
+def check(fn):
+    print(fn)
+    df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
 
-des=beta_t_ic_describe(beta_t_ic)
-fig_beta_t_ic=plot_beta_t_ic(beta_t_ic)
+    df=change_index(df)
+    beta_t_ic,g_ret,cover_rate=get_result(df,ret_1m,fdmt,zz500_ret_1m)
 
-g_ret_des=g_ret_describe(g_ret)
-fig_layer=plot_g_ret(g_ret)
-fig_annual_bar=plot_annual_bar(g_ret_des)
-fig_tmb=plot_tmb(g_ret)
+    beta_t_ic_des=beta_t_ic_describe(beta_t_ic)
+    fig_beta_t_ic=plot_beta_t_ic(beta_t_ic)
 
+    g_ret_des=g_ret_describe(g_ret)
+    fig_g=plot_layer_analysis(g_ret, g_ret_des,cover_rate)
 
-fig_beta_t_ic.show()
-fig_annual_bar.show()
-fig_layer.show()
-fig_tmb.show()
+    col=df.columns[0]
+    directory=os.path.join(SINGLE_D_CHECK,col)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
+    beta_t_ic.to_csv(os.path.join(directory,'beta_t_ic.csv'))
+    beta_t_ic_des.to_csv(os.path.join(directory,'beta_t_ic_des.csv'))
 
-fig = plt.figure(figsize=(16, 8))
-ax1 = plt.subplot(221)
-# ax1=plt.subplot2grid((2,2),(0,0),colspan=1,rowspan=1)
-cumprod = (1 + g_ret).cumprod()
-for col in cumprod.columns:
-    if col == 'g{}_g1'.format(G):
-        ax1.plot(g_ret.index, cumprod[col], 'r', label=col, alpha=1, linewidth=1)
-    elif col == 'zz500':
-        ax1.plot(g_ret.index, cumprod[col], 'b', label=col, alpha=1, linewidth=1)
-    else:
-        ax1.plot(g_ret.index, cumprod[col], label=col, alpha=0.8, linewidth=0.5)
-ax1.set_title('cumprod')
+    g_ret.to_csv(os.path.join(directory,'g_ret.csv'))
+    g_ret_des.to_csv(os.path.join(directory,'t_ret_des.csv'))
 
-ax2 = plt.subplot(223)
-# ax3=plt.subplot2grid((2,2),(1,0),colspan=1,rowspan=1)
-ax2.bar(g_ret.index, g_ret['g10_g1'].values, width=20,alpha=1)
-ax2.set_xlabel('month_end')
-ax2.set_ylabel('return bar', color='b')
-[tl.set_color('b') for tl in ax2.get_yticklabels()]
+    fig_beta_t_ic.savefig(os.path.join(directory,'fig_beta_t_ic.png'))
+    fig_g.savefig(os.path.join(directory,'fig_g.png'))
 
-ax3 = ax2.twinx()
-ax3.plot(g_ret.index, cumprod['g{}_g1'.format(G)], 'r-')
-ax3.set_ylabel('cumprod', color='r')
-[tl.set_color('r') for tl in ax3.get_yticklabels()]
+def task(fn):
+    try:
+        check(fn)
+    except:
+        pass
+
+def debug():
+    fn=r'G_hcg_20__oper_profit.pkl'
+    check(fn)
+
+# debug()
 
 
-ax4 = plt.subplot(122)
-# ax2=plt.subplot2grid((2,2),(1,1),colspan=1,rowspan=2)
-colors
-ax4.bar(range(g_ret_des['annual'].shape[0]),g_ret_des['annual'],tick_label=g_ret_des.index)
-ax4.set_title('annual return')
-
-
-
-fig.show()
-
+if __name__ == '__main__':
+    fns = os.listdir(SINGLE_D_INDICATOR)
+    fns=[fn for fn in fns if fn.endswith('.pkl')]
+    pool=multiprocessing.Pool(6)
+    pool.map(check,fns)
 
 
 
