@@ -4,7 +4,7 @@
 # Email:13163385579@163.com
 # TIME:2018-06-20  08:54
 # NAME:FT-new_growth.py
-from config import SINGLE_D_INDICATOR
+from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
 import os
 from singleFactor.factors.new_operators import x_pct_chg, ratio_pct_chg, \
@@ -12,7 +12,7 @@ from singleFactor.factors.new_operators import x_pct_chg, ratio_pct_chg, \
 
 
 def save_indicator(df,name):
-    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
+    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR_FINANCIAL, name + '.pkl'))
 
 #===============================成长因子========================================
 #TODO: 同比，表示yoy？

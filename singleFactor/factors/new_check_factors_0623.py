@@ -11,7 +11,8 @@ from math import floor, ceil, sqrt
 from data.dataApi import read_local
 import pandas as pd
 import os
-from config import SINGLE_D_INDICATOR, SINGLE_D_CHECK, DCC, FORWARD_TRADING_DAY
+from config import SINGLE_D_INDICATOR_FINANCIAL, SINGLE_D_CHECK, DCC, \
+    FORWARD_TRADING_DAY, SINGLE_D_INDICATOR_TECHNICAL
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -330,12 +331,14 @@ def get_cache():
 with open(os.path.join(DCC,'frz.pkl'),'rb') as f:
     fdmt, ret_1m, zz500_ret_1m=pickle.load(f)
 
+def check_factor(df):
+    '''
+    Args:
+        df: pd.DataFrame,with only one column,and the index is ['stkcd','trd_dt']
 
-def check(fn):
-    print(fn)
-    df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
+    Returns:
 
-    df=change_index(df)
+    '''
     beta_t_ic,g_ret,cover_rate=get_result(df,ret_1m,fdmt,zz500_ret_1m)
 
     beta_t_ic_des=beta_t_ic_describe(beta_t_ic)
@@ -358,24 +361,58 @@ def check(fn):
     fig_beta_t_ic.savefig(os.path.join(directory,'fig_beta_t_ic.png'))
     fig_g.savefig(os.path.join(directory,'fig_g.png'))
 
+
+def check_fn(fn):
+    print(fn)
+    path1=os.path.join(SINGLE_D_INDICATOR_FINANCIAL,fn)
+    path2=os.path.join(SINGLE_D_INDICATOR_TECHNICAL,fn)
+    if os.path.exists(path1):
+        path=path1
+    else:
+        path=path2
+    df=pd.read_pickle(path)
+    df=change_index(df)
+    check_factor(df)
+
 def task(fn):
     try:
-        check(fn)
+        check_fn(fn)
     except:
         pass
 
+
+
+def check_financial_indicators():
+    fns = os.listdir(SINGLE_D_INDICATOR_FINANCIAL)
+    fns=[fn for fn in fns if fn.endswith('.pkl')]
+    # print(fns[fns.index('V__pe.pkl'):])
+    pool=multiprocessing.Pool(6)
+    pool.map(check_fn, fns)
+
+def _check_technical_indicator(fn):
+    print(fn)
+    df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR_TECHNICAL,fn))
+    check_factor(df)
+
+def check_technical_indicators():
+    fns = os.listdir(SINGLE_D_INDICATOR_TECHNICAL)
+    fns = [fn for fn in fns if fn.endswith('.pkl')]
+
+    pool = multiprocessing.Pool(6)
+    pool.map(_check_technical_indicator, fns)
+
 def debug():
-    fn=r'G_hcg_20__oper_profit.pkl'
-    check(fn)
+    fn=r'T__1dc1m.pkl'
+    _check_technical_indicator(fn)
 
 # debug()
 
-
+#review: how to adjust negative factors? take mom for exmaple
 if __name__ == '__main__':
-    fns = os.listdir(SINGLE_D_INDICATOR)
-    fns=[fn for fn in fns if fn.endswith('.pkl')]
-    pool=multiprocessing.Pool(6)
-    pool.map(check,fns)
+    check_technical_indicators()
+
+
+
 
 
 

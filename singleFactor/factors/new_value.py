@@ -6,14 +6,14 @@
 # NAME:FT-new_value.py
 import os
 
-from config import SINGLE_D_INDICATOR
+from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
 from singleFactor.factors.new_operators import ratio, \
     x_history_compound_growth, x_square
 
 
 def save_indicator(df,name):
-    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
+    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR_FINANCIAL, name + '.pkl'))
 
 def get_bp():
     #股东权益合计  /  总市值

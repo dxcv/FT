@@ -5,7 +5,7 @@
 # TIME:2018-06-20  13:53
 # NAME:FT-new_compact.py
 
-from config import SINGLE_D_INDICATOR
+from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
 import os
 from singleFactor.factors.new_operators import x_pct_chg, ratio_pct_chg, \

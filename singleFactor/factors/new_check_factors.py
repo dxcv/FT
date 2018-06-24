@@ -6,7 +6,7 @@
 # NAME:FT-new_check_factors.py
 import multiprocessing
 
-from config import SINGLE_D_INDICATOR, SINGLE_D_RESULT
+from config import SINGLE_D_INDICATOR_FINANCIAL, SINGLE_D_RESULT
 import os
 import pandas as pd
 
@@ -118,15 +118,15 @@ def _check(df):
 
 @monitor
 def check_factors():
-    fns=os.listdir(os.path.join(SINGLE_D_INDICATOR))
+    fns=os.listdir(os.path.join(SINGLE_D_INDICATOR_FINANCIAL))
     fns=[fn for fn in fns if fn.endswith('.pkl')]
     for fn in fns:
-        df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
+        df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR_FINANCIAL, fn))
         df=change_index(df)
         _check(df)
 
 def task(fn):
-    df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
+    df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR_FINANCIAL, fn))
     df=change_index(df)
     _check(df)
 
@@ -134,7 +134,7 @@ def task(fn):
 task(fn)
 
 # if __name__ == '__main__':
-#     fns=os.listdir(SINGLE_D_INDICATOR)
+#     fns=os.listdir(SINGLE_D_INDICATOR_FINANCIAL)
 #     fns=[fn for fn in fns if fn.endswith('.pkl')]
 #     pool=multiprocessing.Pool(2)
 #     pool.map(task,fns)

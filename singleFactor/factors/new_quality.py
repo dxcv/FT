@@ -7,14 +7,14 @@
 
 import os
 
-from config import SINGLE_D_INDICATOR
+from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
 from singleFactor.factors.new_operators import ratio, x_history_std, x_ttm, \
     x_history_downside_std
 
 
 def save_indicator(df,name):
-    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
+    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR_FINANCIAL, name + '.pkl'))
 
 
 #------------------------------ratio------------------------------------

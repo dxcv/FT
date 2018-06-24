@@ -7,7 +7,7 @@
 from functools import reduce
 
 import pandas as pd
-from config import SINGLE_D_INDICATOR
+from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
 import os
 import re
@@ -16,7 +16,7 @@ from singleFactor.factors.new_operators import *
 
 
 def save_indicator(df,name):
-    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
+    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR_FINANCIAL, name + '.pkl'))
 
 def parse_vars(equation):
     '''
@@ -143,6 +143,6 @@ def cal_sheet_growth():
             save_indicator(df,name)
             print(func,indicator,kwarg['q'])
 
-# if __name__ == '__main__':
-#     cal_sheet_equation()
+if __name__ == '__main__':
+    cal_sheet_equation()
 #     cal_sheet_growth()
