@@ -76,10 +76,6 @@ def x_history_std(s, q=8):
     return s.groupby('stkcd').apply(
         lambda x:x.rolling(q,min_periods=q).std())
 
-#TODO: 覆盖度
-
-
-
 def x_history_downside_std(s,q=8):
     '''
     stddev(min(x-x(-1),0))
@@ -172,7 +168,7 @@ def pct_chg_dif(df,x,y,q=1,delete_negative=True):
         df[y]=df[y].where(df[y]>0,np.nan)
     return x_pct_chg(df[x],q)-x_pct_chg(df[y],q)
 
-def ratio_x_chg_over_lag_y(df, x,y,ttm=True,delete_negative_y=True):
+def ratio_x_chg_over_lag_y(df, x,y,delete_negative_y=True):
     '''
     d(x)/lag(y)
     the change in each accounting variable scaled by a lagged base variable

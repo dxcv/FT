@@ -31,6 +31,7 @@ SINGLE_D_RESULT = r'D:\zht\database\quantDb\internship\FT\singleFactor\result'
 SINGLE_D_INDICATOR_FINANCIAL= r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators\financial'
 SINGLE_D_INDICATOR_TECHNICAL=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators\technical'
 SINGLE_D_CHECK=r'D:\zht\database\quantDb\internship\FT\singleFactor\check'
+SINGLE_D_SUMMARY=r'D:\zht\database\quantDb\internship\FT\singleFactor\summary'
 
 FORWARD_TRADING_DAY=400
 

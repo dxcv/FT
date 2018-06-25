@@ -125,6 +125,8 @@ def clean(df, col):
     col:
         因子名称
     '''
+
+    # Review: 风格中性：对市值对数和市场做回归后取残差
     df[col + '_out']=df.groupby('month_end')[col].apply(outlier)
     df[col + '_zsc']=df.groupby('month_end')[col + '_out'].apply(z_score)
     df['wind_2'] = df['wind_indcd'].apply(str).str.slice(0, 6) # wind 2 级行业代码
@@ -175,17 +177,24 @@ def beta_t_ic_describe(beta_t_ic):
 
 def plot_beta_t_ic(beta_t_ic):
     fig = plt.figure(figsize=(16, 8))
-    ax1 = plt.subplot(311)
-    ax1.bar(beta_t_ic.index, beta_t_ic['beta'], width=20)
-    ax1.set_title('beta')
 
-    ax2 = plt.subplot(312, sharex=ax1)
-    ax2.bar(beta_t_ic.index, beta_t_ic['tvalue'], width=20)
-    ax2.axhline(y=2, linewidth=0.5, marker='_', color='r')
-    ax2.axhline(y=-2, linewidth=0.5, marker='_', color='r')
+    ax1 = plt.subplot(211)
+    ax1.bar(beta_t_ic.index, beta_t_ic['beta'], width=20,color='b')
+    ax1.set_ylabel('return bar')
+    ax1.set_title('factor return')
+
+    ax4=ax1.twinx()
+    ax4.plot(beta_t_ic.index,beta_t_ic['beta'].cumsum(),'r-')
+    ax4.set_ylabel('cumsum',color='r')
+    [tl.set_color('r') for tl in ax4.get_yticklabels()]
+
+    ax2 = plt.subplot(223, sharex=ax1)
+    ax2.bar(beta_t_ic.index, beta_t_ic['tvalue'], width=20,color='olive')
+    ax2.axhline(y=2, linewidth=1, marker='_', color='r')
+    ax2.axhline(y=-2, linewidth=1, marker='_', color='r')
     ax2.set_title('tvalue')
 
-    ax3 = plt.subplot(313, sharex=ax1)
+    ax3 = plt.subplot(224, sharex=ax1)
     ax3.bar(beta_t_ic.index, beta_t_ic['ic'], width=20)
     ax3.set_title('ic')
     return fig
@@ -255,8 +264,8 @@ def plot_layer_analysis(g_ret, g_ret_des,cover_rate):
     ax2.set_title('top minus bottom')
 
     ax3 = ax2.twinx()
-    ax3.plot(g_ret.index, cumprod['g{}_g1'.format(G)], 'r-')
-    ax3.set_ylabel('cumprod', color='r')
+    ax3.plot(g_ret.index, g_ret['g{}_g1'.format(G)].cumsum(), 'r-')
+    ax3.set_ylabel('cumsum', color='r')
     [tl.set_color('r') for tl in ax3.get_yticklabels()]
 
     ax4 = plt.subplot(222)
@@ -356,7 +365,7 @@ def check_factor(df):
     beta_t_ic_des.to_csv(os.path.join(directory,'beta_t_ic_des.csv'))
 
     g_ret.to_csv(os.path.join(directory,'g_ret.csv'))
-    g_ret_des.to_csv(os.path.join(directory,'t_ret_des.csv'))
+    g_ret_des.to_csv(os.path.join(directory,'g_ret_des.csv'))
 
     fig_beta_t_ic.savefig(os.path.join(directory,'fig_beta_t_ic.png'))
     fig_g.savefig(os.path.join(directory,'fig_g.png'))
@@ -380,8 +389,6 @@ def task(fn):
     except:
         pass
 
-
-
 def check_financial_indicators():
     fns = os.listdir(SINGLE_D_INDICATOR_FINANCIAL)
     fns=[fn for fn in fns if fn.endswith('.pkl')]
@@ -402,7 +409,7 @@ def check_technical_indicators():
     pool.map(_check_technical_indicator, fns)
 
 def debug():
-    fn=r'T__1dc1m.pkl'
+    fn=r'T__mom_1dc1m.pkl'
     _check_technical_indicator(fn)
 
 # debug()
@@ -410,8 +417,7 @@ def debug():
 #review: how to adjust negative factors? take mom for exmaple
 if __name__ == '__main__':
     check_technical_indicators()
-
-
+    check_financial_indicators()
 
 
 

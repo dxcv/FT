@@ -12,7 +12,9 @@ from data.dataApi import read_local
 
 
 def _save(df,name):
-    df.to_pickle(os.path.join(SINGLE_D_INDICATOR_TECHNICAL,'T__{}.pkl'.format(name)))
+    new_name='T__'+name
+    df.columns=[new_name]
+    df.to_pickle(os.path.join(SINGLE_D_INDICATOR_TECHNICAL,new_name+'.pkl'))
 
 
 #=================================momentum=====================================
@@ -86,12 +88,15 @@ def get_mom_1dc1m():
 
 def get_sucess():
     #Success=1-过去一个月的收益率排名/股票总数
+    #等价于反转因子(1M)
     name='sucess'
     trading_m=read_local('trading_m')
 
     def func(x):
         x=x.reset_index()
-        x['sucess']=1-x['ret_m'].rank()/x.shape[0]
+        x['rank']=x['ret_m'].rank()
+        x['sucess1']=1-x['rank']/x.shape[0]
+        x['sucess']=1-x['ret_m'].rank(ascending=True)/x.shape[0] # the larger the ret_m,the larger the rank and the smaller the sucess value
         x=x.set_index('stkcd')
         return x['sucess']
 
@@ -110,7 +115,7 @@ def get_sucess():
 
 # get_sucess()
 def get_pm_1d():
-    name='T_pm_1d'
+    name='pm_1d'
     trading_d=read_local('equity_selected_trading_data')
     trading_d[name]=trading_d['adjclose'].groupby('stkcd').pct_change()
     _save(trading_d[[name]],name)
