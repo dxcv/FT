@@ -11,14 +11,14 @@ from config import FORWARD_TRADING_DAY
 from data.dataApi import read_local
 
 
+directory=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators\financial'
 
-trading_m=read_local('trading_m')
+fns=os.listdir(directory)
 
-window=2
+fns=[fn for fn in fns if fn.endswith('.pkl')]
 
-close=pd.pivot_table(trading_m,values='close',index='trd_dt',columns='stkcd')
-mom=close.pct_change(window)
 
-b=trading_m['close'].groupby('stkcd').pct_change(periods=window)
-type(b)
-b.name
+for fn in fns:
+    df=pd.read_pickle(os.path.join(directory,fn))
+    print(df.columns[0])
+

@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-20  09:02
-# NAME:FT-new_operators.py
+# NAME:FT-operators.py
 import numpy as np
 import pandas as pd
 

@@ -4,14 +4,9 @@
 # Email:13163385579@163.com
 # TIME:2018-05-27  22:07
 # NAME:FT-base_function.py
-from config import DCSV, DPKL
-import os
-import pandas as pd
 import numpy as np
 
 # refer to the paper for operator
-from singleFactor.factors.check import check_factor
-from tools import handle_duplicates
 '''
 Notes:
 1. before cal pct_change,we should delete the items with negative indicators,

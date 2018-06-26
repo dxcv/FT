@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-24  19:57
-# NAME:FT-new_summarize_result.py
+# NAME:FT-summarize_result.py
 from config import SINGLE_D_CHECK, SINGLE_D_SUMMARY
 import os
 import pandas as pd
@@ -168,8 +168,11 @@ def highlight_max(data, color='yellow'):
                             index=data.index, columns=data.columns)
 
 
-def summrize_result(category):
-    directory=os.path.join(SINGLE_D_SUMMARY,category)
+def summarize_result(category=None):
+    if category:
+        directory=os.path.join(SINGLE_D_SUMMARY,category)
+    else:
+        directory=os.path.join(SINGLE_D_SUMMARY,'all')
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -184,10 +187,11 @@ def summrize_result(category):
     #     to_excel(os.path.join(directory,'corr.xlsx'),engine='openpyxl')
 
 
-summrize_result('T')
-summrize_result('V')
-summrize_result('Q')
-summrize_result('G')
+summarize_result('T')
+summarize_result('V')
+summarize_result('Q')
+summarize_result('G')
+summarize_result()
 
 
 

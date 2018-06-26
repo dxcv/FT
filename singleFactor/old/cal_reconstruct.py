@@ -9,16 +9,13 @@ from functools import reduce
 import pandas as pd
 import numpy as np
 
-
-
-import xiangqi.data_merge as dm
 import xiangqi.data_clean as dc
 import xiangqi.factor_test as ft
 import os
 
 from data.dataApi import read_local_pkl
-from singleFactor.factors.cal_tools import read_fields_map
-from singleFactor.factors.check import check_factor
+from singleFactor.old.cal_tools import read_fields_map
+from singleFactor.old import check_factor
 
 TEST_DIR=r'E:\a\testdir'
 

@@ -5,21 +5,17 @@
 # TIME:2018-06-04  09:19
 # NAME:FT-calulate_excel.py
 
-import multiprocessing
-import os
-import pickle
-
 import pandas as pd
 import numpy as np
 
 from data.dataApi import read_local_pkl, get_dataspace
 
-from singleFactor.factors.base_function import x_history_growth_avg, \
+from singleFactor.old import x_history_growth_avg, \
     x_history_compound_growth, ttm_adjust, x_history_downside_std
-from singleFactor.factors.cal_tools import get_dataspace_old, check_g_yoy, \
+from singleFactor.old.cal_tools import get_dataspace_old, check_g_yoy, \
     check_ratio_yoy_pct_chg, check_raw_level, check_compound_g_yoy, check_ratio, \
-    check_stability, check_level_square
-from singleFactor.factors.check import check_factor, _check
+    check_stability
+from singleFactor.old import check_factor, _check
 
 #===============================成长因子========================================
 def get_saleEarnings_sq_yoy():

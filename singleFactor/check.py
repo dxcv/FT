@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-23  21:11
-# NAME:FT-new_check_factors_0623.py
+# NAME:FT-check.py
 import multiprocessing
 import pickle
 from math import floor, ceil, sqrt
@@ -127,6 +127,7 @@ def clean(df, col):
     '''
 
     # Review: 风格中性：对市值对数和市场做回归后取残差
+    #TODO： 市值中性化方式有待优化，可以使用SMB代替ln_cap
     df[col + '_out']=df.groupby('month_end')[col].apply(outlier)
     df[col + '_zsc']=df.groupby('month_end')[col + '_out'].apply(z_score)
     df['wind_2'] = df['wind_indcd'].apply(str).str.slice(0, 6) # wind 2 级行业代码
@@ -276,6 +277,7 @@ def plot_layer_analysis(g_ret, g_ret_des,cover_rate):
 
     ax5=plt.subplot(224)
     ax5.stackplot(cover_rate.index,cover_rate.T.values,alpha=0.7)
+    ax5.set_yticks(np.arange(0,1.2,step=0.2))
     ax5.set_title('cover rate')
 
     return fig
@@ -370,7 +372,6 @@ def check_factor(df):
     fig_beta_t_ic.savefig(os.path.join(directory,'fig_beta_t_ic.png'))
     fig_g.savefig(os.path.join(directory,'fig_g.png'))
 
-
 def check_fn(fn):
     try:
         print(fn)
@@ -407,12 +408,13 @@ def check_technical_indicators():
     checked=os.listdir(SINGLE_D_CHECK)
     fns=[fn for fn in fns if fn[:-4] not in checked]
 
-    pool = multiprocessing.Pool(6)
+    pool = multiprocessing.Pool(4)
     pool.map(_check_technical_indicator, fns)
 
 def debug():
-    fn=r'T__mom_1dc1m.pkl'
-    _check_technical_indicator(fn)
+    fn=r'G_hcg_12__net_cash_flows_oper_act'
+    check_fn(fn)
+
 
 # debug()
 

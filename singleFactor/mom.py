@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-24  22:16
-# NAME:FT-new_calculate_mom.py
+# NAME:FT-mom.py
 from config import SINGLE_D_INDICATOR_TECHNICAL
 import os
 import pandas as pd
@@ -15,7 +15,6 @@ def _save(df,name):
     new_name='T__'+name
     df.columns=[new_name]
     df.to_pickle(os.path.join(SINGLE_D_INDICATOR_TECHNICAL,new_name+'.pkl'))
-
 
 #=================================momentum=====================================
 def _cal_mom(x,window):
@@ -71,6 +70,11 @@ def get_mom_12mc6m():
 
 # get_mom_12mc6m()
 def get_mom_1dc1m():
+    '''
+    过去一个月最大日收益率
+    Returns:
+
+    '''
     name='mom_1dc1m'
     trading_d=read_local('equity_selected_trading_data')
     trading_d['ret_d']=trading_d['adjclose'].groupby('stkcd').pct_change()
@@ -83,8 +87,6 @@ def get_mom_1dc1m():
     del mom_max_ret['month_end']
     mom_max_ret.columns=[name]
     _save(mom_max_ret,name)
-
-# get_mom_1dc1m()
 
 def get_sucess():
     #Success=1-过去一个月的收益率排名/股票总数
@@ -113,8 +115,8 @@ def get_sucess():
     result.columns=[name]
     _save(result,name)
 
-# get_sucess()
 def get_pm_1d():
+    '''上一个交易日收益率'''
     name='pm_1d'
     trading_d=read_local('equity_selected_trading_data')
     trading_d[name]=trading_d['adjclose'].groupby('stkcd').pct_change()

@@ -3,16 +3,15 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-20  17:30
-# NAME:FT-new_calculate_by_use_excel.py
+# NAME:FT-get_indicators.py
 from functools import reduce
 
-import pandas as pd
 from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
 import os
 import re
 
-from singleFactor.factors.new_operators import *
+from singleFactor.operators import *
 
 
 def save_indicator(df,name):

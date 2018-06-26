@@ -5,15 +5,6 @@
 # TIME:2018-06-20  13:53
 # NAME:FT-new_compact.py
 
-from config import SINGLE_D_INDICATOR_FINANCIAL
-from data.dataApi import get_dataspace
-import os
-from singleFactor.factors.new_operators import x_pct_chg, ratio_pct_chg, \
-    x_history_growth_avg, x_history_compound_growth
-import pandas as pd
-
-
-
 
 #---------------------- 1. 单个指标增长率（同比增长率） x_pct_chg(q=4)
 

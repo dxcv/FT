@@ -7,7 +7,7 @@
 
 
 from data.dataApi import read_local_pkl
-from singleFactor.factors.check import _check
+from singleFactor.old import _check
 import pandas as pd
 
 #=================================momentum=====================================

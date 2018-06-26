@@ -9,7 +9,7 @@ import os
 
 from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
-from singleFactor.factors.new_operators import ratio, x_history_std, x_ttm, \
+from singleFactor.operators import ratio, x_history_std, x_ttm, \
     x_history_downside_std
 
 

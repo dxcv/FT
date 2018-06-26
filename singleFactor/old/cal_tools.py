@@ -12,10 +12,10 @@ import pandas as pd
 
 from config import DCC
 from data.dataApi import read_local_pkl, read_local
-from singleFactor.factors.base_function import raw_level, x_history_std, \
+from singleFactor.old import raw_level, x_history_std, \
     x_pct_chg, x_history_compound_growth, ratio_x_y, ratio_yoy_pct_chg, \
     raw_square
-from singleFactor.factors.check import check_factor
+from singleFactor.old import check_factor
 
 
 def check_raw_level(df,col,name,ttm='both'):

@@ -7,8 +7,8 @@
 from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
 import os
-from singleFactor.factors.new_operators import x_pct_chg, ratio_pct_chg, \
-    x_history_growth_avg, x_history_compound_growth
+from singleFactor.operators import x_pct_chg, ratio_pct_chg, \
+    x_history_compound_growth
 
 
 def save_indicator(df,name):

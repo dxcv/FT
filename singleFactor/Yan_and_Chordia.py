@@ -4,17 +4,14 @@
 # Email:13163385579@163.com
 # TIME:2018-05-31  16:06
 # NAME:FT-Yan_and_Chordia.py
-from functools import partial
 
-import multiprocessing
 import os
 import pandas as pd
-from singleFactor.factors.base_function import x_pct_chg, ratio_x_y, \
+from singleFactor.old.base_function import x_pct_chg, ratio_x_y, \
     ratio_yoy_chg, ratio_yoy_pct_chg, ratio_x_chg_over_lag_y, pct_chg_dif, \
-    ratio_x_y_history_std, x_history_std, x_history_downside_std, \
-    ratio_x_y_history_downside_std, x_history_growth_avg, x_history_growth_std, \
+    ratio_x_y_history_std, ratio_x_y_history_downside_std, x_history_growth_avg, x_history_growth_std, \
     x_history_growth_downside_std
-from singleFactor.factors.check import check_factor
+from singleFactor.old import check
 
 dirtmp=r'e:\tmp'
 proj_bi = r'E:\test_yan\indicators\bivariate'
@@ -202,7 +199,7 @@ def check():
         for col in [c for c in df.columns if c!='trd_dt']:
             subdf=df[['trd_dt',col]]
             subdf.columns=['trd_dt','target']
-            check_factor(subdf,col)
+            check(subdf,col)
         print(fp)
 
 

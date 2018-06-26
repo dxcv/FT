@@ -4,9 +4,9 @@
 # Email:13163385579@163.com
 # TIME:2018-06-05  14:19
 # NAME:FT-con.py
-from data.dataApi import read_local_pkl, read_raw
+from data.dataApi import read_raw
 import pandas as pd
-from singleFactor.factors.check import _check
+from singleFactor.old import _check
 
 con=read_raw('equity_consensus_forecast')
 con=con[-int(con.shape[0]/100):]
