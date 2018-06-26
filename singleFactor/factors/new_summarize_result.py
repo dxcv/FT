@@ -61,10 +61,13 @@ def compare(fns,nlargest=None):
     factors=beta_des['Return Mean'].abs().sort_values(ascending=False).index
     if nlargest:
         factors=factors[:nlargest]
+        beta_des=beta_des.loc[factors]
+        g_des=g_des.loc[factors]
 
-    fig_layer=g[factors].cumsum().plot().get_figure()
-    fig_beta=b[factors].cumsum().plot().get_figure()
-    return g_des,beta_des,fig_layer,fig_beta
+    fig_layer=g[factors].cumsum().plot(figsize=(16,8)).get_figure()
+    fig_beta=b[factors].cumsum().plot(figsize=(16,8)).get_figure()
+    corr=b[factors].corr()
+    return g_des,beta_des,corr,fig_layer,fig_beta
 
     # if abs_fig:
     #     sign=np.where(g_des[critera]>0,1,-1)
@@ -86,10 +89,6 @@ def compare_by_category(category=None,nlargest=None):
         fns = [fn for fn in fns if fn.startswith(category)]
     return compare(fns,nlargest=nlargest)
 
-def summrize_sample():
-    beta_des,g_des,fig_cumprod,fig_cumsum=compare_by_category(nlargest=10)
-    fig_cumsum.show()
-    fig_cumprod.show()
 
 def compare_different_growth_function():
     fns=os.listdir(SINGLE_D_CHECK)
@@ -113,8 +112,7 @@ def compare_different_growth_function():
             indicator = fn.split('__')[1]
             if indicator==ind:
                 target.append(fn)
-        beta_des, g_des, fig_cumprod, fig_cumsum=compare(target)
-        fig_cumsum.savefig(os.path.join(SINGLE_D_SUMMARY,'growth',ind+'.png'))
+        g_des, beta_des, corr, fig_layer, fig_beta=compare(target)
         print(ind)
 
     #compare with different indicator
@@ -124,8 +122,7 @@ def compare_different_growth_function():
             func = fn.split("__")[0][2:]
             if func==f:
                 target.append(fn)
-        beta_des, g_des, fig_cumprod, fig_cumsum=compare(target)
-        fig_cumsum.savefig(os.path.join(SINGLE_D_SUMMARY,'growth',f+'.png'))
+        g_des, beta_des, corr, fig_layer, fig_beta=compare(target)
         print(f)
 
 def analyze_growth():
@@ -152,26 +149,45 @@ def analyze_growth():
 
     return df
 
-# df=analyze_growth()
 
-# _,_,_,fig_T=compare_by_category(category='T',nlargest=5)
-# _,_,_,fig_Q=compare_by_category(category='Q',nlargest=5)
-# _,_,_,fig_V=compare_by_category(category='V',nlargest=4)
+def color_negative_red(val):
+    color='red' if val<0 else 'black'
+    return 'color:%s'%color
 
-# beta_des,g_des,fig_cumprod,fig_cumsum=compare_by_category(nlargest=20)
+def highlight_max(data, color='yellow'):
+    '''
+    highlight the maximum in a Series or DataFrame
+    '''
+    attr = 'background-color: {}'.format(color)
+    if data.ndim == 1:  # Series from .apply(axis=0) or axis=1
+        is_max = data == data.max()
+        return [attr if v else '' for v in is_max]
+    else:  # from .apply(axis=None)
+        is_max = data == data.max().max()
+        return pd.DataFrame(np.where(is_max, attr, ''),
+                            index=data.index, columns=data.columns)
 
 
-# fig_T.show()
-# fig_Q.show()
-# fig_V.show() #
+def summrize_result(category):
+    directory=os.path.join(SINGLE_D_SUMMARY,category)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-# _,_,fig_T_sharpe,_=compare_by_category(category='T',nlargest=10,critera='sharpe')
-# _,_,fig_T_annual,_=compare_by_category(category='T',nlargest=10,critera='annual')
+    g_des,beta_des,corr,fig_layer,fig_beta=compare_by_category(category=category)
+    fig_layer.savefig(os.path.join(directory,'layer.png'))
+    fig_beta.savefig(os.path.join(directory,'beta.png'))
+    g_des.to_excel(os.path.join(directory,'g_des.xlsx'))
+    beta_des.to_excel(os.path.join(directory,'beta_des.xlsx'))
+    corr.to_excel(os.path.join(directory,'corr.xlsx'))
 
-# fig_T_sharpe.show()
-# fig_T_annual.show()
+    # corr.style.format('{:.4}').applymap(color_negative_red).\
+    #     to_excel(os.path.join(directory,'corr.xlsx'),engine='openpyxl')
 
 
-_,_,fig_layer,fig_beta=compare_by_category(nlargest=20)
-fig_layer.show()
-fig_beta.show()
+summrize_result('T')
+summrize_result('V')
+summrize_result('Q')
+summrize_result('G')
+
+
+

@@ -125,7 +125,7 @@ if __name__ == '__main__':
     get_mom_mc()
     get_mom_12mc6m()
     get_mom_1dc1m()
-    get_sucess()
+    # get_sucess()
     get_pm_1d()
 
 

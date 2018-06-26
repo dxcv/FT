@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-05-31  16:06
-# NAME:FT-Yan.py
+# NAME:FT-Yan_and_Chordia.py
 from functools import partial
 
 import multiprocessing

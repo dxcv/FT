@@ -372,26 +372,26 @@ def check_factor(df):
 
 
 def check_fn(fn):
-    print(fn)
-    path1=os.path.join(SINGLE_D_INDICATOR_FINANCIAL,fn)
-    path2=os.path.join(SINGLE_D_INDICATOR_TECHNICAL,fn)
-    if os.path.exists(path1):
-        path=path1
-    else:
-        path=path2
-    df=pd.read_pickle(path)
-    df=change_index(df)
-    check_factor(df)
-
-def task(fn):
     try:
-        check_fn(fn)
+        print(fn)
+        path1=os.path.join(SINGLE_D_INDICATOR_FINANCIAL,fn)
+        path2=os.path.join(SINGLE_D_INDICATOR_TECHNICAL,fn)
+        if os.path.exists(path1):
+            path=path1
+        else:
+            path=path2
+        df=pd.read_pickle(path)
+        df=change_index(df)
+        check_factor(df)
     except:
+        print('{}------> wrong'.format(fn))
         pass
 
 def check_financial_indicators():
     fns = os.listdir(SINGLE_D_INDICATOR_FINANCIAL)
     fns=[fn for fn in fns if fn.endswith('.pkl')]
+    checked=os.listdir(SINGLE_D_CHECK)
+    fns=[fn for fn in fns if fn[:-4] not in checked]
     # print(fns[fns.index('V__pe.pkl'):])
     pool=multiprocessing.Pool(6)
     pool.map(check_fn, fns)
@@ -404,6 +404,8 @@ def _check_technical_indicator(fn):
 def check_technical_indicators():
     fns = os.listdir(SINGLE_D_INDICATOR_TECHNICAL)
     fns = [fn for fn in fns if fn.endswith('.pkl')]
+    checked=os.listdir(SINGLE_D_CHECK)
+    fns=[fn for fn in fns if fn[:-4] not in checked]
 
     pool = multiprocessing.Pool(6)
     pool.map(_check_technical_indicator, fns)

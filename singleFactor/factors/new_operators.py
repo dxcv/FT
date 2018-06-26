@@ -5,6 +5,8 @@
 # TIME:2018-06-20  09:02
 # NAME:FT-new_operators.py
 import numpy as np
+import pandas as pd
+
 
 def x_ttm(s,q=4):
     return s.groupby('stkcd').rolling(q).mean()
@@ -179,5 +181,24 @@ def ratio_x_chg_over_lag_y(df, x,y,delete_negative_y=True):
     chg_x=x_chg(df[x],q=1)
     lag_y=df[y].groupby('stkcd').shift(1)
     return chg_x/lag_y
+
+def ratio_of_growth_rates(df,x,y,q=4):
+    '''
+    ratio of growth rate (d(x)/x)/(d(y)/y)
+
+    References:
+      Chordia, T., Goyal, A., and Saretto, A. (2017). p-Hacking: Evidence from Two Million Trading Strategies (Rochester, NY: Social Science Research Network).
+
+    '''
+    x_g=x_pct_chg(df[x],q=q)
+    y_g=x_pct_chg(df[y],q=q)
+    return x_g/y_g
+
+def three_ratio(df,x1,x2,y):
+    '''
+        (x1-x2)/y
+    ratios of three
+    '''
+    return (df[x1]-df[x2])/df[y]
 
 
