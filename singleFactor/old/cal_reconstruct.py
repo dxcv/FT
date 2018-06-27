@@ -174,18 +174,3 @@ get_roe_growth_rate()
 
 
 
-'''
-1. use ['stkcd','trd_dt'] as index or not？
-2. how to span,only ttm need to span the time series
-3. 
-
-#set limit based on the frequency   asfreq() resample?
-
-determine the frequency of trd_dt 
-
-D,Q,M,Y,W
-
-    计算指标的时候  comb.groupby('stkcd').resample('Q',on='report_period').asfreq()
-
-use index or not？ stkcd trd_dt   resample asfreq
-'''

@@ -3,10 +3,10 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-20  17:30
-# NAME:FT-get_indicators.py
+# NAME:FT-financial.py
 from functools import reduce
 
-from config import SINGLE_D_INDICATOR_FINANCIAL
+from config import SINGLE_D_INDICATOR
 from data.dataApi import get_dataspace
 import os
 import re
@@ -15,7 +15,9 @@ from singleFactor.operators import *
 
 
 def save_indicator(df,name):
-    df[['trd_dt',name]].to_pickle(os.path.join(SINGLE_D_INDICATOR_FINANCIAL, name + '.pkl'))
+    df=df.dropna(how='all')
+    df=df.reset_index().set_index(['stkcd','trd_dt'])
+    df[[name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
 
 def parse_vars(equation):
     '''
@@ -104,35 +106,49 @@ def parse_equation(equation):
     else:# for example, "tot_assets"
         return get_dataspace(equation)[equation]
 
-def cal_sheet_equation():
-    path=r'D:\app\python36\zht\internship\FT\singleFactor\factors\indicators.xlsx'
-    df=pd.read_excel(path,sheet_name='equation',index_col=0)
-    for _,s in df.iterrows():
-        name='__'.join([s['type'],s['name']])
-        eq_x=s['numerator']
-        eq_y=s['denominator']
-        func=s['function']
-        vars= parse_vars(eq_x) + parse_vars(eq_y)
+def parse_a_row(s):
+    name = '__'.join([s['type'], s['name']])
+    eq_x = s['numerator']
+    eq_y = s['denominator']
+    func = s['function']
+    if eq_y==1:
+        vars=parse_vars(eq_x)
         df=get_dataspace(vars)
         df['x']=parse_equation(eq_x)
-        df['y']=parse_equation(eq_y)
-        kwarg=parse_args(s['kwarg']) if isinstance(s['kwarg'],str) else None
+        kwarg = parse_args(s['kwarg']) if isinstance(s['kwarg'], str) else None
         if kwarg:
-            df[name]=eval(func)(df,'x','y',**kwarg)
+            df[name]=eval(func)(df['x'],**kwarg)
         else:
-            df[name]=eval(func)(df,'x','y')
-        save_indicator(df,name)
-        print(name)
+            df[name]=eval(func)(df['x'])
+    else:
+        vars = parse_vars(eq_x) + parse_vars(eq_y)
+        df = get_dataspace(vars)
+        df['x'] = parse_equation(eq_x)
+        df['y'] = parse_equation(eq_y)
+        kwarg = parse_args(s['kwarg']) if isinstance(s['kwarg'], str) else None
+        if kwarg:
+            df[name] = eval(func)(df, 'x', 'y', **kwarg)
+        else:
+            df[name] = eval(func)(df, 'x', 'y')
+
+    save_indicator(df, name)
+    print(name)
+
+def cal_sheet_equation():
+    path=r'D:\app\python36\zht\internship\FT\singleFactor\indicators.xlsx'
+    df=pd.read_excel(path,sheet_name='equation',index_col=0)
+    for _,s in df.iterrows():
+        parse_a_row(s)
 
 def cal_sheet_growth():
     func_id={'x_pct_chg':'pct',
              'x_history_compound_growth':'hcg',
              'x_history_std':'std'}
 
-    path = r'D:\app\python36\zht\internship\FT\singleFactor\factors\indicators.xlsx'
+    path = r'D:\app\python36\zht\internship\FT\singleFactor\indicators.xlsx'
     df = pd.read_excel(path, sheet_name='growth', index_col=0)
     indicators=df['indicator']
-    for _,s in df.dropna().iterrows():
+    for _,s in df[['function','kwarg']].dropna().iterrows():
         func=s['function']
         kwarg=parse_args(s['kwarg'])
         for indicator in indicators:
@@ -143,5 +159,5 @@ def cal_sheet_growth():
             print(func,indicator,kwarg['q'])
 
 if __name__ == '__main__':
-    cal_sheet_equation()
-#     cal_sheet_growth()
+    # cal_sheet_equation()
+    cal_sheet_growth()

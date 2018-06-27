@@ -8,7 +8,7 @@ import pandas as pd
 
 import os
 from config import D_DRV,D_FILESYNC_ADJ
-from data.dataApi import read_local, get_dataspace
+from data.dataApi import read_local, get_dataspace, read_from_sql
 import numpy as np
 
 
@@ -190,4 +190,35 @@ def get_monthly_indice_ir():
     monthly=monthly[['sz50','hs300','zz500','sz50_ret_m','hs300_ret_m','zz500_ret_m',
                      'sz50_ret_1m','hs300_ret_1m','zz500_ret_1m']]
     monthly.to_pickle(os.path.join(D_DRV,'indice_m.pkl'))
+
+
+def get_mould():
+    '''
+    get a mould for stkcd and trd_dt
+    Returns: DataFrame with index as ['stkcd','trd_dt']
+
+    '''
+    trd_dt=read_from_sql('AshareCalendar')
+    dates=pd.to_datetime(trd_dt['TRADE_DAYS'].unique())
+    dates=sorted(dates)
+
+    description=read_from_sql('AShareDescription')
+    info=description[['S_INFO_WINDCODE', 'S_INFO_LISTDATE']]
+    info.columns=['stkcd', 'listdate']
+    info=info[info['stkcd'].map(lambda x:x[0] in ['0','3','6'])]
+    info=info.dropna()#some stocks do not have a listdate since they haven't been listed yet.
+    info['listdate']=pd.to_datetime(info['listdate'])
+
+    df=pd.DataFrame(index=dates, columns=info['stkcd'].sort_values().values)
+    for _,s in info.iterrows():
+        d=s['listdate']
+        stkcd=s['stkcd']
+        df.at[d, stkcd]=True
+
+    df=df.ffill()
+    mould=df.stack().swaplevel().to_frame()
+    mould.columns=['listed']
+    mould.index.names=['stkcd','trd_dt']
+    mould.to_pickle(os.path.join(D_DRV,'mould.pkl'))
+
 

@@ -11,8 +11,8 @@ from math import floor, ceil, sqrt
 from data.dataApi import read_local
 import pandas as pd
 import os
-from config import SINGLE_D_INDICATOR_FINANCIAL, SINGLE_D_CHECK, DCC, \
-    FORWARD_TRADING_DAY, SINGLE_D_INDICATOR_TECHNICAL
+from config import SINGLE_D_INDICATOR, SINGLE_D_CHECK, DCC, \
+    FORWARD_TRADING_DAY
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -283,6 +283,17 @@ def plot_layer_analysis(g_ret, g_ret_des,cover_rate):
     return fig
 
 def get_result(df,ret_1m,fdmt,zz500_ret_1m):
+    '''
+    df: pd.DataFrame,with only one column,and the index is ['stkcd','trd_dt']
+    Args:
+        df:
+        ret_1m: stock return of the next month
+        fdmt:
+        zz500_ret_1m: zz500's return of the next month
+
+    Returns:
+
+    '''
     col=df.columns[0]
 
     # merge and filter sample
@@ -326,6 +337,7 @@ def get_cache():
     fdmt = read_local('equity_fundamental_info')[
         ['cap', 'type_st', 'wind_indcd', 'young_1year']]
 
+    #trick 调整ret_1m 和 zz500 的日期，是他们也变为month-end 而不是trading date，和函数get_result的日期一致
     ret_1m = read_local('trading_m')['ret_1m']
     ret_1m = ret_1m.reset_index().groupby('stkcd').resample(
         'M',on='trd_dt').last().dropna()[['ret_1m']]
@@ -375,53 +387,47 @@ def check_factor(df):
 def check_fn(fn):
     try:
         print(fn)
-        path1=os.path.join(SINGLE_D_INDICATOR_FINANCIAL,fn)
-        path2=os.path.join(SINGLE_D_INDICATOR_TECHNICAL,fn)
-        if os.path.exists(path1):
-            path=path1
-        else:
-            path=path2
+        path=os.path.join(SINGLE_D_INDICATOR,fn)
         df=pd.read_pickle(path)
-        df=change_index(df)
         check_factor(df)
     except:
         print('{}------> wrong'.format(fn))
         pass
 
-def check_financial_indicators():
-    fns = os.listdir(SINGLE_D_INDICATOR_FINANCIAL)
+def main():
+    fns=os.listdir(SINGLE_D_INDICATOR)
     fns=[fn for fn in fns if fn.endswith('.pkl')]
     checked=os.listdir(SINGLE_D_CHECK)
-    fns=[fn for fn in fns if fn[:-4] not in checked]
-    # print(fns[fns.index('V__pe.pkl'):])
-    pool=multiprocessing.Pool(6)
-    pool.map(check_fn, fns)
-
-def _check_technical_indicator(fn):
-    print(fn)
-    df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR_TECHNICAL,fn))
-    check_factor(df)
-
-def check_technical_indicators():
-    fns = os.listdir(SINGLE_D_INDICATOR_TECHNICAL)
-    fns = [fn for fn in fns if fn.endswith('.pkl')]
-    checked=os.listdir(SINGLE_D_CHECK)
-    fns=[fn for fn in fns if fn[:-4] not in checked]
+    fns = [fn for fn in fns if fn[:-4] not in checked]
 
     pool = multiprocessing.Pool(4)
-    pool.map(_check_technical_indicator, fns)
+    pool.map(check_fn, fns)
 
 def debug():
-    fn=r'G_hcg_12__net_cash_flows_oper_act'
-    check_fn(fn)
+    fn='Q__cashRateOfSales.pkl'
+    path = os.path.join(SINGLE_D_INDICATOR, fn)
+    df = pd.read_pickle(path)
+    check_factor(df)
+
+DEBUG=False
+
+if __name__ == '__main__':
+    if DEBUG:
+        debug()
+    else:
+        main()
+
+
+
 
 
 # debug()
 
 #review: how to adjust negative factors? take mom for exmaple
-if __name__ == '__main__':
-    check_technical_indicators()
-    check_financial_indicators()
+# if __name__ == '__main__':
+    # check_technical_indicators()
+    # check_financial_indicators()
+    # check_consensus_indicators()
 
 
 

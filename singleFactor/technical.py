@@ -3,8 +3,8 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-24  22:16
-# NAME:FT-mom.py
-from config import SINGLE_D_INDICATOR_TECHNICAL
+# NAME:FT-technical.py
+from config import SINGLE_D_INDICATOR
 import os
 import pandas as pd
 
@@ -14,7 +14,7 @@ from data.dataApi import read_local
 def _save(df,name):
     new_name='T__'+name
     df.columns=[new_name]
-    df.to_pickle(os.path.join(SINGLE_D_INDICATOR_TECHNICAL,new_name+'.pkl'))
+    df.to_pickle(os.path.join(SINGLE_D_INDICATOR,new_name+'.pkl'))
 
 #=================================momentum=====================================
 def _cal_mom(x,window):
@@ -121,6 +121,7 @@ def get_pm_1d():
     trading_d=read_local('equity_selected_trading_data')
     trading_d[name]=trading_d['adjclose'].groupby('stkcd').pct_change()
     _save(trading_d[[name]],name)
+
 
 if __name__ == '__main__':
     get_moms()

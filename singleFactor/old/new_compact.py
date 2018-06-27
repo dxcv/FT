@@ -68,7 +68,7 @@ artRate = s_fa_arturn 应收账款周转率
 
 methods:
     1. ratio(df,col1,col2)
-    2. x_ttm
+    2. apply_ttm
     3. x_history_downside_std(s)
 
 

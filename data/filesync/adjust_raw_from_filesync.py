@@ -209,7 +209,7 @@ def calculate_q_sheet():
         indicators=[c for c in x.columns if c not in cols]
         if x.shape[0]==4:
             x[indicators]=x[indicators].apply(lambda s:s-s.shift(1).fillna(0))
-            #TODO: wrong ,有缺失数据的时候会出错
+            #wrong:有缺失数据的时候会出错
             return x
 
         #TODO: float type rather than str

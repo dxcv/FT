@@ -9,7 +9,7 @@ import os
 
 from config import SINGLE_D_INDICATOR_FINANCIAL
 from data.dataApi import get_dataspace
-from singleFactor.operators import ratio, x_history_std, x_ttm, \
+from singleFactor.operators import ratio, x_history_std, apply_ttm, \
     x_history_downside_std
 
 
@@ -331,7 +331,7 @@ def get_roa():
     col1='net_profit_incl_min_int_inc'
     col2='tot_assets'
     df=get_dataspace([col1,col2])
-    df[name]=x_ttm(df[col1])/df[col2]
+    df[name]= apply_ttm(df[col1]) / df[col2]
     save_indicator(df,name)
 
 def get_roe_ebit():

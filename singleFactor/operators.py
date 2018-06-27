@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 
-def x_ttm(s,q=4):
+def apply_ttm(s, q=4):
     return s.groupby('stkcd').rolling(q).mean()
 
 def x_chg(s,q=1):
@@ -102,7 +102,7 @@ def x_history_growth_downside_std(s,q=12,delete_negative=True):
     return x_history_downside_std(x_pct_chg(s,q=1),q=q)
 
 #----------------with two indicators-------------------------------------------
-def ratio(df, x, y, delete_negative_y=True, smooth=False, handle_inf=True):
+def ratio(df, x, y,ttm_x=False,delete_negative_y=True, smooth=False, handle_inf=True):
     '''
         x/y
     Args:
@@ -114,13 +114,18 @@ def ratio(df, x, y, delete_negative_y=True, smooth=False, handle_inf=True):
     Returns:
 
     '''
+    if ttm_x:
+        df[x]=apply_ttm(df[x])
+
     if delete_negative_y:
         df[y]=df[y].where(df[y]>0,np.nan)
+
     if smooth:
         y_smooth=df[y].groupby('stkcd').apply(lambda s:(s+s.shift(1))/2)
         ratio=df[x]/y_smooth
     else:
         ratio=df[x]/df[y]
+
     if handle_inf:
         ratio=ratio.where((-np.inf<ratio)&(ratio<np.inf),np.nan)#TODO: 注意 除法 容易出现inf 和 -inf
     return ratio
@@ -138,7 +143,7 @@ def ratio_chg(df, x, y, q=4, delete_negative_y=True):
     '''
     return x_chg(ratio(df, x, y, delete_negative_y), q=q)
 
-def ratio_pct_chg(df, x, y, q=4, delete_negative_y=True):
+def ratio_pct_chg(df, x, y, q=4,delete_negative_y=True):
     '''
         d(x/y)/(x/y)
     '''

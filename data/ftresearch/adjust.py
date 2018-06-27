@@ -83,8 +83,6 @@ def adjust_three_sheets():
         df=df.drop(['stkcd','create_time','update_time'],axis=1)
         df.to_pickle(os.path.join(D_FT_ADJ, tbname + '.pkl'))
 
-adjust_three_sheets()
-
 def adjust_equity_cash_dividend():
     tbname='equity_cash_dividend'
     df=read_cache(tbname)
@@ -134,6 +132,10 @@ def adjust_equity_selected_indice_ir():
     df['zz500_ret_d']=df['zz500'].pct_change()
     df=df.set_index('trd_dt')
     df.to_pickle(os.path.join(D_FT_ADJ,tbname+'.pkl'))
+
+def adjust_consensus_forecast():
+    pass
+
 
 # adjust_equity_selected_indice_ir()
 
