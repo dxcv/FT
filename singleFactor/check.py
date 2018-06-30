@@ -402,12 +402,12 @@ def main():
     pool.map(check_fn, fns)
 
 def debug():
-    fn='G__eps.pkl'
+    fn='T__vol_ret_std_12M.pkl'
     path = os.path.join(SINGLE_D_INDICATOR, fn)
     df = pd.read_pickle(path)
     check_factor(df)
 
-DEBUG=False
+DEBUG=True
 
 if __name__ == '__main__':
     if DEBUG:

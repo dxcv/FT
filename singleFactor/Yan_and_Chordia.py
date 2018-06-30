@@ -216,14 +216,18 @@ def check_indicators():
     pool=multiprocessing.Pool(4)
     pool.map(_check_a_indicator,fns)
 
-def debug():
+def debug_get_indicators():
+    arg_list=get_arg_list()
+    cal_indicator(arg_list[0])
+
+def debug_check():
     fn=r'1-x_chg-acting_trading_sec.pkl'
     df=pd.read_pickle(os.path.join(dir_indicators,fn))
     check_factor(df,rootdir=dir_check)
 
 
-if __name__ == '__main__':
-    get_indicators()
+# if __name__ == '__main__':
+#     get_indicators()
 
 
 

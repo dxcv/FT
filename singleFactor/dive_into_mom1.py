@@ -99,28 +99,47 @@ data=data.groupby('month_end').filter(lambda x:x.shape[0]>300)
 data['sqrt_cap']=np.sqrt(data['cap'])
 data['wind_2'] = data['wind_indcd'].apply(str).str.slice(0, 6)
 
-def reg(data):
+def reg(data,cap_weight=True):
     industry = list(np.sort(data['wind_2'].unique()))[1:]
     data = data.join(pd.get_dummies(data['wind_2'], drop_first=True))
     a=data[['T__mom_1M', 'T__mom_12M', 'G_pct_4__tot_oper_rev','V__bp', 'Q__roe', 'sqrt_cap']+industry].values
     A = np.hstack([a, np.ones([len(a), 1])])
-    y = data.loc[:, 'ret_1m']
-    beta = np.linalg.lstsq(A, y, rcond=None)[0][0]
+    y=data[['ret_1m']].values
+
+    if cap_weight:
+        W=np.sqrt(np.diag(data['cap'].values))
+        AW=np.dot(W,A)
+        yW=np.dot(W,y)
+        beta=np.linalg.lstsq(AW,yW)[0][0][0]
+    else:
+        beta = np.linalg.lstsq(A, y, rcond=None)[0][0][0]
     return beta
 
-betas=data.groupby('month_end').apply(reg)
-
+betas=data.groupby('month_end').apply(reg,False)
+betas_weighted=data.groupby('month_end').apply(reg,True)
 
 import matplotlib.pyplot as plt
 fig = plt.figure(figsize=(16, 8))
 ax1 = plt.subplot(211)
 ax1.bar(betas.index, betas.values, width=20, color='b')
 ax1.set_ylabel('return bar')
-ax1.set_title('factor return')
+ax1.set_title('equal weighted')
 
 ax4 = ax1.twinx()
 ax4.plot(betas.index, betas.cumsum(), 'r-')
 ax4.set_ylabel('cumsum', color='r')
 [tl.set_color('r') for tl in ax4.get_yticklabels()]
 
+ax2 = plt.subplot(212)
+ax2.bar(betas_weighted.index, betas_weighted.values, width=20, color='b')
+ax2.set_ylabel('return bar')
+ax2.set_title('cap weighted')
+
+ax3 = ax2.twinx()
+ax3.plot(betas_weighted.index, betas_weighted.cumsum(), 'r-')
+ax3.set_ylabel('cumsum', color='r')
+[tl.set_color('r') for tl in ax3.get_yticklabels()]
+
 fig.savefig(r'e:\a\fig.png')
+
+

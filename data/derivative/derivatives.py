@@ -223,7 +223,7 @@ def get_mould_index():
         df.at[d, stkcd]=True
 
     df=df.ffill()
-    mould=df.stack().swaplevel().to_frame()
+    mould=df.stack().swaplevel().to_frame().sort_index()
     mould.columns=['listed']
     mould.index.names=['stkcd','trd_dt']
     with open(os.path.join(D_DRV,'mould_index.pkl'),'wb') as f:
