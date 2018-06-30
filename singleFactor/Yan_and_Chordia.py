@@ -4,18 +4,17 @@
 # Email:13163385579@163.com
 # TIME:2018-05-31  16:06
 # NAME:FT-Yan_and_Chordia.py
-
+import multiprocessing
 import os
-import pandas as pd
-from singleFactor.old.base_function import x_pct_chg, ratio_x_y, \
-    ratio_yoy_chg, ratio_yoy_pct_chg, ratio_x_chg_over_lag_y, pct_chg_dif, \
-    ratio_x_y_history_std, ratio_x_y_history_downside_std, x_history_growth_avg, x_history_growth_std, \
-    x_history_growth_downside_std
-from singleFactor.old import check
+from functools import partial
 
-dirtmp=r'e:\tmp'
-proj_bi = r'E:\test_yan\indicators\bivariate'
-proj_sg = r'e:\test_yan\indicators\single'
+import pandas as pd
+from singleFactor.check import check_factor
+from singleFactor.operators import *
+
+dir_tmp= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\tmp'
+dir_indicators= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\indicators'
+dir_check=r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\check'
 
 base_variables1=['tot_assets', # total assets
                 'tot_cur_assets',# total current assets
@@ -64,9 +63,9 @@ def get_financial_sheets():
     # cf.to_pickle(os.path.join(r'E:\tmp','cf.pkl'))
     # inc.to_pickle(os.path.join(r'E:\tmp','inc.pkl'))
 
-    bs=pd.read_pickle(os.path.join(dirtmp,'bs.pkl'))
-    cf=pd.read_pickle(os.path.join(dirtmp,'cf.pkl'))
-    inc=pd.read_pickle(os.path.join(dirtmp,'inc.pkl'))
+    bs=pd.read_pickle(os.path.join(dir_tmp, 'bs.pkl'))
+    cf=pd.read_pickle(os.path.join(dir_tmp, 'cf.pkl'))
+    inc=pd.read_pickle(os.path.join(dir_tmp, 'inc.pkl'))
 
     return bs,cf,inc
 
@@ -114,116 +113,91 @@ def combine_financial_sheet():
     for col in cols_to_delete:
         del data[col]
 
-    data.to_pickle(os.path.join(dirtmp,'data.pkl'))
+    data.to_pickle(os.path.join(dir_tmp, 'data.pkl'))
+
+def generator_with_single_variable(func,s):
+    return eval(func)(s)
+
+def generator_with_two_variable(func,df,x,y):
+    name='2-{}-{}-{}'.format(func,x,y)
+    return eval(func)(df,x,y),name
+
+funcs1=['x_chg',
+       'x_pct_chg',
+       'x_history_growth_avg',
+       'x_square',
+       'x_history_compound_growth',
+       'x_history_downside_std',
+       'x_history_growth_std',
+       'x_history_growth_downside_std',
+       ]
+
+funcs2=[
+    'ratio',
+    'ratio_chg',
+    'ratio_pct_chg',
+    'ratio_history_std',
+    'ratio_history_compound_growth',
+    'ratio_history_downside_std',
+    'pct_chg_dif',
+    'ratio_x_chg_over_lag_y',
+    'ratio_of_growth_rates',
+]
 
 
-def gen_with_x_y(df, var, base_var):
-    # TODO: do not use ttm with q data,how about using ttm method and use accumulative data?
-    # x,y
-    ind1=ratio_x_y(df, var, base_var, ttm=False, delete_negative_y=True)['target']
-    ind1.name='ratio_x_y___{}_{}'.format(var,base_var)
 
-    ind2=ratio_yoy_chg(df, var, base_var, ttm=False, delete_negative_y=True)['target']
-    ind2.name='ratio_yoy_chg___{}_{}'.format(var,base_var)
-
-    ind3=ratio_yoy_pct_chg(df, var, base_var, ttm=False, delete_negative_y=True)['target']
-    ind3.name='ratio_yoy_pct_chg___{}_{}'.format(var,base_var)
-
-    ind4=ratio_x_chg_over_lag_y(df, var, base_var, ttm=False, delete_negative_y=True)['target']
-    ind4.name='ratio_x_chg_over_lag_y___{}_{}'.format(var,base_var)
-
-    ind5=pct_chg_dif(df, var, base_var, ttm=False, delete_negative=True)['target']
-    ind5.name='pct_chg_dif___{}_{}'.format(var,base_var)
-
-    #devariate
-    ind6=ratio_x_y_history_std(df, var, base_var, q=8, delete_negative_y=True)['target']
-    ind6.name='ratio_x_y_history_std___{}_{}'.format(var,base_var)
-
-    ind7=ratio_x_y_history_downside_std(df, var, base_var, q=12, delete_negative_y=True)['target']
-    ind7.name='ratio_x_y_history_downside_std___{}_{}'.format(var,base_var)
-
-    return pd.concat([ind1,ind2,ind3,ind4,ind5,ind6,ind7],axis=1)
+data = pd.read_pickle(os.path.join(dir_tmp, 'data.pkl'))
+data = data.set_index(['stkcd', 'report_period'])
+def _save(df,name):
+    df=df.reset_index().set_index(['stkcd','trd_dt'])
+    df.to_pickle(os.path.join(dir_indicators, name + '.pkl'))
 
 
-
-def gen_with_x(df,var):
-    # TODO:base bariable
-    # single var :   base_variables + variables
-    ind8 = x_pct_chg(df, var, q=1, ttm=False, delete_negative=True)['target']
-    ind8.name = 'x_pct_chg___{}'.format(var)
-
-    ind9=x_history_growth_avg(df,var,q=12,ttm=False,delete_negative=True)['target']
-    ind9.name='x_history_growth___{}'.format(var)
-
-    ind10=x_history_growth_std(df,var,q=12,delete_negative=True)['target']
-    ind10.name='x_history_growth___{}'.format(var)
-
-    ind11=x_history_growth_downside_std(df,var,q=12,delete_negative=True)['target']
-    ind11.name='x_history_growth_downside_std___{}'.format(var)
-
-    return pd.concat([ind8,ind9,ind10,ind11],axis=1)
-
-#TODO: add other operator
-#TODO: delete indicators with too small sample
-
-#TODO: add ttm at this place
-
-def gen_indicators2(data,base_variables,var):
-    directory=os.path.join(proj_bi,var)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    for base_var in base_variables:
-        bi_ind=gen_with_x_y(data, var, base_var)
-        bi_ind.to_csv(os.path.join(directory,base_var+'.csv'))
-        print(var,base_var)
-
-def gen_indicators1(data, var):
-    sg_ind=gen_with_x(data,var)
-    sg_ind.to_csv(os.path.join(proj_sg,var+'.csv'))
-    print(var)
-
-def check():
-    data = pd.read_pickle(os.path.join(dirtmp, 'data.pkl'))
-    data = data.set_index(['stkcd', 'report_period'])
-    vars=os.listdir(proj_bi)
-    fps=[]
-    for var in vars:
-        fns=os.listdir(os.path.join(proj_bi,var))
-        fps+=[os.path.join(proj_bi,var,fn) for fn in fns]
-
-    fps+=[os.path.join(proj_sg,fn) for fn in os.listdir(proj_sg)]
-
-    for fp in fps:
-        df=pd.read_csv(fp,index_col=[0,1],parse_dates=True)
-        df['trd_dt']=data['trd_dt']
-        for col in [c for c in df.columns if c!='trd_dt']:
-            subdf=df[['trd_dt',col]]
-            subdf.columns=['trd_dt','target']
-            check(subdf,col)
-        print(fp)
+unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
+variables = [col for col in data.columns if
+             col not in unuseful_cols + base_variables]
 
 
-check()
+arg_list=[]
 
+
+for func in funcs1:
+    for var in variables+base_variables:
+        arg_list.append((func,var))
+
+for func in funcs2:
+    for y in base_variables:
+        for x in variables:
+            arg_list.append((func,x,y))
+
+def task(args):
+    if len(args)==2:
+        func=args[0]
+        x=args[1]
+        name='1-{}-{}'.format(func,x)
+        data[name]=eval(func)(data[x])
+
+    else:
+        func=args[0]
+        x=args[1]
+        y=args[2]
+        name='1-{}-{}-{}'.format(func,x,y)
+        data[name]=eval(func)(data,x,y)
+    _save(data[['trd_dt',name]].copy(),name)
+
+for args in arg_list[:5]:
+    task(args)
 
 
 #TODO: 要每期筛选
 
 
-# if __name__ == '__main__':
-#     data = pd.read_pickle(os.path.join(dirtmp, 'data.pkl'))
-#     data = data.set_index(['stkcd', 'report_period'])
-#
-#     unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
-#     variables = [col for col in data.columns if
-#                  col not in unuseful_cols + base_variables]
-#
-#
-#     pool=multiprocessing.Pool(4)
-#     pool.map(partial(gen_indicators2,data,base_variables),variables)
+fns=os.listdir(dir_indicators)
+fn=fns[0]
+df=pd.read_pickle(os.path.join(dir_indicators,fn))
 
-    # pool=multiprocessing.Pool(4)
-    # pool.map(partial(gen_indicators1,data),variables+base_variables)
+check_factor(df)
+
 
 
 

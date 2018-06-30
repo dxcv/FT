@@ -6,18 +6,34 @@
 # NAME:FT-financial.py
 from functools import reduce
 
-from config import SINGLE_D_INDICATOR
-from data.dataApi import get_dataspace
+from config import SINGLE_D_INDICATOR, FORWARD_LIMIT_Q
+from data.dataApi import get_dataspace, read_local
 import os
 import re
 
 from singleFactor.operators import *
+from tools import daily2monthly
 
+MOULD_INDEX=read_local("mould_index")
 
 def save_indicator(df,name):
-    df=df.dropna(how='all')
-    df=df.reset_index().set_index(['stkcd','trd_dt'])
     df[[name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
+
+def convert_to_monthly(df):
+    df = df.reset_index()
+    if 'report_period' in df.columns:
+        df = df.sort_values(['stkcd', 'trd_dt', 'report_period'])
+        df = df[~df.duplicated(subset=['stkcd', 'trd_dt'], keep='last')]
+    else:
+        df=df.dropna(subset=['trd_dt']) # V__capSquare
+    df = df.set_index(['stkcd', 'trd_dt'])
+    df = df.reindex(MOULD_INDEX).reset_index()
+    df=df.groupby('stkcd').ffill(limit=FORWARD_LIMIT_Q)#trick: ffill,yearly or quarterly?
+    df=daily2monthly(df)
+
+    df=df.set_index(['stkcd','month_end'])
+    return df
+
 
 def parse_vars(equation):
     '''
@@ -108,6 +124,7 @@ def parse_equation(equation):
 
 def parse_a_row(s):
     name = '__'.join([s['type'], s['name']])
+    print(name)
     eq_x = s['numerator']
     eq_y = s['denominator']
     func = s['function']
@@ -131,8 +148,8 @@ def parse_a_row(s):
         else:
             df[name] = eval(func)(df, 'x', 'y')
 
+    df=convert_to_monthly(df)
     save_indicator(df, name)
-    print(name)
 
 def cal_sheet_equation():
     path=r'D:\app\python36\zht\internship\FT\singleFactor\indicators.xlsx'
@@ -155,9 +172,10 @@ def cal_sheet_growth():
             name='G_{}_{}__{}'.format(func_id[func],kwarg['q'],indicator)
             df=get_dataspace(indicator)
             df[name]=eval(func)(df[indicator],**kwarg)
+            df = convert_to_monthly(df)
             save_indicator(df,name)
             print(func,indicator,kwarg['q'])
 
 if __name__ == '__main__':
-    # cal_sheet_equation()
+    cal_sheet_equation()
     cal_sheet_growth()

@@ -7,6 +7,8 @@
 
 import time
 import pandas as pd
+from pandas.tseries.offsets import MonthEnd
+
 
 def monitor(func):
     def wrapper(*args,**kwargs):
@@ -44,3 +46,19 @@ def number2dateStr(x):
         if '.' in x:
             x=x.split('.')[0]
         return x
+
+def daily2monthly(df):
+    '''
+
+    Args:
+        df:DataFrame,contains column ['stkcd','trd_dt']
+
+    Returns:
+
+    '''
+    df=df.sort_values(['stkcd','trd_dt'])
+    monthly=df[(df['stkcd']==df['stkcd'].shift(-1)) &
+                     (df['trd_dt'].dt.month!=df['trd_dt'].shift(-1).dt.month)]
+    monthly=monthly.dropna(how='all')
+    monthly['month_end']=monthly['trd_dt']+MonthEnd(0)
+    return monthly

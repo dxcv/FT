@@ -187,11 +187,12 @@ def summarize_result(category=None):
     #     to_excel(os.path.join(directory,'corr.xlsx'),engine='openpyxl')
 
 
-summarize_result('T')
-summarize_result('V')
-summarize_result('Q')
-summarize_result('G')
-summarize_result()
+# summarize_result('T')
+# summarize_result('V')
+# summarize_result('Q')
+# summarize_result('G')
+summarize_result('C')
+
 
 
 

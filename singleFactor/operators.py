@@ -9,7 +9,7 @@ import pandas as pd
 
 
 def apply_ttm(s, q=4):
-    return s.groupby('stkcd').rolling(q).mean()
+    return s.groupby('stkcd',group_keys=False).rolling(q).mean()
 
 def x_chg(s,q=1):
     '''

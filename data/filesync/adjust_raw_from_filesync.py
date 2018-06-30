@@ -219,7 +219,6 @@ def calculate_q_sheet():
 # calculate_q_sheet()
 
 
-
 #TODO: compare my data with ftresearch
 #TODO:compare ftresearch with filesync to see which one it has choosen
 #TODO: calculate q sheets
@@ -230,5 +229,4 @@ def calculate_q_sheet():
 '''
 ftresearch 的单位进行了调整，比如tot_cur_liab的单位调整为了万元，四舍五入。
 '''
-
 

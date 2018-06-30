@@ -13,6 +13,8 @@ DCSV=r'D:\zht\database\quantDb\internship\FT\database\csv'
 DPKL=r'D:\zht\database\quantDb\internship\FT\database\pkl'
 DCC=r'D:\zht\database\quantDb\internship\FT\TMP'
 
+D_DATABASE=r'D:\zht\database\quantDb\internship\FT\database1'
+
 D_FT_RAW=r'D:\zht\database\quantDb\internship\FT\database\ftresearch_based\raw\pkl'
 D_FT_ADJ= r'D:\zht\database\quantDb\internship\FT\database\ftresearch_based\adjusted\pkl'
 
@@ -29,6 +31,10 @@ END= '2018-01-31'
 #single factor
 SINGLE_D_RESULT = r'D:\zht\database\quantDb\internship\FT\singleFactor\result'
 SINGLE_D_INDICATOR=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators'
+'''
+all the data saved in SINGLE_D_INDICATOR should be a dataframe with 
+'''
+
 # SINGLE_D_INDICATOR_FINANCIAL= r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators\financial'
 # SINGLE_D_INDICATOR_TECHNICAL=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators\technical'
 # SINGLE_D_INDICATOR_CONSENSUS=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators\consensus'
@@ -36,4 +42,13 @@ SINGLE_D_CHECK=r'D:\zht\database\quantDb\internship\FT\singleFactor\check'
 SINGLE_D_SUMMARY=r'D:\zht\database\quantDb\internship\FT\singleFactor\summary'
 
 FORWARD_TRADING_DAY=400
+
+
+FORWARD_LIMIT_Q=400 #400 (trading) days
+FORWARD_LIMIT_M=25 #25 (trading) days
+
+
+
+
+
 

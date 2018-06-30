@@ -63,10 +63,7 @@ def get_cover_rate_old(fn,df,fdmt):
     cover_rate = covered / total
     return cover_rate
 
-def get_cover_rate(data,col):
-    df = data[['stkcd', 'trd_dt', 'cap', col]]
-    monthly = df.groupby('stkcd').resample('M', on='trd_dt').last()
-    monthly.index.names = ['stkcd', 'month_end']
+def get_cover_rate(monthly, col):
     monthly['g'] = monthly.groupby('month_end', group_keys=False).apply(
         lambda x: pd.qcut(x['cap'], G,
                           labels=['g{}'.format(i) for i in range(1, G + 1)]))
@@ -282,6 +279,23 @@ def plot_layer_analysis(g_ret, g_ret_des,cover_rate):
 
     return fig
 
+def filter_st_and_young_old(df, fdmt):
+    data=pd.merge(fdmt.reset_index(),df.reset_index(),on=['stkcd','trd_dt'],how='left')
+    data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
+    data = data.groupby('stkcd').ffill(limit=FORWARD_TRADING_DAY) # debug: 向前填充最最多400个交易日,年度频率的数据，400 问题不大，但是对于月频的数据，最多向前填充400个交易日肯定是有问题的
+    return data
+
+def filter_st_and_young(df,fdmt_m):
+    data=pd.concat([fdmt_m,df],axis=1).reindex(fdmt_m.index)
+    data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
+    return data
+
+def daily2monthly(daily):
+    monthly=daily.groupby('stkcd').resample('M',on='trd_dt').last().dropna()
+    del monthly['trd_dt']
+    monthly.index.names=['stkcd','month_end']
+    return monthly
+
 def get_result(df,ret_1m,fdmt,zz500_ret_1m):
     '''
     df: pd.DataFrame,with only one column,and the index is ['stkcd','trd_dt']
@@ -294,65 +308,49 @@ def get_result(df,ret_1m,fdmt,zz500_ret_1m):
     Returns:
 
     '''
+    #review: 最后测试使用的月频数据，我们可以把计算的因子全部统一到月频上来，并且计算因子时候就ffill.用resample，所以把
+    #review: date 全部变为 month_end. 包括trading_m等，只要是月频的全部变为month_end,Q全部变为quarter_end
+    #review：这种情况下ffill也好控制，
+
     col=df.columns[0]
-
-    # merge and filter sample
-    data=pd.merge(fdmt.reset_index(),df.reset_index(),on=['stkcd','trd_dt'],how='left')
-    data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
-    data = data.groupby('stkcd').ffill(limit=FORWARD_TRADING_DAY) # review: 向前填充最最多400个交易日
-
-    cover_rate=get_cover_rate(data,col)
+    monthly=filter_st_and_young(df, fdmt)
+    cover_rate=get_cover_rate(monthly,col)
 
     #resample monthly to ease the calculation,but remember that resample will convert the trading date to calendar date(month end).
-    monthly=data.groupby('stkcd').resample('M',on='trd_dt').last().dropna()
-    del monthly['trd_dt']
-    monthly.index.names=['stkcd','month_end']
-
-    # data.to_pickle(r'e:\a\data.pkl')
-    # monthly.to_pickle(r'e:\a\monthly.pkl')
-
+    monthly=monthly.dropna()
     monthly=monthly.groupby('month_end').filter(lambda x:x.shape[0]>300) #trick: filter,因为后边要进行行业中性化，太少的样本会出问题
-    if monthly.shape[0]>0:#review
-        monthly=clean(monthly, col) # outlier,z_score,nutrualize
+    if monthly.shape[0]==0:
+        print('The sample is too small!')
+        return
 
-        #cross sectional analyse and layers test
-        comb=pd.concat([ret_1m,monthly[col]],axis=1,join='inner').dropna()
-        comb=comb.groupby('month_end').filter(lambda x:x.shape[0]>=50)#Trick:后边要进行分组分析，数据样本太少的话没法做
-        if comb.shape[0]>0:
-            # cross section    beta tvalue ic
-            beta_t_ic=comb.groupby('month_end').apply(get_beta_t_ic,col,'ret_1m')
+    monthly=clean(monthly, col) # outlier,z_score,nutrualize
 
-            #layer test
-            comb['g']=comb.groupby('month_end',group_keys=False).apply(
-                lambda x:pd.qcut(x[col],G,labels=['g{}'.format(i) for i in range(1,G+1)]))
-            g_ret=comb.groupby(['month_end','g'])['ret_1m'].mean().unstack('g')
-            g_ret.columns=g_ret.columns.tolist()
-            g_ret['g{}_g1'.format(G)]=g_ret['g{}'.format(G)]-g_ret['g1']#top minus bottom
-            g_ret['zz500']=zz500_ret_1m
-            g_ret=g_ret.dropna()
-            return beta_t_ic,g_ret,cover_rate
+    #cross sectional analyse and layers test
+    comb=pd.concat([ret_1m,monthly[col]],axis=1,join='inner').dropna()
+    comb=comb.groupby('month_end').filter(lambda x:x.shape[0]>=50)#Trick:后边要进行分组分析，数据样本太少的话没法做
 
-def get_cache():
-    #load relevant DataFrame
-    fdmt = read_local('equity_fundamental_info')[
-        ['cap', 'type_st', 'wind_indcd', 'young_1year']]
+    if comb.shape[0]==0:
+        print('The sample is too small!')
+        return
 
-    #trick 调整ret_1m 和 zz500 的日期，是他们也变为month-end 而不是trading date，和函数get_result的日期一致
-    ret_1m = read_local('trading_m')['ret_1m']
-    ret_1m = ret_1m.reset_index().groupby('stkcd').resample(
-        'M',on='trd_dt').last().dropna()[['ret_1m']]
-    ret_1m.index.names = ['stkcd', 'month_end']
+    # cross section    beta tvalue ic
+    beta_t_ic=comb.groupby('month_end').apply(get_beta_t_ic,col,'ret_1m')
 
-    zz500_ret_1m=read_local('indice_m')['zz500_ret_1m']
-    zz500_ret_1m=zz500_ret_1m.resample('M').last()
-    zz500_ret_1m.index.name='month_end'
-    with open(os.path.join(DCC,'frz.pkl'),'wb') as f:
-        pickle.dump((fdmt,ret_1m,zz500_ret_1m),f)
+    #layer test
+    comb['g']=comb.groupby('month_end',group_keys=False).apply(
+        lambda x:pd.qcut(x[col],G,labels=['g{}'.format(i) for i in range(1,G+1)]))
+    g_ret=comb.groupby(['month_end','g'])['ret_1m'].mean().unstack('g')
+    g_ret.columns=g_ret.columns.tolist()
+    g_ret['g{}_g1'.format(G)]=g_ret['g{}'.format(G)]-g_ret['g1']#top minus bottom
+    g_ret['zz500']=zz500_ret_1m
+    g_ret=g_ret.dropna()
+    return beta_t_ic,g_ret,cover_rate
 
+fdmt_m = read_local('fdmt_m')[
+    ['cap', 'type_st', 'wind_indcd', 'young_1year']]
+ret_1m = read_local('trading_m')['ret_1m']
+zz500_ret_1m=read_local('indice_m')['zz500_ret_1m']
 
-# get_cache()
-with open(os.path.join(DCC,'frz.pkl'),'rb') as f:
-    fdmt, ret_1m, zz500_ret_1m=pickle.load(f)
 
 def check_factor(df):
     '''
@@ -362,7 +360,7 @@ def check_factor(df):
     Returns:
 
     '''
-    beta_t_ic,g_ret,cover_rate=get_result(df,ret_1m,fdmt,zz500_ret_1m)
+    beta_t_ic,g_ret,cover_rate=get_result(df, ret_1m, fdmt_m, zz500_ret_1m)
 
     beta_t_ic_des=beta_t_ic_describe(beta_t_ic)
     fig_beta_t_ic=plot_beta_t_ic(beta_t_ic)
@@ -404,7 +402,7 @@ def main():
     pool.map(check_fn, fns)
 
 def debug():
-    fn='Q__cashRateOfSales.pkl'
+    fn='G__eps.pkl'
     path = os.path.join(SINGLE_D_INDICATOR, fn)
     df = pd.read_pickle(path)
     check_factor(df)
@@ -416,18 +414,6 @@ if __name__ == '__main__':
         debug()
     else:
         main()
-
-
-
-
-
-# debug()
-
-#review: how to adjust negative factors? take mom for exmaple
-# if __name__ == '__main__':
-    # check_technical_indicators()
-    # check_financial_indicators()
-    # check_consensus_indicators()
 
 
 

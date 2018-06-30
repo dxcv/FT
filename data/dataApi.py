@@ -18,6 +18,8 @@ def read_raw(tbname):
     return pd.read_csv(os.path.join(DRAW, tbname + '.csv'),index_col=0)
 
 def read_local(tbname,col=None):
+    #DEBUG: 不能这么弄，这样会导致数据很混乱
+
     #TODO: rewrite this function
     df=None
     for d in [D_FT_ADJ,D_FILESYNC_ADJ,D_DRV]:
@@ -170,13 +172,15 @@ def _get_fields_map():
     'equity_cash_dividend',
     'shr_and_cap'
     ]
-    tbs_derivatives=[f[:-4] for f in os.listdir(D_DRV)]
-    tbs_ftresearch+=tbs_derivatives
-
+    
+    tbs_derivatives=['ebit','grossIncome','indice_m','netAsset','NetNonOI',
+                     'payable','periodCost','receivable']
+    # tbs_derivatives=[f[:-4] for f in os.listdir(D_DRV)]
     tbs_filesync=['asharefinancialindicator']
+
     shared_cols=['stkcd','trd_dt','ann_dt','report_period']
     fields_map={}
-    for tbname in tbs_ftresearch+tbs_filesync:
+    for tbname in tbs_ftresearch+tbs_derivatives+tbs_filesync:
         df=read_local(tbname)
         indicators=[col for col in df.columns if col not in shared_cols]
         for ind in indicators:
@@ -258,7 +262,7 @@ def check_dfs():
 
 
 
-#get_mould
+#get_mould_index
 
 # fp1=r'D:\zht\database\quantDb\internship\FT\database\filesync_based\adjusted\trading_m.pkl'
 # fp2=r'D:\zht\database\quantDb\internship\FT\database\filesync_based\adjusted\shr_and_cap.pkl'

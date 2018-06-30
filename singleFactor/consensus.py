@@ -9,9 +9,11 @@ from data.dataApi import read_raw, read_local
 import pandas as pd
 import os
 
-def _save(s):
-    new_name='C__'+s.name
-    df=s.to_frame()
+from tools import daily2monthly
+
+
+def _save(df):
+    new_name='C__'+df.columns[0]
     df.columns=[new_name]
     df.to_pickle(os.path.join(SINGLE_D_INDICATOR,new_name+'.pkl'))
 
@@ -27,8 +29,8 @@ def _get_monthly_data():
     comb=pd.merge(con,trading.reset_index()[['trd_dt','stkcd','close']],on=['stkcd','trd_dt'],how='left')#使用未复权的收盘价
     # comb=comb[-int(comb.shape[0]/100):] #debug:
 
-    monthly=comb.groupby('stkcd').resample('M',on='trd_dt').last()
-    monthly.index.names=['stkcd','month_end']
+    monthly=daily2monthly(comb).set_index(['stkcd','month_end'])
+    # monthly=comb.groupby('stkcd').resample('M',on='trd_dt').last()
     return monthly
 
 def apply_g(df,col,period=1):
@@ -56,19 +58,16 @@ def cal():
                 monthly['{}_{}_{}'.format(indicator,length,'perShare_chg_{}m'.format(period))]=apply_chg(monthly,per,period=period)
             print(indicator,length)
 
-
     for day in [30,90,180]:
         monthly['est_price_{}_relative'.format(day)]=monthly['est_price_{}'.format(day)]/monthly['close']
         for period in [1,3,6]:
             monthly['{}_{}_{}_{}'.format('est_price',day,'g',period)]=apply_g(monthly,'est_price_{}'.format(day),period=period)
             monthly['{}_{}_{}_{}'.format('est_price',day,'chg',period)]=apply_chg(monthly,'est_price_{}'.format(day),period=period)
-
-    del monthly['stkcd']
-    monthly=monthly.reset_index().set_index(['stkcd','trd_dt'])
+            print(day,period)
 
     for col in monthly.columns:
-        if col not in old_columns+['month_end']:
-            _save(monthly[col])
+        if col not in old_columns:
+            _save(monthly[[col]])
 
 if __name__ == '__main__':
     cal()

@@ -4,12 +4,16 @@
 # Email:13163385579@163.com
 # TIME:2018-06-15  13:54
 # NAME:FT-derivatives.py
+import pickle
+
 import pandas as pd
 
 import os
 from config import D_DRV,D_FILESYNC_ADJ
 from data.dataApi import read_local, get_dataspace, read_from_sql
 import numpy as np
+from pandas.tseries.offsets import MonthEnd
+from tools import daily2monthly
 
 
 def _ttm(s):
@@ -113,7 +117,7 @@ def cal_grossIncome():
 
 
 
-def _daily2monthly(x):
+def _d2m(x):
     ohlc_dict={
                 # 'preclose':'last',
                # 'open':'first',
@@ -139,7 +143,7 @@ def _daily2monthly(x):
     span,便于后边计算return 不会有时间对不上的问题，比如，如果日期有缺失，
     那么在计算monthly return的时候，会出错
     '''
-    monthly=monthly.asfreq('M')
+    monthly=monthly.asfreq('M')#trick: use asfreq('M') to span the data sample
     return monthly
 
 def get_monthly_trading_data():
@@ -149,7 +153,7 @@ def get_monthly_trading_data():
     # 同时原始数据中也有缺失数据比如000033.SZ 在2015年到2017年的数据缺失。
     daily=daily[~(daily['tradestatus']=='停牌')] #删掉停牌数据
     daily['tradestatus'].value_counts()
-    monthly=daily.groupby('stkcd').apply(_daily2monthly)
+    monthly=daily.groupby('stkcd').apply(_d2m)
     monthly=monthly.rename(columns={'adjopen':'open',
                             'adjhigh':'high',
                             'adjlow':'low',
@@ -157,10 +161,7 @@ def get_monthly_trading_data():
                             })
     monthly=monthly[['trd_dt']+[col for col in monthly.columns if col!='trd_dt']]
     monthly.index.names=['stkcd','month_end']
-    monthly=monthly.dropna(subset=['trd_dt']) #删掉缺失数据
-    monthly=monthly.reset_index().set_index(['stkcd','trd_dt'])
     monthly.to_pickle(os.path.join(D_FILESYNC_ADJ,'trading_m.pkl'))
-
 
 #TODO: use this method to handle quarterly data
 
@@ -176,7 +177,9 @@ def get_monthly_cap():
 def get_monthly_indice_ir():
     daily=read_local('equity_selected_indice_ir')
     daily=daily.reset_index()
-    monthly=daily.resample('M',on='trd_dt',closed='right',label='right').last()
+    # monthly=daily2monthly(daily)
+    monthly=daily.resample('M',on='trd_dt',closed='right',label='right').last().asfreq('M')
+    monthly.index.name='month_end'
     monthly['sz50_ret_m']=monthly['sz50'].pct_change()
     monthly['hs300_ret_m']=monthly['hs300'].pct_change()
     monthly['zz500_ret_m']=monthly['zz500'].pct_change()
@@ -185,14 +188,18 @@ def get_monthly_indice_ir():
     monthly['hs300_ret_1m']=monthly['hs300_ret_m'].shift(-1)
     monthly['zz500_ret_1m']=monthly['zz500_ret_m'].shift(-1)
 
-    monthly.index.name='month_end'
-    monthly=monthly.reset_index().set_index('trd_dt')
     monthly=monthly[['sz50','hs300','zz500','sz50_ret_m','hs300_ret_m','zz500_ret_m',
                      'sz50_ret_1m','hs300_ret_1m','zz500_ret_1m']]
     monthly.to_pickle(os.path.join(D_DRV,'indice_m.pkl'))
 
+def get_fdmt_m():
+    fdmt=read_local('equity_fundamental_info').reset_index()
+    fdmt_m=daily2monthly(fdmt)
+    fdmt_m['month_end']=fdmt_m['trd_dt']+MonthEnd(0)
+    fdmt_m=fdmt_m.set_index(['stkcd','month_end'])
+    fdmt_m.to_pickle(os.path.join(D_DRV,'fdmt_m.pkl'))
 
-def get_mould():
+def get_mould_index():
     '''
     get a mould for stkcd and trd_dt
     Returns: DataFrame with index as ['stkcd','trd_dt']
@@ -219,6 +226,6 @@ def get_mould():
     mould=df.stack().swaplevel().to_frame()
     mould.columns=['listed']
     mould.index.names=['stkcd','trd_dt']
-    mould.to_pickle(os.path.join(D_DRV,'mould.pkl'))
-
+    with open(os.path.join(D_DRV,'mould_index.pkl'),'wb') as f:
+        pickle.dump(mould.index,f)
 

@@ -11,14 +11,6 @@ from config import FORWARD_TRADING_DAY
 from data.dataApi import read_local
 
 
-directory=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators\financial'
+data=pd.read_pickle(r'e:\a\data.pkl')
 
-fns=os.listdir(directory)
-
-fns=[fn for fn in fns if fn.endswith('.pkl')]
-
-
-for fn in fns:
-    df=pd.read_pickle(os.path.join(directory,fn))
-    print(df.columns[0])
-
+monthly1=data.groupby('stkcd').resample('M',on='trd_dt').last().dropna()
