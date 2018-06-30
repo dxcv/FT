@@ -20,6 +20,15 @@ def save_indicator(df,name):
     df[[name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
 
 def convert_to_monthly(df):
+    '''
+
+    Args:
+        df:the index is ['stkcd','report_period'] or ['stkcd','month_end']
+        and the columns contains 'trd_dt'
+
+    Returns:DataFrame,the index is ['stkcd','month_end']
+
+    '''
     df = df.reset_index()
     if 'report_period' in df.columns:
         df = df.sort_values(['stkcd', 'trd_dt', 'report_period'])
@@ -33,7 +42,6 @@ def convert_to_monthly(df):
 
     df=df.set_index(['stkcd','month_end'])
     return df
-
 
 def parse_vars(equation):
     '''
@@ -69,8 +77,6 @@ def parse_args(s):
         s2='smooth=True,q=12'
         print(parse_args(s1))
         print(parse_args(s2))
-
-
     '''
     s=s.replace(' ','')
     if ',' in s:
@@ -80,7 +86,6 @@ def parse_args(s):
 
 def parse_equation(equation):
     '''
-
     Args:
         equation:
 

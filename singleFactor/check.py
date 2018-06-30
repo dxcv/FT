@@ -352,7 +352,7 @@ ret_1m = read_local('trading_m')['ret_1m']
 zz500_ret_1m=read_local('indice_m')['zz500_ret_1m']
 
 
-def check_factor(df):
+def check_factor(df,rootdir=SINGLE_D_CHECK):
     '''
     Args:
         df: pd.DataFrame,with only one column,and the index is ['stkcd','trd_dt']
@@ -369,7 +369,7 @@ def check_factor(df):
     fig_g=plot_layer_analysis(g_ret, g_ret_des,cover_rate)
 
     col=df.columns[0]
-    directory=os.path.join(SINGLE_D_CHECK,col)
+    directory=os.path.join(rootdir,col)
     if not os.path.exists(directory):
         os.makedirs(directory)
 

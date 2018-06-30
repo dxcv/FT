@@ -10,6 +10,7 @@ from functools import partial
 
 import pandas as pd
 from singleFactor.check import check_factor
+from singleFactor.financial import convert_to_monthly
 from singleFactor.operators import *
 
 dir_tmp= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\tmp'
@@ -148,56 +149,85 @@ funcs2=[
 
 data = pd.read_pickle(os.path.join(dir_tmp, 'data.pkl'))
 data = data.set_index(['stkcd', 'report_period'])
-def _save(df,name):
-    df=df.reset_index().set_index(['stkcd','trd_dt'])
+
+def _save(df):
+    name=df.columns[0]
     df.to_pickle(os.path.join(dir_indicators, name + '.pkl'))
 
+def get_arg_list():
+    unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
+    variables = [col for col in data.columns if
+                 col not in unuseful_cols + base_variables]
 
-unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
-variables = [col for col in data.columns if
-             col not in unuseful_cols + base_variables]
+    arg_list=[]
 
+    for func in funcs1:
+        for var in variables+base_variables:
+            arg_list.append((func,var))
 
-arg_list=[]
+    for func in funcs2:
+        for y in base_variables:
+            for x in variables:
+                arg_list.append((func,x,y))
+    return arg_list
 
-
-for func in funcs1:
-    for var in variables+base_variables:
-        arg_list.append((func,var))
-
-for func in funcs2:
-    for y in base_variables:
-        for x in variables:
-            arg_list.append((func,x,y))
-
-def task(args):
+def cal_indicator(args):
+    print(args)
     if len(args)==2:
         func=args[0]
         x=args[1]
         name='1-{}-{}'.format(func,x)
-        data[name]=eval(func)(data[x])
-
+        s=eval(func)(data[x])
+        s.name=name
     else:
         func=args[0]
         x=args[1]
         y=args[2]
         name='1-{}-{}-{}'.format(func,x,y)
-        data[name]=eval(func)(data,x,y)
-    _save(data[['trd_dt',name]].copy(),name)
+        s=eval(func)(data,x,y)
+        s.name=name
+    result=s.to_frame()
+    result['trd_dt']=data['trd_dt']
+    result=convert_to_monthly(result)[[name]]
+    _save(result)
 
-for args in arg_list[:5]:
-    task(args)
+def get_indicators():
+    arg_list=get_arg_list()
+    pool=multiprocessing.Pool(4)
+    pool.map(cal_indicator,arg_list)
+    # for i,args in enumerate(arg_list[:100]):
+    #     cal_indicator(args)
+    #     print(i,args)
 
 
 #TODO: 要每期筛选
 
+def _check_a_indicator(fn):
+    print(fn)
+    df=pd.read_pickle(os.path.join(dir_indicators,fn))
+    try:
+        check_factor(df,rootdir=dir_check)
+    except:
+        print('{}-------> wrong!'.format(fn))
 
-fns=os.listdir(dir_indicators)
-fn=fns[0]
-df=pd.read_pickle(os.path.join(dir_indicators,fn))
 
-check_factor(df)
+def check_indicators():
+    fns=os.listdir(dir_indicators)
+    pool=multiprocessing.Pool(4)
+    pool.map(_check_a_indicator,fns)
 
+def debug():
+    fn=r'1-x_chg-acting_trading_sec.pkl'
+    df=pd.read_pickle(os.path.join(dir_indicators,fn))
+    check_factor(df,rootdir=dir_check)
+
+
+if __name__ == '__main__':
+    get_indicators()
+
+
+
+#TODO: select those indicators with enough sample
 
 
 
