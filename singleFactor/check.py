@@ -402,7 +402,7 @@ def main():
     pool.map(check_fn, fns)
 
 def debug():
-    fn='T__vol_ret_std_12M.pkl'
+    fn='T__vol_beta_1M.pkl'
     path = os.path.join(SINGLE_D_INDICATOR, fn)
     df = pd.read_pickle(path)
     check_factor(df)

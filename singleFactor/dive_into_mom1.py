@@ -25,7 +25,7 @@ sqrt(cap) weighted
 import os
 
 import pandas as pd
-from data.dataApi import read_local
+from data.dataApi import read_local, read_from_sql
 import numpy as np
 from pandas.tseries.offsets import MonthEnd
 from pyparsing import Word
@@ -76,33 +76,44 @@ def daily2monthly(daily):
     monthly.index.names=['stkcd','month_end']
     return monthly
 
-indicators=['T__mom_1M','T__mom_12M','G_pct_4__tot_oper_rev','V__bp','Q__roe']
-directory=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators'
-fdmt = read_local('fdmt_m')[
-    ['cap', 'type_st', 'wind_indcd', 'young_1year']]
+indicators=['T__mom_12mc1m','T__mom_1M','G_pct_4__tot_oper_rev','V__bp','Q__roe']
 
-ret_1m = read_local('trading_m')['ret_1m']
-dfs=[]
-for indicator in indicators:
-    df=pd.read_pickle(os.path.join(directory,indicator+'.pkl'))
-    dfs.append(df)
+#
+# directory=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators'
+# fdmt = read_local('fdmt_m')[
+#     ['cap', 'type_st', 'wind_indcd', 'young_1year']]
+#
+# ret_1m = read_local('trading_m')['ret_1m']
+# dfs=[]
+# for indicator in indicators:
+#     df=pd.read_pickle(os.path.join(directory,indicator+'.pkl'))
+#     dfs.append(df)
+#
+# data=pd.concat([fdmt,ret_1m]+dfs,axis=1).reindex(fdmt.index)
+# data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
+# data=data.groupby('stkcd').ffill().dropna()
+#
+# for indicator in indicators:
+#     print(indicator)
+#     data[indicator]=clean(data,indicator)
+#
+# data=data.groupby('month_end').filter(lambda x:x.shape[0]>300)
+# data['sqrt_cap']=np.sqrt(data['cap'])
+# data['wind_2'] = data['wind_indcd'].apply(str).str.slice(0, 6)
+#
+# data.to_pickle(r'e:\a\data.pkl')
 
-data=pd.concat([fdmt,ret_1m]+dfs,axis=1).reindex(fdmt.index)
-data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
-data=data.groupby('stkcd').ffill().dropna()
 
-for indicator in indicators:
-    print(indicator)
-    data[indicator]=clean(data,indicator)
 
-data=data.groupby('month_end').filter(lambda x:x.shape[0]>300)
-data['sqrt_cap']=np.sqrt(data['cap'])
-data['wind_2'] = data['wind_indcd'].apply(str).str.slice(0, 6)
+
+# data=pd.read_pickle(r'e:\a\data.pkl')
+
 
 def reg(data,cap_weight=True):
     industry = list(np.sort(data['wind_2'].unique()))[1:]
     data = data.join(pd.get_dummies(data['wind_2'], drop_first=True))
-    a=data[['T__mom_1M', 'T__mom_12M', 'G_pct_4__tot_oper_rev','V__bp', 'Q__roe', 'sqrt_cap']+industry].values
+    a=data[indicators+['sqrt_cap']+industry].values
+    # a=data[['T__mom_1M', 'T__mom_12M', 'G_pct_4__tot_oper_rev','V__bp', 'Q__roe', 'sqrt_cap']+industry].values
     A = np.hstack([a, np.ones([len(a), 1])])
     y=data[['ret_1m']].values
 
@@ -110,36 +121,68 @@ def reg(data,cap_weight=True):
         W=np.sqrt(np.diag(data['cap'].values))
         AW=np.dot(W,A)
         yW=np.dot(W,y)
-        beta=np.linalg.lstsq(AW,yW)[0][0][0]
+        betas=np.linalg.lstsq(AW,yW)[0]
+        mom,rev=betas[0][0],betas[1][0]
     else:
-        beta = np.linalg.lstsq(A, y, rcond=None)[0][0][0]
-    return beta
+        betas = np.linalg.lstsq(A, y, rcond=None)[0]
+        mom, rev = betas[0][0], betas[1][0]
+    return pd.Series([mom,rev],index=['mom','rev'])
 
-betas=data.groupby('month_end').apply(reg,False)
-betas_weighted=data.groupby('month_end').apply(reg,True)
 
-import matplotlib.pyplot as plt
-fig = plt.figure(figsize=(16, 8))
-ax1 = plt.subplot(211)
-ax1.bar(betas.index, betas.values, width=20, color='b')
-ax1.set_ylabel('return bar')
-ax1.set_title('equal weighted')
 
-ax4 = ax1.twinx()
-ax4.plot(betas.index, betas.cumsum(), 'r-')
-ax4.set_ylabel('cumsum', color='r')
-[tl.set_color('r') for tl in ax4.get_yticklabels()]
+# betas=data.groupby('month_end').apply(reg,False)
+# result=data.groupby('month_end').apply(reg,True)
 
-ax2 = plt.subplot(212)
-ax2.bar(betas_weighted.index, betas_weighted.values, width=20, color='b')
-ax2.set_ylabel('return bar')
-ax2.set_title('cap weighted')
+# result.to_pickle(r'e:\a\result.pkl')
 
-ax3 = ax2.twinx()
-ax3.plot(betas_weighted.index, betas_weighted.cumsum(), 'r-')
-ax3.set_ylabel('cumsum', color='r')
-[tl.set_color('r') for tl in ax3.get_yticklabels()]
+result=pd.read_pickle(r'e:\a\result.pkl')
 
-fig.savefig(r'e:\a\fig.png')
+
+fr=read_from_sql('factor_return','barra_test')
+fr['trd_dt']=pd.to_datetime(fr['trd_dt'])
+
+corr=fr[['beta','growth','is_ST','is_Subnew','leverage','liquidity','momentum','nl_size',
+    'profit','resid_vol','reversal','size','value']].corr()
+
+
+fr=fr.set_index('trd_dt')
+fr=fr.resample('M').sum()
+
+
+
+comb=pd.concat([result,fr[['momentum','reversal']]],axis=1)
+
+comb['reversal'].dropna().cumsum().plot().get_figure().show()
+
+# comb=pd.concat([betas_weighted,mom,rev],axis=1,keys=['mom0','momentum','reversal'])
+# comb.dropna().cumsum().plot().get_figure().show()
+
+
+
+
+
+# import matplotlib.pyplot as plt
+# fig = plt.figure(figsize=(16, 8))
+# ax1 = plt.subplot(211)
+# ax1.bar(betas.index, betas.values, width=20, color='b')
+# ax1.set_ylabel('return bar')
+# ax1.set_title('equal weighted')
+#
+# ax4 = ax1.twinx()
+# ax4.plot(betas.index, betas.cumsum(), 'r-')
+# ax4.set_ylabel('cumsum', color='r')
+# [tl.set_color('r') for tl in ax4.get_yticklabels()]
+#
+# ax2 = plt.subplot(212)
+# ax2.bar(betas_weighted.index, betas_weighted.values, width=20, color='b')
+# ax2.set_ylabel('return bar')
+# ax2.set_title('cap weighted')
+#
+# ax3 = ax2.twinx()
+# ax3.plot(betas_weighted.index, betas_weighted.cumsum(), 'r-')
+# ax3.set_ylabel('cumsum', color='r')
+# [tl.set_color('r') for tl in ax3.get_yticklabels()]
+#
+# fig.savefig(r'e:\a\fig.png')
 
 

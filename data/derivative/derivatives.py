@@ -137,13 +137,13 @@ def _d2m(x):
 
     monthly=x.resample('M',on='trd_dt',closed='right',label='right').apply(ohlc_dict)
     # monthly=x.resample('M',how=ohlc_dict,closed='right',label='right',on='trd_dt')
-    monthly['ret_m']=monthly['adjclose'].pct_change()
-    monthly['ret_1m']=monthly['ret_m'].shift(-1)# return of the next month
     '''
     span,便于后边计算return 不会有时间对不上的问题，比如，如果日期有缺失，
     那么在计算monthly return的时候，会出错
     '''
     monthly=monthly.asfreq('M')#trick: use asfreq('M') to span the data sample
+    monthly['ret_m']=monthly['adjclose'].pct_change()
+    monthly['ret_1m']=monthly['ret_m'].shift(-1)# return of the next month
     return monthly
 
 def get_monthly_trading_data():
@@ -152,7 +152,6 @@ def get_monthly_trading_data():
     # 原始数据中在停牌的时候股价是向前填充，ohlc 均为上一个交易日的收盘价，交易量为0
     # 同时原始数据中也有缺失数据比如000033.SZ 在2015年到2017年的数据缺失。
     daily=daily[~(daily['tradestatus']=='停牌')] #删掉停牌数据
-    daily['tradestatus'].value_counts()
     monthly=daily.groupby('stkcd').apply(_d2m)
     monthly=monthly.rename(columns={'adjopen':'open',
                             'adjhigh':'high',
@@ -163,8 +162,15 @@ def get_monthly_trading_data():
     monthly.index.names=['stkcd','month_end']
     monthly.to_pickle(os.path.join(D_FILESYNC_ADJ,'trading_m.pkl'))
 
-#TODO: use this method to handle quarterly data
+trading_m=pd.read_pickle(os.path.join(D_FILESYNC_ADJ,'trading_m.pkl'))
 
+ret_m=pd.pivot_table(trading_m,values='ret_m',index='month_end',columns='stkcd')
+(ret_m['000001.SZ']+1).cumprod().plot().get_figure().show()
+
+
+
+
+#TODO: use this method to handle quarterly data
 def get_monthly_cap():
     daily=read_local('equity_fundamental_info')
     daily=daily.reset_index()

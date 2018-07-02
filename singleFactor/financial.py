@@ -37,7 +37,8 @@ def convert_to_monthly(df):
         df=df.dropna(subset=['trd_dt']) # V__capSquare
     df = df.set_index(['stkcd', 'trd_dt'])
     df = df.reindex(MOULD_INDEX).reset_index()
-    df=df.groupby('stkcd').ffill(limit=FORWARD_LIMIT_Q)#trick: ffill,yearly or quarterly?
+    df=df.groupby('stkcd').apply(lambda x:x.ffill(limit=FORWARD_LIMIT_Q))
+    # df=df.groupby('stkcd').ffill(limit=FORWARD_LIMIT_Q)#trick: ffill,yearly or quarterly?
     df=daily2monthly(df)
 
     df=df.set_index(['stkcd','month_end'])
@@ -184,3 +185,6 @@ def cal_sheet_growth():
 if __name__ == '__main__':
     cal_sheet_equation()
     cal_sheet_growth()
+
+
+#TODO: fill the crisis period

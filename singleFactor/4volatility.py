@@ -33,6 +33,7 @@ def _save(df):
 
     '''
     name='T__vol_{}'.format(df.columns[0])
+    df.columns=[name]
     df.to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
 
 def highlow(x):
@@ -57,16 +58,16 @@ def beta(x):
     a=x[['hs300_ret_d']].values
     A = np.hstack([a, np.ones([len(a), 1])])
     y=x[['pctchange']].values
-    beta=np.linalg.lstsq(A,y,rcond=None)[0][0]
+    beta=np.linalg.lstsq(A,y,rcond=None)[0][0][0]
     return beta
 
 def idioVol_capm(x):
     a=x[['hs300_ret_d']].values
     A = np.hstack([a, np.ones([len(a), 1])])
     y=x[['pctchange']].values
-    resid = np.linalg.lstsq(A, y, rcond=None)[0][1]
+    beta = np.linalg.lstsq(A, y, rcond=None)[0]
+    resid = y - np.dot(A, beta)
     return np.std(resid)
-
 
 def _rolling_for_series(df,months,history,thresh,type_func):
     df=df.reset_index(level='stkcd')
@@ -119,10 +120,19 @@ def cal_all():
 
 def debug():
     func='idioVol_capm'
+    # func='beta'
     df=groupby_rolling(trading,dict_D,func)
     for col in df.columns:
         _save(df[[col]])
 
 
 cal_all()
+
+
+# fns=os.listdir(SINGLE_D_INDICATOR)
+# fns=[fn for fn in fns if fn.startswith('T__vol_') and fn.endswith('.pkl')]
+# for fn in fns:
+#     df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,fn))
+#     print(fn,df.columns)
+
 
