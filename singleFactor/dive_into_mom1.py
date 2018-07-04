@@ -78,29 +78,29 @@ def daily2monthly(daily):
 
 indicators=['T__mom_12mc1m','T__mom_1M','G_pct_4__tot_oper_rev','V__bp','Q__roe']
 
-#
-# directory=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators'
-# fdmt = read_local('fdmt_m')[
-#     ['cap', 'type_st', 'wind_indcd', 'young_1year']]
-#
-# ret_1m = read_local('trading_m')['ret_1m']
-# dfs=[]
-# for indicator in indicators:
-#     df=pd.read_pickle(os.path.join(directory,indicator+'.pkl'))
-#     dfs.append(df)
-#
-# data=pd.concat([fdmt,ret_1m]+dfs,axis=1).reindex(fdmt.index)
-# data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
-# data=data.groupby('stkcd').ffill().dropna()
-#
-# for indicator in indicators:
-#     print(indicator)
-#     data[indicator]=clean(data,indicator)
-#
-# data=data.groupby('month_end').filter(lambda x:x.shape[0]>300)
-# data['sqrt_cap']=np.sqrt(data['cap'])
-# data['wind_2'] = data['wind_indcd'].apply(str).str.slice(0, 6)
-#
+
+directory=r'D:\zht\database\quantDb\internship\FT\singleFactor\indicators'
+fdmt = read_local('fdmt_m')[
+    ['cap', 'type_st', 'wind_indcd', 'young_1year']]
+
+ret_1m = read_local('trading_m')['ret_1m']
+dfs=[]
+for indicator in indicators:
+    df=pd.read_pickle(os.path.join(directory,indicator+'.pkl'))
+    dfs.append(df)
+
+data=pd.concat([fdmt,ret_1m]+dfs,axis=1).reindex(fdmt.index)
+data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
+data=data.groupby('stkcd').ffill().dropna()
+
+for indicator in indicators:
+    print(indicator)
+    data[indicator]=clean(data,indicator)
+
+data=data.groupby('month_end').filter(lambda x:x.shape[0]>300)
+data['sqrt_cap']=np.sqrt(data['cap'])
+data['wind_2'] = data['wind_indcd'].apply(str).str.slice(0, 6)
+
 # data.to_pickle(r'e:\a\data.pkl')
 
 
@@ -131,11 +131,11 @@ def reg(data,cap_weight=True):
 
 
 # betas=data.groupby('month_end').apply(reg,False)
-# result=data.groupby('month_end').apply(reg,True)
+result=data.groupby('month_end').apply(reg,True)
 
 # result.to_pickle(r'e:\a\result.pkl')
 
-result=pd.read_pickle(r'e:\a\result.pkl')
+# result=pd.read_pickle(r'e:\a\result.pkl')
 
 
 fr=read_from_sql('factor_return','barra_test')
@@ -152,10 +152,10 @@ fr=fr.resample('M').sum()
 
 comb=pd.concat([result,fr[['momentum','reversal']]],axis=1)
 
-comb['reversal'].dropna().cumsum().plot().get_figure().show()
+# comb['reversal'].dropna().cumsum().plot().get_figure().show()
 
 # comb=pd.concat([betas_weighted,mom,rev],axis=1,keys=['mom0','momentum','reversal'])
-# comb.dropna().cumsum().plot().get_figure().show()
+comb.dropna().cumsum().plot().get_figure().show()
 
 
 

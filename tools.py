@@ -53,7 +53,7 @@ def daily2monthly(df):
     Args:
         df:DataFrame,contains column ['stkcd','trd_dt']
 
-    Returns:
+    Returns:DataFrame, only add a new column named 'month_end' to the input df
 
     '''
     df=df.sort_values(['stkcd','trd_dt'])

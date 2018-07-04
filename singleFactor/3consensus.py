@@ -61,8 +61,8 @@ def cal():
     for day in [30,90,180]:
         monthly['est_price_{}_relative'.format(day)]=monthly['est_price_{}'.format(day)]/monthly['close']
         for period in [1,3,6]:
-            monthly['{}_{}_{}_{}'.format('est_price',day,'g',period)]=apply_g(monthly,'est_price_{}'.format(day),period=period)
-            monthly['{}_{}_{}_{}'.format('est_price',day,'chg',period)]=apply_chg(monthly,'est_price_{}'.format(day),period=period)
+            monthly['{}_{}_{}_{}m'.format('est_price',day,'g',period)]=apply_g(monthly,'est_price_{}'.format(day),period=period)
+            monthly['{}_{}_{}_{}m'.format('est_price',day,'chg',period)]=apply_chg(monthly,'est_price_{}'.format(day),period=period)
             print(day,period)
 
     for col in monthly.columns:

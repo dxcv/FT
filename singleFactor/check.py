@@ -160,16 +160,22 @@ def beta_t_ic_describe(beta_t_ic):
     beta_t_ic: DataFrame
         含有return, tvalue, ic
     '''
-    describe = {'Return Mean': beta_t_ic.beta.mean(),
-              'Return Std': beta_t_ic.beta.std(),
-              'P(t > 0)': len(beta_t_ic[beta_t_ic.tvalue > 0]) / len(beta_t_ic),
-              'P(|t| > 2)': len(beta_t_ic[abs(beta_t_ic.tvalue) > 2]) / len(beta_t_ic),
-              '|t| Mean': abs(beta_t_ic.tvalue).mean(),
-              'IC Mean': beta_t_ic.ic.mean(),
-              'IC Std': beta_t_ic.ic.std(),
-              'P(IC > 0)': len(beta_t_ic[beta_t_ic.ic > 0]) / len(beta_t_ic.ic),
-              'P(IC > 0.02)': len(beta_t_ic[beta_t_ic.ic > 0.02]) / len(beta_t_ic.ic),
-              'IC IR': beta_t_ic.ic.mean() / beta_t_ic.ic.std()}
+    describe = {
+                'Return Mean': beta_t_ic.beta.mean(),
+                'months':beta_t_ic.shape[0],
+                'Return Std': beta_t_ic.beta.std(),
+                'P(t > 0)': len(beta_t_ic[beta_t_ic.tvalue > 0]) / len(beta_t_ic),
+                'P(t > 2)': len(beta_t_ic[beta_t_ic.tvalue > 2]) / len(beta_t_ic),
+                'P(t <- 2)': len(beta_t_ic[beta_t_ic.tvalue <- 2]) / len(beta_t_ic),
+                't Mean': beta_t_ic.tvalue.mean(),
+                'rank IC Mean': beta_t_ic.ic.mean(),
+                'rank IC Std': beta_t_ic.ic.std(),
+                'P(rank IC > 0)': len(beta_t_ic[beta_t_ic.ic > 0]) / len(beta_t_ic.ic),
+                'P(rank IC > 0.02)': len(beta_t_ic[beta_t_ic.ic > 0.02]) / len(beta_t_ic.ic),
+                'P(rank IC <- 0.02)': len(beta_t_ic[beta_t_ic.ic <- 0.02]) / len(beta_t_ic.ic),
+                'rank IC IR': beta_t_ic.ic.mean() / beta_t_ic.ic.std(),
+                'tvalue':beta_t_ic.beta.mean()*sqrt(beta_t_ic.shape[0])/beta_t_ic.beta.std()
+                }
     describe=pd.Series(describe)
     return describe
 
@@ -402,12 +408,12 @@ def main():
     pool.map(check_fn, fns)
 
 def debug():
-    fn='T__vol_beta_1M.pkl'
+    fn='T__mom_1dc1m.pkl'
     path = os.path.join(SINGLE_D_INDICATOR, fn)
     df = pd.read_pickle(path)
     check_factor(df)
 
-DEBUG=True
+DEBUG=0
 
 if __name__ == '__main__':
     if DEBUG:

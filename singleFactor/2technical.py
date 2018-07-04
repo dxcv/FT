@@ -9,10 +9,20 @@ import os
 import pandas as pd
 
 from data.dataApi import read_local
+from tools import daily2monthly
 
 
-def _save(df,name):
-    new_name='T__'+name
+def _save(df):
+    '''
+
+    Args:
+        df:DataFrame, with only one column
+        name:
+
+    Returns:
+
+    '''
+    new_name='T__'+df.columns[0]
     df.columns=[new_name]
     df.to_pickle(os.path.join(SINGLE_D_INDICATOR,new_name+'.pkl'))
 
@@ -20,7 +30,7 @@ def _save(df,name):
 def _cal_mom(x,window):
     return x.resample('M',on='month_end')['close'].last().pct_change(periods=window)
 
-def get_retn(n):
+def _get_retn(n):
     '''
     get return of n month
 
@@ -39,10 +49,10 @@ def get_moms():
     windows=[1,2,3,6,9,12,24,36]
     for window in windows:
         name='mom_{}M'.format(window)
-        mom=get_retn(window)
+        mom=_get_retn(window)
         mom=mom.to_frame()
         mom.columns=[name]
-        _save(mom,name)
+        _save(mom)
         print(window)
 
 # get_moms()
@@ -50,23 +60,23 @@ def get_moms():
 def get_mom_mc():
     for l in [6,12]:
         name='mom_{}mc1m'.format(l)
-        mom_l=get_retn(l)
-        mom_s=get_retn(1)
+        mom_l=_get_retn(l)
+        mom_s=_get_retn(1)
         mom_mc=mom_l-mom_s
         mom_mc=mom_mc.to_frame()
         mom_mc.columns=[name]
-        _save(mom_mc,name)
+        _save(mom_mc)
 
 # get_mom_mc()
 
 def get_mom_12mc6m():
     name='mom_12mc6m'
-    mom_l=get_retn(12)
-    mom_s=get_retn(6)
+    mom_l=_get_retn(12)
+    mom_s=_get_retn(6)
     mom_mc=mom_l-mom_s
     mom_mc=mom_mc.to_frame()
     mom_mc.columns=[name]
-    _save(mom_mc,name)
+    _save(mom_mc)
 
 # get_mom_12mc6m()
 def get_mom_1dc1m():
@@ -81,12 +91,10 @@ def get_mom_1dc1m():
     trading_d=trading_d.reset_index()
     mom_max_ret=trading_d.groupby('stkcd').apply(
         lambda x:x.resample('M',on='trd_dt',closed='right',label='right')
-            .apply({'ret_d':'max','trd_dt':'last'}))
+            .apply({'ret_d':'max'}))
     mom_max_ret.index.names=['stkcd','month_end']
-    mom_max_ret=mom_max_ret.reset_index().set_index(['stkcd','trd_dt'])
-    del mom_max_ret['month_end']
     mom_max_ret.columns=[name]
-    _save(mom_max_ret,name)
+    _save(mom_max_ret)
 
 def get_sucess():
     #Success=1-过去一个月的收益率排名/股票总数
@@ -113,23 +121,24 @@ def get_sucess():
     result=comb.T.stack().to_frame()
     result.index.names=['stkcd','trd_dt']
     result.columns=[name]
-    _save(result,name)
+    _save(result)
 
-def get_pm_1d():
+def get_mom_1d():
     '''上一个交易日收益率'''
-    name='pm_1d'
+    name='mom_1d'
     trading_d=read_local('equity_selected_trading_data')
     trading_d[name]=trading_d['adjclose'].groupby('stkcd').pct_change()
-    _save(trading_d[[name]],name)
+    monthly=daily2monthly(trading_d.reset_index()).set_index(['stkcd','month_end'])
+    _save(monthly[[name]])
 
 
 if __name__ == '__main__':
-    get_moms()
-    get_mom_mc()
-    get_mom_12mc6m()
-    get_mom_1dc1m()
+    # get_moms()
+    # get_mom_mc()
+    # get_mom_12mc6m()
+    # get_mom_1dc1m()
     # get_sucess()
-    get_pm_1d()
+    get_mom_1d()
 
 
 
