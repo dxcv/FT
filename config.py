@@ -49,6 +49,12 @@ FORWARD_LIMIT_M=25 #25 (trading) days
 
 
 
+#---------------------------factor combination----------------------------------
+DIR_CLEANED=r'D:\zht\database\quantDb\internship\FT\factor_combination\cleaned'
 
 
+DIR_BACKTEST=r'D:\zht\database\quantDb\internship\FT\backtest'
+
+DIR_SIGNAL=r'D:\zht\database\quantDb\internship\FT\signal'
+DIR_BACKTEST_FIG=r'D:\zht\database\quantDb\internship\FT\backtest\result'
 

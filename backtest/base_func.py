@@ -1,6 +1,11 @@
+import os
+
 import numpy as np
 import pandas as pd
 import warnings
+
+from config import DIR_BACKTEST
+
 warnings.filterwarnings('ignore', category=FutureWarning)
 np.warnings.filterwarnings('ignore', 'Mean of empty slice')
 import statsmodels.api as sm
@@ -227,7 +232,7 @@ trade_data_path = None
 def read_trade_data(*args, data_path=None):
     if data_path is None:
         data_path = trade_data_path        
-    with pd.HDFStore(data_path) as trade_data:
+    with pd.HDFStore(os.path.join(DIR_BACKTEST,data_path)) as trade_data:
         data = []
         for d in args:
             data.append(trade_data[d])

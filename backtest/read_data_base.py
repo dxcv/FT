@@ -2,27 +2,38 @@
 # Python 3.6
 # Author:Zhang Haitao
 # Email:13163385579@163.com
-# TIME:2018-06-02  13:17
-# NAME:stocks_backtest-test_read_data_base.py
+# TIME:2018-07-09  09:08
+# NAME:FT-read_data_base.py
 
-from data.database_api import database_api as dbi
+# prerun section
+import numpy as np
 import pandas as pd
+import pickle
+import itertools
+import os
+import sys
 
+from config import DIR_BACKTEST
+
+sys.path.append('./lib')
+
+import backtest.database_api as dbi
 from sqlalchemy import create_engine
+filesync_engine = create_engine('mysql+pymysql://ftresearch:FTResearch@192.168.1.140/filesync?charset=utf8')
 
-# filesync_engine = create_engine('mysql+pymysql://ftresearch:FTResearch@192.168.1.140/filesync?charset=utf8')
-filesync_engine = create_engine('mysql+pymysql://root:root@localhost/filesync?charset=utf8')
-
-
-start_date = '2008-01-01'
-end_date = '2012-12-31'
+start_date = '2005-01-01'
+end_date = '2018-12-31'
 
 stk_univ = slice(None)
-backtest_data = 'backtest_data.h5'
-signal_input_data = 'signal_input_data.h5'
+backtest_data = os.path.join(DIR_BACKTEST,'backtest_data.h5')
+signal_input_data = os.path.join(DIR_BACKTEST,'signal_input_data.h5')
+
+
+
+# get backtest data
 
 def get_zz500(start_date, end_date):
-    zz500 = dbi.get_index_data(['zz500'], start_date, end_date)['zz500']
+    zz500 = dbi.get_index_data('zz500', start_date, end_date)['zz500']
     zz500.index.name = 'trade_date'
     zz500.name = 'zz500'
     return zz500
@@ -44,14 +55,17 @@ def get_backtest_stocks_trade_data(start_date, end_date):
     stocks_trade_data.index.names = ['trade_date', 'stock_ID']
     return stocks_trade_data
 
+
 def get_stocks_trade_status(start_date, end_date):
-    stocks_trade_status = dbi.get_stocks_data('equity_selected_trading_data', ['tradestatus'],
-                                              start_date, end_date)['tradestatus']
+    stocks_trade_status = \
+    dbi.get_stocks_data('equity_selected_trading_data', ['tradestatus'],
+                        start_date, end_date)['tradestatus']
     stocks_trade_status[stocks_trade_status != '停牌'] = 1
     stocks_trade_status[stocks_trade_status == '停牌'] = 0
     stocks_trade_status = stocks_trade_status.astype('float')
     stocks_trade_status.index.names = ['trade_date', 'stock_ID']
     return stocks_trade_status
+
 
 def get_stocks_is_ST(start_date, end_date):
     stocks_is_ST = dbi.get_stocks_data('equity_fundamental_info', ['type_st'],
@@ -59,8 +73,9 @@ def get_stocks_is_ST(start_date, end_date):
     stocks_is_ST.index.names = ['trade_date', 'stock_ID']
     stocks_is_ST = stocks_is_ST.dropna()
     stocks_is_ST = pd.Series(stocks_is_ST.index.get_level_values(1),
-                             index=pd.Index(stocks_is_ST.index.get_level_values(0),
-                                            name='trade_date'))
+                             index=pd.Index(
+                                 stocks_is_ST.index.get_level_values(0),
+                                 name='trade_date'))
     return stocks_is_ST.sort_index()
 
 
@@ -117,6 +132,7 @@ def get_stocks_sub_new(start_date, end_date, sub_new_days):
     sub_new_stks.index.name = 'trade_date'
     return sub_new_stks[start_date: end_date].sort_index()
 
+
 zz500 = get_zz500(start_date, end_date)
 stocks_trade_data = get_backtest_stocks_trade_data(start_date, end_date)
 stocks_trade_status = get_stocks_trade_status(start_date, end_date)
@@ -141,7 +157,57 @@ data_names = (['zz500'] +
               ['close_price_none', 'close_price_post',
                'open_price_post', 'vwap_post'] +
               ['stocks_opened', 'stocks_need_drop'])
+
 with pd.HDFStore(backtest_data) as file:
+    for n in data_names:
+        file.put(n, eval(n), format='t', append=True)
+    print(file)
+
+# get sinal input data
+
+def get_stocks_trade_data(start_date, end_date):
+    stocks_trade_data = dbi.get_stocks_data(
+        'equity_selected_trading_data',
+        ['close', 'adjfactor'],
+        start_date, end_date)
+    stocks_trade_data.columns = ['close', 'adj_factor']
+    stocks_trade_data['close_post'] = (stocks_trade_data['close'] *
+                                       stocks_trade_data['adj_factor'])
+    stocks_trade_data.index.names = ['trade_date', 'stock_ID']
+    return stocks_trade_data
+
+
+def get_stocks_trade_status(start_date, end_date):
+    stocks_trade_status = dbi.get_stocks_data('equity_selected_trading_data', ['tradestatus'],
+                                              start_date, end_date)['tradestatus']
+    stocks_trade_status[stocks_trade_status != '停牌'] = 1
+    stocks_trade_status[stocks_trade_status == '停牌'] = 0
+    stocks_trade_status = stocks_trade_status.astype('float')
+    stocks_trade_status.index.names = ['trade_date', 'stock_ID']
+    return stocks_trade_status
+
+
+def get_stocks_industry_L4(start_date, end_date):
+    stocks_industry_L4 = dbi.get_stocks_data('equity_fundamental_info', ['wind_indcd'],
+                                             start_date, end_date)['wind_indcd']
+    stocks_industry_L4 -= 6200000000
+    stocks_industry_L4.index.names = ['trade_date', 'stock_ID']
+    stocks_industry_L4 = stocks_industry_L4.unstack()
+    return stocks_industry_L4
+
+
+stocks_trade_data = get_stocks_trade_data(start_date, end_date)
+stocks_trade_status = get_stocks_trade_status(start_date, end_date)
+stocks_industry_L4 = get_stocks_industry_L4(start_date, end_date)
+
+stocks_trade_data[stocks_trade_status == 0] = np.nan
+close_price_post = stocks_trade_data['close_post'].unstack().loc[:, stk_univ]
+
+stocks_industry_L4 = stocks_industry_L4.loc[:, stk_univ]
+
+# update data to HDF file
+data_names = ['close_price_post', 'stocks_industry_L4']
+with pd.HDFStore(signal_input_data) as file:
     for n in data_names:
         file.put(n, eval(n), format='t', append=True)
     print(file)

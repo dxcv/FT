@@ -8,6 +8,7 @@
 import time
 import pandas as pd
 from pandas.tseries.offsets import MonthEnd
+import numpy as np
 
 
 def monitor(func):
@@ -62,3 +63,73 @@ def daily2monthly(df):
     monthly=monthly.dropna(how='all')
     monthly['month_end']=monthly['trd_dt']+MonthEnd(0)
     return monthly
+
+def filter_st_and_young(df,fdmt_m):
+    data=pd.concat([fdmt_m,df],axis=1).reindex(fdmt_m.index)
+    data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
+    return data
+
+def outlier(x, k=4.5):
+    '''
+    Parameters
+    ==========
+    x:
+        原始因子值
+    k = 3 * (1 / stats.norm.isf(0.75))
+    '''
+    med = np.median(x)
+    mad = np.median(np.abs(x - med))
+    uplimit = med + k * mad
+    lwlimit = med - k * mad
+    y = np.where(x >= uplimit, uplimit, np.where(x <= lwlimit, lwlimit, x))
+    return pd.DataFrame(y, index=x.index)
+
+def z_score(x):
+    return (x - np.mean(x)) / np.std(x)
+
+def neutralize(df, col, industry, cap='ln_cap'):
+    '''
+    Parameters
+    ===========
+    df:
+        包含标准化后的因子值的DataFrame
+    industry: list of industry columns
+        排除第一行业代码后的m-1个行业代码
+
+    Returns
+    =======
+    res:
+        标准化因子对行业哑变量矩阵和对数市值回归后的残差
+    '''
+    a = np.array(df.loc[:, industry + [cap]])
+    A = np.hstack([a, np.ones([len(a), 1])])
+    y = df.loc[:, col]
+    beta = np.linalg.lstsq(A, y,rcond=None)[0]
+    res = y - np.dot(A, beta)
+    return res
+
+def clean(df, col):
+    '''
+    Parameters
+    ==========
+    df: DataFrame
+        含有因子原始值、市值、行业代码
+    col:
+        因子名称
+    '''
+
+    # Review: 风格中性：对市值对数和市场做回归后取残差
+    #TODO： 市值中性化方式有待优化，可以使用SMB代替ln_cap
+    df[col + '_out']=df.groupby('month_end')[col].apply(outlier)
+    df[col + '_zsc']=df.groupby('month_end')[col + '_out'].apply(z_score)
+    df['wind_2'] = df['wind_indcd'].apply(str).str.slice(0, 6) # wind 2 级行业代码
+    df = df.join(pd.get_dummies(df['wind_2'], drop_first=True))
+    df['ln_cap'] = np.log(df['cap'])
+    industry = list(np.sort(df['wind_2'].unique()))[1:]
+    df[col + '_neu'] = df.groupby('month_end', group_keys=False).apply(neutralize, col + '_zsc', industry)
+
+    del df[col]
+    del df[col + '_out']
+    del df[col + '_zsc']
+    df=df.rename(columns={col + '_neu':col})
+    return df
