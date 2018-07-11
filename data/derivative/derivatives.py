@@ -115,8 +115,6 @@ def cal_grossIncome():
 # cal_payable()
 # cal_grossIncome()
 
-
-
 def _d2m(x):
     ohlc_dict={
                 # 'preclose':'last',
@@ -161,14 +159,6 @@ def get_monthly_trading_data():
     monthly=monthly[['trd_dt']+[col for col in monthly.columns if col!='trd_dt']]
     monthly.index.names=['stkcd','month_end']
     monthly.to_pickle(os.path.join(D_FILESYNC_ADJ,'trading_m.pkl'))
-
-trading_m=pd.read_pickle(os.path.join(D_FILESYNC_ADJ,'trading_m.pkl'))
-
-ret_m=pd.pivot_table(trading_m,values='ret_m',index='month_end',columns='stkcd')
-(ret_m['000001.SZ']+1).cumprod().plot().get_figure().show()
-
-
-
 
 #TODO: use this method to handle quarterly data
 def get_monthly_cap():

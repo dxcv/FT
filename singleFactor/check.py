@@ -75,9 +75,6 @@ def get_cover_rate(monthly, col):
     return cover_rate
 
 
-
-
-
 def get_beta_t_ic(df,col_factor,col_ret):
     '''
     df: DataFrame
@@ -254,7 +251,6 @@ def get_result(df,ret_1m,fdmt,zz500_ret_1m):
     #review: 最后测试使用的月频数据，我们可以把计算的因子全部统一到月频上来，并且计算因子时候就ffill.用resample，所以把
     #review: date 全部变为 month_end. 包括trading_m等，只要是月频的全部变为month_end,Q全部变为quarter_end
     #review：这种情况下ffill也好控制，
-
     col=df.columns[0]
     monthly=filter_st_and_young(df, fdmt)
     cover_rate=get_cover_rate(monthly,col)
@@ -295,7 +291,12 @@ ret_1m = read_local('trading_m')['ret_1m']
 zz500_ret_1m=read_local('indice_m')['zz500_ret_1m']
 
 
-def check_factor(df,rootdir=SINGLE_D_CHECK):
+def daily_to_monthly(df):
+    monthly=df.resample('M').last()
+    monthly.index.name='month_end'
+    return monthly
+
+def check_factor(df):
     '''
     Args:
         df: pd.DataFrame,with only one column,and the index is ['stkcd','trd_dt']
@@ -311,26 +312,39 @@ def check_factor(df,rootdir=SINGLE_D_CHECK):
     g_ret_des=g_ret_describe(g_ret)
     fig_g=plot_layer_analysis(g_ret, g_ret_des,cover_rate)
 
-    col=df.columns[0]
-    directory=os.path.join(rootdir,col)
+    dfs={'beta_t_ic':beta_t_ic,
+       'beta_t_ic_des':beta_t_ic_des,
+       'g_ret':g_ret,
+       'g_ret_des':g_ret_des
+       }
+    figs={'fig_beta_t_ic':fig_beta_t_ic,
+          'fig_g':fig_g}
+    return dfs,figs
+
+def save_results(dfs,figs,name):
+    directory=os.path.join(SINGLE_D_CHECK,name)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    beta_t_ic.to_csv(os.path.join(directory,'beta_t_ic.csv'))
-    beta_t_ic_des.to_csv(os.path.join(directory,'beta_t_ic_des.csv'))
+    for k in dfs.keys():
+        dfs[k].to_csv(os.path.join(directory, k + '.csv'))
 
-    g_ret.to_csv(os.path.join(directory,'g_ret.csv'))
-    g_ret_des.to_csv(os.path.join(directory,'g_ret_des.csv'))
+    for k in figs.keys():
+        figs[k].savefig(os.path.join(directory, k + '.png'))
 
-    fig_beta_t_ic.savefig(os.path.join(directory,'fig_beta_t_ic.png'))
-    fig_g.savefig(os.path.join(directory,'fig_g.png'))
 
 def check_fn(fn):
     try:
         print(fn)
-        path=os.path.join(SINGLE_D_INDICATOR,fn)
-        df=pd.read_pickle(path)
-        check_factor(df)
+        path = os.path.join(SINGLE_D_INDICATOR, fn)
+        df = pd.read_pickle(path)
+        monthly = daily_to_monthly(df)
+        monthly = monthly.stack().to_frame().swaplevel()
+        monthly.index.names = ['stkcd', 'month_end']
+        monthly = monthly.sort_index()
+        monthly.columns = [fn[:-4]]
+        dfs,figs=check_factor(monthly)
+        save_results(dfs,figs,fn[:-4])
     except:
         print('{}------> wrong'.format(fn))
         pass
@@ -341,24 +355,28 @@ def main():
     checked=os.listdir(SINGLE_D_CHECK)
     fns = [fn for fn in fns if fn[:-4] not in checked]
 
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(2)
     pool.map(check_fn, fns)
 
 def debug():
-    fn='T__mom_1dc1m.pkl'
+    fn='Q__roa.pkl'
     path = os.path.join(SINGLE_D_INDICATOR, fn)
     df = pd.read_pickle(path)
-    check_factor(df)
+    monthly = daily_to_monthly(df)
+    monthly = monthly.stack().to_frame().swaplevel()
+    monthly.index.names=['stkcd','month_end']
+    monthly=monthly.sort_index()
+    monthly.columns = [fn[:-4]]
+    dfs, figs=check_factor(monthly)
+    save_results(dfs,figs,fn[:-4])
 
-DEBUG=0
+DEBUG=1
 
 if __name__ == '__main__':
     if DEBUG:
         debug()
     else:
         main()
-
-
 
 #TODO: adjust the spraed figure  and add title by using factor name
 

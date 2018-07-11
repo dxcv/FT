@@ -78,7 +78,7 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
         sell_fee = sell_values_sum * (tax_ratio + sell_commission)
 
         # 计算今日买入金额
-        buy_fee = (sell_values_sum - sell_fee) * buy_commission
+        buy_fee = (sell_values_sum - sell_fee) * buy_commission #debug;第一天buy_fee 不应该为0
         if last_hold_shares.empty:
             buy_values_sum = capital
         else:
@@ -95,7 +95,7 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
 
         new_hold_values = new_hold_shares * AStocks_close_price[
             new_hold_shares.index]
-
+        #debug: 建仓当天肯定是没有10000000的，这里没有考虑买入成本
         today_market_value = new_hold_values.sum()  # 计算今日持仓总市值
         if (last_hold_shares.empty) | (last_market_value == 0):
             today_return = 0

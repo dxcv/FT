@@ -8,9 +8,9 @@ import os
 import pandas as pd
 
 from config import FORWARD_TRADING_DAY
-from data.dataApi import read_local
+from data.dataApi import read_local, read_from_sql
 
+df=pd.read_pickle(r'E:\FT_Users\HTZhang\FT\singleFactor\indicators\Q__downturnRisk.pkl')
 
-data=pd.read_pickle(r'e:\a\data.pkl')
+df.index.name
 
-monthly1=data.groupby('stkcd').resample('M',on='trd_dt').last().dropna()

@@ -9,13 +9,21 @@ import os
 from functools import partial
 
 import pandas as pd
-from singleFactor.check import check_factor
-from singleFactor.financial import convert_to_monthly
+
+from config import DIR_DM, DIR_DM_RESULT
+from data.dataApi import read_local
+from singleFactor.check import check_factor, check_fn, daily_to_monthly
+from singleFactor.financial import quarterly_to_daily
 from singleFactor.operators import *
 
-dir_tmp= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\tmp'
-dir_indicators= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\indicators'
-dir_check=r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\check'
+
+# dir_tmp= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\tmp'
+dir_tmp=os.path.join(DIR_DM,'tmp')
+# dir_indicators= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\indicators'
+dir_indicators= os.path.join(DIR_DM,'indicators')
+# dir_check=r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\check'
+dir_check=os.path.join(DIR_DM,'check')
+
 
 base_variables1=['tot_assets', # total assets
                 'tot_cur_assets',# total current assets
@@ -150,10 +158,6 @@ funcs2=[
 data = pd.read_pickle(os.path.join(dir_tmp, 'data.pkl'))
 data = data.set_index(['stkcd', 'report_period'])
 
-def _save(df):
-    name=df.columns[0]
-    df.to_pickle(os.path.join(dir_indicators, name + '.pkl'))
-
 def get_arg_list():
     unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
     variables = [col for col in data.columns if
@@ -171,7 +175,7 @@ def get_arg_list():
                 arg_list.append((func,x,y))
     return arg_list
 
-def cal_indicator(args):
+def cal_and_check(args):
     print(args)
     if len(args)==2:
         func=args[0]
@@ -183,60 +187,64 @@ def cal_indicator(args):
         func=args[0]
         x=args[1]
         y=args[2]
-        name='1-{}-{}-{}'.format(func,x,y)
+        name='2-{}-{}-{}'.format(func,x,y)
         s=eval(func)(data,x,y)
         s.name=name
     result=s.to_frame()
     result['trd_dt']=data['trd_dt']
-    result=convert_to_monthly(result)[[name]]
-    _save(result)
+    daily=quarterly_to_daily(result,name)
 
-def get_indicators():
-    arg_list=get_arg_list()
-    pool=multiprocessing.Pool(4)
-    pool.map(cal_indicator,arg_list)
-    # for i,args in enumerate(arg_list[:100]):
-    #     cal_indicator(args)
-    #     print(i,args)
+    monthly = daily_to_monthly(daily)
+    monthly = monthly.stack().to_frame().swaplevel()
+    monthly.index.names = ['stkcd', 'month_end']
+    monthly = monthly.sort_index()
+    monthly.columns = [name]
 
+    directory = os.path.join(DIR_DM_RESULT, name)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    daily.to_pickle(os.path.join(directory,'daily.pkl'))
+    monthly.to_pickle(os.path.join(directory,'monthly.pkl'))
+
+    try:
+        dfs,figs=check_factor(monthly)
+        for k in dfs.keys():
+            dfs[k].to_csv(os.path.join(directory, k + '.csv'))
+        for k in figs.keys():
+            figs[k].savefig(os.path.join(directory, k + '.png'))
+    except:
+        with open(os.path.join(dir_tmp,'failed.txt'),'a') as f:
+            f.write(name+'\n')
+        print('{}-------> wrong!'.format(name))
 
 #TODO: 要每期筛选
 
-def _check_a_indicator(fn):
-    print(fn)
-    df=pd.read_pickle(os.path.join(dir_indicators,fn))
-    try:
-        check_factor(df,rootdir=dir_check)
-    except:
-        print('{}-------> wrong!'.format(fn))
 
+def get_calculated():
+    fns=os.listdir(DIR_DM_RESULT)
+    handled=[]
+    for fn in fns:
+        handled.append(tuple(fn.split('-')[1:]))
+    return handled
 
-def check_indicators():
-    fns=os.listdir(dir_indicators)
-    pool=multiprocessing.Pool(4)
-    pool.map(_check_a_indicator,fns)
-
-def debug_get_indicators():
+def run():
     arg_list=get_arg_list()
-    cal_indicator(arg_list[0])
+    print(len(arg_list))
+    calculated=get_calculated()
+    alist=[arg for arg in arg_list if arg not in calculated]
+    print(len(alist))
+    pool=multiprocessing.Pool(15)
+    pool.map(cal_and_check,alist)
 
-def debug_check():
-    fn=r'1-x_chg-acting_trading_sec.pkl'
-    df=pd.read_pickle(os.path.join(dir_indicators,fn))
-    check_factor(df,rootdir=dir_check)
+
+if __name__ == '__main__':
+    run()
 
 
-# if __name__ == '__main__':
-#     get_indicators()
 
 
 
 #TODO: select those indicators with enough sample
-
-
-
-
-
 
 
 

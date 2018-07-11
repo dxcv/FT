@@ -4,45 +4,19 @@
 # Email:13163385579@163.com
 # TIME:2018-06-20  17:30
 # NAME:FT-financial.py
+import multiprocessing
 from functools import reduce
 
-from config import SINGLE_D_INDICATOR, FORWARD_LIMIT_Q
-from data.dataApi import get_dataspace, read_local
+from config import SINGLE_D_INDICATOR, FORWARD_LIMIT_Q, FORWARD_TRADING_DAY
+from data.dataApi import get_dataspace, read_local, read_from_sql
 import os
 import re
 
 from singleFactor.operators import *
 from tools import daily2monthly
 
-MOULD_INDEX=read_local("mould_index")
-
 def save_indicator(df,name):
-    df[[name]].to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
-
-def convert_to_monthly(df):
-    '''
-
-    Args:
-        df:the index is ['stkcd','report_period'] or ['stkcd','month_end']
-        and the columns contains 'trd_dt'
-
-    Returns:DataFrame,the index is ['stkcd','month_end']
-
-    '''
-    df = df.reset_index()
-    if 'report_period' in df.columns:
-        df = df.sort_values(['stkcd', 'trd_dt', 'report_period'])
-        df = df[~df.duplicated(subset=['stkcd', 'trd_dt'], keep='last')]
-    else:
-        df=df.dropna(subset=['trd_dt']) # V__capSquare
-    df = df.set_index(['stkcd', 'trd_dt'])
-    df = df.reindex(MOULD_INDEX).reset_index()
-    df=df.groupby('stkcd').apply(lambda x:x.ffill(limit=FORWARD_LIMIT_Q))
-    # df=df.groupby('stkcd').ffill(limit=FORWARD_LIMIT_Q)#trick: ffill,yearly or quarterly?
-    df=daily2monthly(df)
-
-    df=df.set_index(['stkcd','month_end'])
-    return df
+    df.to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
 
 def parse_vars(equation):
     '''
@@ -128,6 +102,21 @@ def parse_equation(equation):
     else:# for example, "tot_assets"
         return get_dataspace(equation)[equation]
 
+def quarterly_to_daily(df,name,duplicates='last'):
+    td=read_from_sql('trade_date','ftresearch')['dates'].values
+    #trick:There are some duplicates (different report_period) even with same stkcd and trd_dt
+    # df=df.reset_index().sort_values(['stkcd','trd_dt','report_period'])
+    # df = df[~df.duplicated(subset=['stkcd', 'trd_dt'], keep='last')]
+
+    #TODO: mean or last for duplicates
+    daily=pd.pivot_table(df,values=name,index='trd_dt',columns='stkcd',aggfunc=duplicates)
+
+    daily=daily.reindex(td)#review:
+    daily.index.name='trd_dt'
+    daily=daily.ffill(limit=FORWARD_TRADING_DAY)
+    daily=daily.dropna(how='all') #trick
+    return daily
+
 def parse_a_row(s):
     name = '__'.join([s['type'], s['name']])
     print(name)
@@ -154,21 +143,40 @@ def parse_a_row(s):
         else:
             df[name] = eval(func)(df, 'x', 'y')
 
-    df=convert_to_monthly(df)
-    save_indicator(df, name)
+    df=df.dropna(subset=[name])
+    if df.shape[0]>0:
+        daily=quarterly_to_daily(df,name)
+        save_indicator(daily, name)
+    else:
+        pass
+
+
+# path=r'indicators.xlsx'
+# df=pd.read_excel(path,sheet_name='equation',index_col=0)
+# s=df.loc[25]
+# parse_a_row(s)
+
+def debug():
+    path = r'indicators.xlsx'
+    df = pd.read_excel(path, sheet_name='equation', index_col=0)
+    parse_a_row(df.loc[19])
+
+# debug()
 
 def cal_sheet_equation():
-    path=r'D:\app\python36\zht\internship\FT\singleFactor\indicators.xlsx'
+    path=r'indicators.xlsx'
     df=pd.read_excel(path,sheet_name='equation',index_col=0)
-    for _,s in df.iterrows():
-        parse_a_row(s)
+    pool=multiprocessing.Pool(10)
+    pool.map(parse_a_row,(s for _,s in df.iterrows()))
+    # for _,s in df.iterrows():
+    #     parse_a_row(s)
 
 def cal_sheet_growth():
     func_id={'x_pct_chg':'pct',
              'x_history_compound_growth':'hcg',
              'x_history_std':'std'}
 
-    path = r'D:\app\python36\zht\internship\FT\singleFactor\indicators.xlsx'
+    path = 'indicators.xlsx'
     df = pd.read_excel(path, sheet_name='growth', index_col=0)
     indicators=df['indicator']
     for _,s in df[['function','kwarg']].dropna().iterrows():
@@ -178,13 +186,13 @@ def cal_sheet_growth():
             name='G_{}_{}__{}'.format(func_id[func],kwarg['q'],indicator)
             df=get_dataspace(indicator)
             df[name]=eval(func)(df[indicator],**kwarg)
-            df = convert_to_monthly(df)
-            save_indicator(df,name)
+            df = df.dropna(subset=[name])
+            if df.shape[0] > 0:
+                daily = quarterly_to_daily(df, name)
+                save_indicator(daily, name)
             print(func,indicator,kwarg['q'])
 
-if __name__ == '__main__':
-    cal_sheet_equation()
-    cal_sheet_growth()
 
-
-#TODO: fill the crisis period
+# if __name__ == '__main__':
+    # cal_sheet_equation()
+    # cal_sheet_growth()

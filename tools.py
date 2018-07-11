@@ -69,6 +69,7 @@ def filter_st_and_young(df,fdmt_m):
     data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
     return data
 
+
 def outlier(x, k=4.5):
     '''
     Parameters
@@ -108,7 +109,7 @@ def neutralize(df, col, industry, cap='ln_cap'):
     res = y - np.dot(A, beta)
     return res
 
-def clean(df, col):
+def clean(df, col,by='month_end'):
     '''
     Parameters
     ==========
@@ -120,13 +121,13 @@ def clean(df, col):
 
     # Review: 风格中性：对市值对数和市场做回归后取残差
     #TODO： 市值中性化方式有待优化，可以使用SMB代替ln_cap
-    df[col + '_out']=df.groupby('month_end')[col].apply(outlier)
-    df[col + '_zsc']=df.groupby('month_end')[col + '_out'].apply(z_score)
+    df[col + '_out']=df.groupby(by)[col].apply(outlier)
+    df[col + '_zsc']=df.groupby(by)[col + '_out'].apply(z_score)
     df['wind_2'] = df['wind_indcd'].apply(str).str.slice(0, 6) # wind 2 级行业代码
     df = df.join(pd.get_dummies(df['wind_2'], drop_first=True))
     df['ln_cap'] = np.log(df['cap'])
     industry = list(np.sort(df['wind_2'].unique()))[1:]
-    df[col + '_neu'] = df.groupby('month_end', group_keys=False).apply(neutralize, col + '_zsc', industry)
+    df[col + '_neu'] = df.groupby(by, group_keys=False).apply(neutralize, col + '_zsc', industry)
 
     del df[col]
     del df[col + '_out']

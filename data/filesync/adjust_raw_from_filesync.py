@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from config import DRAW, DCSV, DPKL, D_FILESYNC_ADJ
+from config import DRAW,D_FILESYNC_ADJ
 from data.dataApi import read_raw, read_local_pkl, read_local_sql
 from tools import number2dateStr
 
