@@ -32,9 +32,15 @@ import sys
 # from backtest.backtest_func import *
 from backtest.plot_performance import portfolio_performance,get_hedged_returns,plot_portfolio_performance,format_year_performance,format_hedged_year_performance
 import backtest.base_func as bf
-global_settings = {'effective_number': 200, 'target_number': 100, 'transform_mode': 0,
-                   'decay_num': 1, 'delay_num': 1, 'hedged_period': 60,
-                   'buy_commission': 2e-3, 'sell_commission': 2e-3}
+global_settings = {'effective_number': 200,
+                   'target_number': 100,
+                   'transform_mode': 0,
+                   # 'decay_num': 1,　＃TODO：　used　ｔｏ　ｓｍｏｏｔｈ　ｔｈｅ　ｓｉｇｎａｌ
+                   # 'delay_num': 1,
+                   'hedged_period': 60,
+                   'buy_commission': 2e-3,
+                   'sell_commission': 2e-3
+                   }
 
 
 

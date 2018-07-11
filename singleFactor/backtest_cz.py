@@ -37,11 +37,9 @@ def test_one(name):
     # if not os.path.exists(directory):
     #     os.makedirs(directory)
     # signal.to_csv(os.path.join(directory, 'signal.csv'))
-    #
-    # signal.to_pickle(r'E:\FT_Users\HTZhang\tmp\signal.pkl')
 
-    signal=pd.read_pickle(r'E:\FT_Users\HTZhang\tmp\signal.pkl')
-
+    directory=os.path.join(DIR_BACKTEST_RESULT,name)
+    signal=pd.read_csv(os.path.join(directory,'signal.csv'),index_col=0,parse_dates=True)
 
 
     start = '2013'
@@ -49,9 +47,9 @@ def test_one(name):
     results, fig = quick(start=start, end=end,
                          signal=signal, mark_title=name)
 
-    # fig.savefig(os.path.join(directory,name+'.png'))
-    # for k in results.keys():
-    #     results[k].to_csv(os.path.join(directory,k+'.csv'))
+    fig.savefig(os.path.join(directory,name+'.png'))
+    for k in results.keys():
+        results[k].to_csv(os.path.join(directory,k+'.csv'))
 
 
 def test_all():

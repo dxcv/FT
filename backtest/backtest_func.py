@@ -47,7 +47,8 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
 
     new_hold_shares = pd.Series()
     today_market_value = capital
-    for day in date_range:
+    for day in date_range: #在策略第一天运行的时候肯定不能直接这样在第一天建仓100只股票，会造成市场冲击，所以，策略在高换手率期间应该有所优化
+        print('backtesting: {}'.format(day))
         # 记录昨日持仓权重和股数，以及昨日收盘价
         last_hold_shares = new_hold_shares
         last_market_value = today_market_value
@@ -65,7 +66,7 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
 
         # 生成初始订单列表
         order_list = target_list.add(-last_hold_shares, fill_value=0)
-        order_list = order_list.round(6)
+        order_list = order_list.round(6) #主要是为了剔除掉那些数值太小的股票
 
         invariable_list = target_list[order_list == 0]  # 持仓不动订单
         sell_list = -order_list[order_list < 0]  # 需卖出订单
@@ -73,29 +74,36 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
 
         # 计算今日卖出金额
         sell_shares = last_hold_shares[sell_list.index]
-        sell_values = sell_shares * AStocks_sell_price[sell_shares.index]
+        sell_values = sell_shares * AStocks_sell_price[sell_shares.index] #实际卖出的时候一般不会是收盘价，这里可以优化一下，交易算法可以单独一个模块来写，这里的买卖价格应该由交易算法模块传过来，而非直接使用开盘价收盘价
         sell_values_sum = sum(sell_values)
         sell_fee = sell_values_sum * (tax_ratio + sell_commission)
 
-        # 计算今日买入金额
-        buy_fee = (sell_values_sum - sell_fee) * buy_commission #debug;第一天buy_fee 不应该为0
+        # 计算今日买入金额，这种方式是错的，应该是（1+buy_commission)*buy_values_sum=sell_values_sum-sell_fee or capital
+        # buy_fee = (sell_values_sum - sell_fee) * buy_commission #debug;第一天buy_fee 不应该为0
+        # if last_hold_shares.empty:
+        #     buy_values_sum = capital
+        # else:
+        #     buy_values_sum = sell_values_sum - sell_fee - buy_fee
+
         if last_hold_shares.empty:
-            buy_values_sum = capital
+            buy_values_sum=capital/(1+buy_commission)
         else:
-            buy_values_sum = sell_values_sum - sell_fee - buy_fee
+            buy_values_sum=(sell_values_sum-sell_fee)/(1+buy_commission)
+
+
 
         buy_list /= buy_list.sum()  # 买入的各股相对权重
         buy_values = buy_values_sum * buy_list
         buy_shares = buy_values / AStocks_buy_price[buy_values.index] #review:不考虑数值调整吗？比如最小交易数量为一手 100股
 
-        invariable_shares = last_hold_shares[#review: 只要在invariable_list中的就不变了吗？不改变权重吗？
+        invariable_shares = last_hold_shares[#review: 只要在invariable_list中的就不变了吗？不改变权重吗？ 万一某只股票持有了很久导致在总仓位中占比较高的话，应该有所调整
             invariable_list.index]  # 获取今日持仓不动股票份额
         new_hold_shares = pd.concat(
             [invariable_shares, buy_shares])  # 更新今日最新持仓股票份额
 
         new_hold_values = new_hold_shares * AStocks_close_price[
             new_hold_shares.index]
-        #debug: 建仓当天肯定是没有10000000的，这里没有考虑买入成本
+
         today_market_value = new_hold_values.sum()  # 计算今日持仓总市值
         if (last_hold_shares.empty) | (last_market_value == 0):
             today_return = 0
@@ -112,7 +120,7 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
         shares_record.append(new_hold_shares.copy())
         transac = pd.concat([-sell_shares, buy_shares])
         transac.name = day
-        transactions_record.append(transac)
+        transactions_record.append(transac) #TODO：ｒｅｃｏｒｄ　ｔｒａｎｓａｃｔｉｏｎ　ｆｅｅｓ
 
     return trade_returns, turnover_rates, positions_record, shares_record, transactions_record
 
@@ -143,12 +151,12 @@ def signal_to_effectivelist(day, signal, effective_number, transform_mode):
         normal_max = normal.max()
         effective_list[effective_list < left_3std] = normal_min
         effective_list[effective_list > right_3std] = normal_max
-    elif transform_mode == 2:
+    elif transform_mode == 2:#transform with arctan
         effective_list -= effective_list.mean()
         k = 1 / effective_list.abs().sum()
         effective_list *= k
         effective_list = effective_list.apply(np.arctan)
-    elif transform_mode == 3:
+    elif transform_mode == 3:# equally weighted
         effective_list[:] = 1
 
     if transform_mode in [0, 1, 2]:
@@ -170,37 +178,37 @@ def effectivelist_to_targetlist(day, effective_list, last_hold_list,
         last_price = last_close_price_none.loc[day]
         buy_limited_AStocks = price[price > 1.095 * last_price].index # 涨停的股票
         sell_limited_AStocks = price[price < 0.905 * last_price].index# 跌停的股票
-        AStocks_opened = (stocks_opened.loc[day] == 1)
+        AStocks_opened = (stocks_opened.loc[day] == 1) #review: simplify this two rows
         opened_AStocks = AStocks_opened[AStocks_opened].index
-
+        #用effective_list 这种方式去确定调不调仓有点naive,也可以考虑用比例，实际情况可能需考虑持仓和市场行情
+        #不需要调仓的股票
         coincident_list = last_hold_list[
-            last_hold_list.index.isin(effective_list.index)]
+            last_hold_list.index.isin(effective_list.index)] #trick： effective_list cover more stock than target_number, and we only sell those stocks that are no longer covered by effective list.
         selling_stocks = set(last_hold_list.index) - set(
             coincident_list.index) - set(buy_limited_AStocks) #不卖涨停的股票，即便根据信号来说该卖
         sellable_stocks = (selling_stocks & set(opened_AStocks)) - set(
             sell_limited_AStocks)
         hold_list = last_hold_list.drop(list(sellable_stocks))
-
         if len(hold_list) < target_number:
             buyable_stocks = (
                         (set(effective_list.index) & set(opened_AStocks)) -
                         set(buy_limited_AStocks) - set(sell_limited_AStocks)) #不买跌停股，即便根据信号来说该买
             effective_list = effective_list[list(buyable_stocks)]
             alternative_list = effective_list.drop(hold_list.index,
-                                                   errors='ignore')
+                                                   errors='ignore')#rebalance时候考虑的股票池
             alternative_list.sort_values(ascending=False, inplace=True)
 
-            complement_number = target_number - len(hold_list)
+            complement_number = target_number - len(hold_list)#这种定量持有100股的持仓方式可以优化一下，不一定非要持有100股
             buy_list = alternative_list[:complement_number]
             if len(buy_list) != 0:
                 if buy_list.sum() != 0:
                     buy_list /= buy_list.sum()
                 else:
                     buy_list[:] = 1 / len(buy_list)
-                buy_list = buy_list.round(8)
+                buy_list = buy_list.round(8) #有时候有些数值特别小，这种情况就直接省略对应的股票
                 buy_list = buy_list[buy_list != 0]
 
-            if len(buy_list) < complement_number:
+            if len(buy_list) < complement_number:#trick:由于上一步删除了数值较小的股票，为了达到持有100只股票的目的，这里应该继续追加股票，但是，更好的方式是少卖一只股票，这样可以减少卖出和买入交易成本
                 sellable_list = last_hold_list[sellable_stocks].sort_values()
                 substitute_list = sellable_list[
                                   :complement_number - len(buy_list)]
