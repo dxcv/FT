@@ -34,10 +34,10 @@ from backtest.plot_performance import portfolio_performance,get_hedged_returns,p
 import backtest.base_func as bf
 global_settings = {'effective_number': 200,
                    'target_number': 100,
-                   'transform_mode': 0,
+                   'transform_mode': 3, #等权重
                    # 'decay_num': 1,　＃TODO：　used　ｔｏ　ｓｍｏｏｔｈ　ｔｈｅ　ｓｉｇｎａｌ
                    # 'delay_num': 1,
-                   'hedged_period': 60,
+                   'hedged_period': 60, #trick: 股指的rebalance时间窗口，也可以考虑使用风险敞口大小来作为relance与否的依据
                    'buy_commission': 2e-3,
                    'sell_commission': 2e-3
                    }
@@ -49,9 +49,15 @@ zz500, = bf.read_trade_data('zz500', data_path=os.path.join(DIR_BACKTEST,'backte
 benchmark_returns_zz500 = zz500.pct_change()
 benchmark_returns_zz500.name = 'benchmark'
 
-def quick(start, end, signal, mark_title):
+def quick(signal,fig_title,start=None, end=None):
     global global_settings
     hedged_period = global_settings['hedged_period']
+
+    if not start:
+        start=trade_date[0]
+    if not end:
+        end=trade_date[-1]
+
     date_range = trade_date[start: end]
     benchmark = zz500[start: end]
 
@@ -93,12 +99,12 @@ def quick(start, end, signal, mark_title):
     hedged_returns = get_hedged_returns(trade_returns, benchmark, hedged_period)
     hedged_perf = portfolio_performance(hedged_returns, benchmark)
     fig=plot_portfolio_performance(trade_returns, turnover_rates, hedged_returns,
-                               benchmark, perf, hedged_perf, mark_title,fig_handler=True)
+                                   benchmark, perf, hedged_perf, fig_title, fig_handler=True)
     format_year_performance(trade_returns, benchmark, turnover_rates,
-                            mark_title)
+                            fig_title)
 
     format_hedged_year_performance(hedged_returns, benchmark,
-                                   mark_title + '_hedged')
+                                   fig_title + '_hedged')
 
     results = OrderedDict({
         'trade_returns': trade_returns,
@@ -110,3 +116,5 @@ def quick(start, end, signal, mark_title):
     })
     return results,fig
 
+
+#TODO: 应该提供几种接口: 1. signal， 2. 股票，

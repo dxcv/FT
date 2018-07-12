@@ -9,7 +9,7 @@ import os
 from functools import partial
 
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from config import DIR_DM, DIR_DM_RESULT
 from data.dataApi import read_local
 from singleFactor.check import check_factor, check_fn, daily_to_monthly
@@ -154,7 +154,6 @@ funcs2=[
 ]
 
 
-
 data = pd.read_pickle(os.path.join(dir_tmp, 'data.pkl'))
 data = data.set_index(['stkcd', 'report_period'])
 
@@ -233,7 +232,7 @@ def run():
     calculated=get_calculated()
     alist=[arg for arg in arg_list if arg not in calculated]
     print(len(alist))
-    pool=multiprocessing.Pool(12)
+    pool=multiprocessing.Pool(30)
     pool.map(cal_and_check,alist)
 
 

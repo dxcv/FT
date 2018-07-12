@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-24  22:16
-# NAME:FT-2technical.py
+# NAME:FT-technical_monthly.py
 from config import SINGLE_D_INDICATOR
 import os
 import pandas as pd

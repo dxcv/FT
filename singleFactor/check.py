@@ -137,6 +137,7 @@ def plot_beta_t_ic(beta_t_ic):
     ax3 = plt.subplot(224, sharex=ax1)
     ax3.bar(beta_t_ic.index, beta_t_ic['ic'], width=20)
     ax3.set_title('ic')
+    plt.close()
     return fig
 
 def drawdown(x):
@@ -220,7 +221,7 @@ def plot_layer_analysis(g_ret, g_ret_des,cover_rate):
     ax5.stackplot(cover_rate.index,cover_rate.T.values,alpha=0.7)
     ax5.set_yticks(np.arange(0,1.2,step=0.2))
     ax5.set_title('cover rate')
-
+    plt.close()#TODO: add grid
     return fig
 
 def filter_st_and_young_old(df, fdmt):
@@ -359,7 +360,7 @@ def main():
     pool.map(check_fn, fns)
 
 def debug():
-    fn='Q__roa.pkl'
+    fn='Q__roe.pkl'
     path = os.path.join(SINGLE_D_INDICATOR, fn)
     df = pd.read_pickle(path)
     monthly = daily_to_monthly(df)

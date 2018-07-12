@@ -103,6 +103,18 @@ def parse_equation(equation):
         return get_dataspace(equation)[equation]
 
 def quarterly_to_daily(df,name,duplicates='last'):
+    '''
+
+    Args:
+        df:DataFrame, contains ['stkcd','report_period','trd_dt'] in its columns
+          or index
+        name:
+        duplicates:
+
+    Returns:
+
+    '''
+
     td=read_from_sql('trade_date','ftresearch')['dates'].values
     #trick:There are some duplicates (different report_period) even with same stkcd and trd_dt
     # df=df.reset_index().sort_values(['stkcd','trd_dt','report_period'])

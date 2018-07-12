@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-28  14:49
-# NAME:FT-4volatility.py
+# NAME:FT-volatility_monthly.py
 import os
 
 from config import SINGLE_D_INDICATOR

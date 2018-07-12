@@ -78,7 +78,7 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
         sell_values_sum = sum(sell_values)
         sell_fee = sell_values_sum * (tax_ratio + sell_commission)
 
-        # 计算今日买入金额，这种方式是错的，应该是（1+buy_commission)*buy_values_sum=sell_values_sum-sell_fee or capital
+        #计算今日买入金额，这种方式是错的，应该是（1+buy_commission)*buy_values_sum=sell_values_sum-sell_fee or capital
         # buy_fee = (sell_values_sum - sell_fee) * buy_commission #debug;第一天buy_fee 不应该为0
         # if last_hold_shares.empty:
         #     buy_values_sum = capital
@@ -89,8 +89,6 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
             buy_values_sum=capital/(1+buy_commission)
         else:
             buy_values_sum=(sell_values_sum-sell_fee)/(1+buy_commission)
-
-
 
         buy_list /= buy_list.sum()  # 买入的各股相对权重
         buy_values = buy_values_sum * buy_list
@@ -120,12 +118,12 @@ def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
         shares_record.append(new_hold_shares.copy())
         transac = pd.concat([-sell_shares, buy_shares])
         transac.name = day
-        transactions_record.append(transac) #TODO：ｒｅｃｏｒｄ　ｔｒａｎｓａｃｔｉｏｎ　ｆｅｅｓ
+        transactions_record.append(transac) #TODO：record transaction fees
 
     return trade_returns, turnover_rates, positions_record, shares_record, transactions_record
 
 
-def signal_to_effectivelist(day, signal, effective_number, transform_mode):
+def signal_to_effectivelist(day, signal, effective_number, transform_mode=3):
     effective_list = signal.loc[day]
     need_drop_stocks = set()
     if day in stocks_need_drop.index:

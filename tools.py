@@ -69,7 +69,6 @@ def filter_st_and_young(df,fdmt_m):
     data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
     return data
 
-
 def outlier(x, k=4.5):
     '''
     Parameters

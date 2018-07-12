@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-06-04  22:55
-# NAME:FT-2technical.py
+# NAME:FT-technical_monthly.py
 
 
 from data.dataApi import read_local_pkl
