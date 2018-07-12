@@ -6,7 +6,6 @@
 # NAME:FT-check.py
 import multiprocessing
 import pickle
-from math import floor, ceil, sqrt
 
 from data.dataApi import read_local
 import pandas as pd
@@ -46,23 +45,6 @@ def change_index(df):
     df=df.set_index(['stkcd','trd_dt']).dropna()
     return df
 
-def get_cover_rate_old(fn,df,fdmt):
-    '''
-    计算指标覆盖率
-    '''
-    base = pd.pivot_table(fdmt, values='cap', index='trd_dt', columns='stkcd')
-    base_monthly = base.resample('M').last()
-
-    table = pd.pivot_table(df, values=fn[:-4], index='trd_dt', columns='stkcd')
-    table = table.reindex(base.index)
-    table = table.ffill(limit=FORWARD_TRADING_DAY)
-    monthly = table.resample('M').last()
-
-    total = base_monthly.notnull().sum(axis=1)
-    covered = monthly.notnull().sum(axis=1)
-    cover_rate = covered / total
-    return cover_rate
-
 def get_cover_rate(monthly, col):
     monthly['g'] = monthly.groupby('month_end', group_keys=False).apply(
         lambda x: pd.qcut(x['cap'], G,
@@ -73,7 +55,6 @@ def get_cover_rate(monthly, col):
     cover_rate = cover_rate.unstack('g') / G
     cover_rate = cover_rate[['g{}'.format(i) for i in range(1, G + 1)]]
     return cover_rate
-
 
 def get_beta_t_ic(df,col_factor,col_ret):
     '''
@@ -222,6 +203,7 @@ def plot_layer_analysis(g_ret, g_ret_des,cover_rate):
     ax5.set_yticks(np.arange(0,1.2,step=0.2))
     ax5.set_title('cover rate')
     plt.close()#TODO: add grid
+    #TODO： add title
     return fig
 
 def filter_st_and_young_old(df, fdmt):
@@ -340,9 +322,8 @@ def check_fn(fn):
         path = os.path.join(SINGLE_D_INDICATOR, fn)
         df = pd.read_pickle(path)
         monthly = daily_to_monthly(df)
-        monthly = monthly.stack().to_frame().swaplevel()
+        monthly = monthly.stack().to_frame().swaplevel().sort_index()
         monthly.index.names = ['stkcd', 'month_end']
-        monthly = monthly.sort_index()
         monthly.columns = [fn[:-4]]
         dfs,figs=check_factor(monthly)
         save_results(dfs,figs,fn[:-4])
@@ -360,7 +341,7 @@ def main():
     pool.map(check_fn, fns)
 
 def debug():
-    fn='Q__roe.pkl'
+    fn='C__est_bookvalue_FT24M_to_close_g_20.pkl'
     path = os.path.join(SINGLE_D_INDICATOR, fn)
     df = pd.read_pickle(path)
     monthly = daily_to_monthly(df)

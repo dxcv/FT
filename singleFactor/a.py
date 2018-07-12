@@ -8,44 +8,33 @@
 import pandas as pd
 from backtest.main import quick
 import numpy as np
+from config import DIR_BACKTEST_RESULT
 from data.dataApi import read_local
 
-trading = read_local('equity_selected_trading_data')
-ret=pd.pivot_table(trading,values='pctchange',index='trd_dt',columns='stkcd')/100
-zz500_ret_d=read_local('equity_selected_indice_ir')['zz500_ret_d']
-df=pd.concat([zz500_ret_d,ret],axis=1,join='inner')
-df=df.dropna(how='all')
-
-def roll(df, d):
-    # stack df.values d-times shifted once at each stack
-    roll_array = np.dstack([df.values[i:i + d, :] for i in range(len(df.index) - d + 1)]).T
-    # roll_array is now a 3-D array and can be read into
-    # a pandas panel object
-    panel = pd.Panel(roll_array,
-                     items=df.index[d - 1:],
-                     major_axis=df.columns,
-                     minor_axis=pd.Index(range(d), name='roll'))
-    # convert to dataframe and pivot + groupby
-    # is now ready for any action normally performed
-    # on a groupby object
-    return panel.to_frame().unstack().T.groupby(level=0)
+import os
 
 
-def beta(df, d):
-    df=df.dropna(thresh=int(d / 2), axis=1)
-    df=df.fillna(0)
-    # first column is the market
-    X = df.values[:, [0]]
-    # prepend a column of ones for the intercept
-    X = np.concatenate([np.ones_like(X), X], axis=1)
-    # matrix algebra
-    b = np.linalg.pinv(X.T.dot(X)).dot(X.T).dot(df.values[:, 1:])
-    return pd.Series(b[1], df.columns[1:], name='Beta')
+name = 'C__est_bookvalue_FT24M_to_close_g_20'
+
+monthly_check=pd.read_pickle(r'E:\FT_Users\HTZhang\tmp\monthly_check.pkl')
+
+directory = os.path.join(DIR_BACKTEST_RESULT, name)
+
+tmp = pd.read_csv(os.path.join(directory, 'signal.csv'), index_col=0,
+                     parse_dates=True)
+
+
+signal=pd.pivot_table(monthly_check,values=name,index='month_end',columns='stkcd')
+signal=signal.reindex(pd.date_range(start=signal.index[0],end=signal.index[-1]))
+signal=signal.ffill(limit=30)
+signal=signal.reindex(tmp.index)
+
+results,fig=quick(signal,fig_title='test',start='2010')
+
+fig.show()
 
 
 
-d=20
-results=roll(df,d).apply(beta,d)
 
 
 

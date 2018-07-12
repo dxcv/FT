@@ -77,7 +77,7 @@ def outlier(x, k=4.5):
         原始因子值
     k = 3 * (1 / stats.norm.isf(0.75))
     '''
-    med = np.median(x)
+    med = np.median(x) #debug: NaN should be removed before apply this function
     mad = np.median(np.abs(x - med))
     uplimit = med + k * mad
     lwlimit = med - k * mad
@@ -120,7 +120,7 @@ def clean(df, col,by='month_end'):
 
     # Review: 风格中性：对市值对数和市场做回归后取残差
     #TODO： 市值中性化方式有待优化，可以使用SMB代替ln_cap
-    df[col + '_out']=df.groupby(by)[col].apply(outlier)
+    df[col + '_out']=df.groupby(by)[col].apply(outlier) #trick: dropna before applying function outlier
     df[col + '_zsc']=df.groupby(by)[col + '_out'].apply(z_score)
     df['wind_2'] = df['wind_indcd'].apply(str).str.slice(0, 6) # wind 2 级行业代码
     df = df.join(pd.get_dummies(df['wind_2'], drop_first=True))

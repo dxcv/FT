@@ -125,7 +125,7 @@ def quarterly_to_daily(df,name,duplicates='last'):
 
     daily=daily.reindex(td)#review:
     daily.index.name='trd_dt'
-    daily=daily.ffill(limit=FORWARD_TRADING_DAY)
+    daily=daily.ffill(limit=FORWARD_TRADING_DAY)# debug: 向前填充最最多400个交易日,年度频率的数据，400 问题不大，但是对于月频的数据，最多向前填充400个交易日肯定是有问题的
     daily=daily.dropna(how='all') #trick
     return daily
 
@@ -173,7 +173,6 @@ def debug():
     df = pd.read_excel(path, sheet_name='equation', index_col=0)
     parse_a_row(df.loc[19])
 
-# debug()
 
 def cal_sheet_equation():
     path=r'indicators.xlsx'
