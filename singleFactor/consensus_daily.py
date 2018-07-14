@@ -11,7 +11,7 @@ import os
 
 
 FORWARD_LIMIT=20
-
+SMOOTH_PERIOD=30
 
 
 
@@ -45,6 +45,8 @@ def cal():
                 comb[indName]=comb[numerator]/comb[denominator]
                 d=pd.pivot_table(comb, values=indName, index='trd_dt', columns='stkcd')
                 d=d.ffill(limit=FORWARD_LIMIT)
+                d=d.rolling(SMOOTH_PERIOD).mean()#trick： 平滑，否则换手率太高
+                #trick: 如果月频的测出来有效，我们可以把日度的数据变为月度的。每月调仓一次就好了
                 for day in days:
                     nameG='{}_g_{}'.format(indName,day)
                     g=d.pct_change(periods=day)
@@ -54,8 +56,8 @@ def cal():
                     save_indicator(chg,'C__{}'.format(nameC))
                     print(numerator,denominator,day)
 
-
-cal()
+if __name__ == '__main__':
+    cal()
 
 
 

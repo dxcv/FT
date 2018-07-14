@@ -118,3 +118,4 @@ def quick(signal,fig_title,start=None, end=None):
 
 
 #TODO: 应该提供几种接口: 1. signal， 2. 股票，
+#TODO:分别测算每年的对冲收益率，因为实际投资的时候不可能投资５年，所以ｃｕｍｐｒｏｄ实际会夸大效果

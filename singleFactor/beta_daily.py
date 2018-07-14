@@ -84,5 +84,3 @@ def cal_idioVol():
         results=roll(df,d).apply(idioVol, d)
         save_indicator(results,name)
         print(d)
-
-

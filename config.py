@@ -59,13 +59,21 @@ DIR_CLEANED=os.path.join(DIR_ROOT,'factor_combination','cleaned')
 # DIR_BACKTEST=r'D:\zht\database\quantDb\internship\FT\backtest'
 DIR_BACKTEST=os.path.join(DIR_ROOT,'backtest')
 # DIR_SIGNAL=r'D:\zht\database\quantDb\internship\FT\signal'
-DIR_SIGNAL=os.path.join(DIR_ROOT,'signal')
+DIR_SIGNAL=os.path.join(DIR_ROOT,'singleFactor','signal')
 # DIR_BACKTEST_RESULT=r'D:\zht\database\quantDb\internship\FT\backtest\result'
 DIR_BACKTEST_RESULT=os.path.join(DIR_ROOT, 'backtest', 'result')
 
 
 
 DIR_DM=os.path.join(DIR_ROOT,'singleFactor','data_mining')
+DIR_DM_TMP=os.path.join(DIR_DM,'tmp')
+
 DIR_DM_RESULT=os.path.join(DIR_DM,'result')
+DIR_DM_SIGNAL=os.path.join(DIR_DM,'signal')
+DIR_DM_BACKTEST=os.path.join(DIR_DM,'backtest')
+
+
+
+DIR_TMP=os.path.join(DIR_ROOT,'tmp')
 
 

@@ -124,8 +124,9 @@ def plot_beta_t_ic(beta_t_ic):
     plt.close()
     return fig
 
-def plot_layer_analysis(g_ret, g_ret_des, distribution=None):
+def plot_layer_analysis(g_ret, g_ret_des,distribution,name):
     fig = plt.figure(figsize=(16, 8))
+    plt.suptitle(name, fontsize=16)
     ax1 = plt.subplot(221)
     logRet = np.log((1 + g_ret).cumprod())
     logRet['g{}-zz500'.format(G)]=logRet['g{}'.format(G)]-logRet['zz500']
@@ -133,25 +134,23 @@ def plot_layer_analysis(g_ret, g_ret_des, distribution=None):
 
     for col in logRet.columns:
         if col == 'g{}-zz500'.format(G):
-            ax1.plot(g_ret.index, logRet[col], 'r', label=col, alpha=1,
+            ax1.plot(g_ret.index, logRet[col].values, 'r', label=col, alpha=1,
                      linewidth=1.5)
         elif col == 'g1-zz500'.format(G):
-            ax1.plot(g_ret.index, logRet[col], 'violet', label=col, alpha=1,
+            ax1.plot(g_ret.index, logRet[col].values, 'violet', label=col, alpha=1,
                      linewidth=1.5)
         elif col == 'zz500':
-            ax1.plot(g_ret.index, logRet[col], 'b', label=col, alpha=1,
+            ax1.plot(g_ret.index, logRet[col].values, 'b', label=col, alpha=1,
                      linewidth=1.5)
         else:
-            ax1.plot(g_ret.index, logRet[col], label=col, alpha=0.8,
-                     linewidth=0.5)
-    #TODO: add relative return
-    # ax1.plot(g_ret.index,logRet['g1']-logRet['zz500'])
-    ax1.set_title('logRet')
+            ax1.plot(g_ret.index, logRet[col].values, alpha=0.8,
+                     linewidth=0.5) #hide legend for these portfolios
     ax1.legend()
+    ax1.set_title('logRet')
+    ax1.grid(True)
 
     ax2 = plt.subplot(223)
     ax2.bar(g_ret.index, (g_ret['g{}'.format(G)]-g_ret['zz500']).values, width=20, alpha=1,color='b')
-    ax2.set_xlabel('month_end')
     ax2.set_ylabel('return bar', color='b')
     [tl.set_color('b') for tl in ax2.get_yticklabels()]
     ax2.set_title('top minus zz500')
@@ -165,13 +164,16 @@ def plot_layer_analysis(g_ret, g_ret_des, distribution=None):
     barlist=ax4.bar(range(g_ret_des['annual'].shape[0]), g_ret_des['annual'],
                       tick_label=g_ret_des.index, color='b')
     barlist[list(g_ret_des.index).index('zz500'.format(G))].set_color('r')
+    ax4.axhline(g_ret_des.loc['zz500','annual'],color='r')
     # ax4.axhline
     ax4.set_title('annual return')
 
     # distribution
     ax5=plt.subplot(224)
     ax5.stackplot(distribution.index, distribution.T.values, alpha=0.5)
-    ax5.set_yticks(np.arange(0,0.12,step=0.02))
+    ax5.set_yticks(np.arange(0,1.2/G,step=(0.2/G)))
+    # ax5.set_yticks(np.arange(0,1.2,step=0.2))
+    ax5.set_ylim(0,1.0/G)
     ax5.plot(distribution.index,distribution[['g{}'.format(i) for i in range(1,int(G/2)+1)]].sum(axis=1),'b-',label='boundary')
     ax5.set_title('distribution of the top basket')
     plt.close()
@@ -204,7 +206,6 @@ def g_ret_describe(g_ret):
                 'rela_sigma': rela_sigma,
                 'rela_ret_IR': rela_retn_IR,
                 'rela_max_drdw': rela_max_drdw})
-
 
 def get_daily_signal(name):
     df = pd.read_pickle(os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
@@ -249,7 +250,7 @@ def check_factor_monthly(name):
     fig_beta_t_ic = plot_beta_t_ic(beta_t_ic)
 
     g_ret_des = g_ret_describe(g_ret)
-    fig_g = plot_layer_analysis(g_ret, g_ret_des, distribution)
+    fig_g = plot_layer_analysis(g_ret, g_ret_des,distribution,name)
 
     dfs={'beta_t_ic':beta_t_ic,
        'beta_t_ic_des':beta_t_ic_des,
@@ -275,24 +276,26 @@ def check_with_name(name):
     try:
         dfs,figs=check_factor_monthly(name)
         save_results(dfs,figs,name)
+        print(name)
     except:
         print('{}----------> wrong'.format(name))
 
 def debug():
-    name='C__est_bookvalue_FT24M_to_close_g_20'
+    name='Q__roe'
     dfs, figs = check_factor_monthly(name)
     save_results(dfs, figs, name)
-
 
 def main():
     fns=os.listdir(SINGLE_D_INDICATOR)
     fns=[fn for fn in fns if fn.endswith('.pkl')]
     names=[fn[:-4] for fn in fns]
+    print(len(names))
     checked=os.listdir(SINGLE_D_CHECK)
     names=[n for n in names if n not in checked]
-    pool = multiprocessing.Pool(2)
+    print(len(names))
+    pool = multiprocessing.Pool(4)
     pool.map(check_with_name, names)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
 

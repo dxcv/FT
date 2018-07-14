@@ -52,7 +52,8 @@ def get_amount2std():
         save_indicator(amount_to_std,name)
         print(day)
 
-get_amount2std()
+if __name__ == '__main__':
+    get_amount2std()
 
 
 

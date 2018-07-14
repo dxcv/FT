@@ -10,19 +10,13 @@ from functools import partial
 
 import pandas as pd
 import matplotlib.pyplot as plt
-from config import DIR_DM, DIR_DM_RESULT
+from config import DIR_DM, DIR_DM_RESULT,DIR_DM_TMP
 from data.dataApi import read_local
 from singleFactor.check import check_factor, check_fn, daily_to_monthly
 from singleFactor.financial import quarterly_to_daily
 from singleFactor.operators import *
 
 
-# dir_tmp= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\tmp'
-dir_tmp=os.path.join(DIR_DM,'tmp')
-# dir_indicators= r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\indicators'
-dir_indicators= os.path.join(DIR_DM,'indicators')
-# dir_check=r'D:\zht\database\quantDb\internship\FT\singleFactor\data_mining\check'
-dir_check=os.path.join(DIR_DM,'check')
 
 
 base_variables1=['tot_assets', # total assets
@@ -72,9 +66,9 @@ def get_financial_sheets():
     # cf.to_pickle(os.path.join(r'E:\tmp','cf.pkl'))
     # inc.to_pickle(os.path.join(r'E:\tmp','inc.pkl'))
 
-    bs=pd.read_pickle(os.path.join(dir_tmp, 'bs.pkl'))
-    cf=pd.read_pickle(os.path.join(dir_tmp, 'cf.pkl'))
-    inc=pd.read_pickle(os.path.join(dir_tmp, 'inc.pkl'))
+    bs=pd.read_pickle(os.path.join(DIR_DM_TMP, 'bs.pkl'))
+    cf=pd.read_pickle(os.path.join(DIR_DM_TMP, 'cf.pkl'))
+    inc=pd.read_pickle(os.path.join(DIR_DM_TMP, 'inc.pkl'))
 
     return bs,cf,inc
 
@@ -122,7 +116,7 @@ def combine_financial_sheet():
     for col in cols_to_delete:
         del data[col]
 
-    data.to_pickle(os.path.join(dir_tmp, 'data.pkl'))
+    data.to_pickle(os.path.join(DIR_DM_TMP, 'data.pkl'))
 
 def generator_with_single_variable(func,s):
     return eval(func)(s)
@@ -154,7 +148,7 @@ funcs2=[
 ]
 
 
-data = pd.read_pickle(os.path.join(dir_tmp, 'data.pkl'))
+data = pd.read_pickle(os.path.join(DIR_DM_TMP, 'data.pkl'))
 data = data.set_index(['stkcd', 'report_period'])
 
 def get_arg_list():
@@ -212,7 +206,7 @@ def cal_and_check(args):
         for k in figs.keys():
             figs[k].savefig(os.path.join(directory, k + '.png'))
     except:
-        with open(os.path.join(dir_tmp,'failed.txt'),'a') as f:
+        with open(os.path.join(DIR_DM_TMP,'failed.txt'),'a') as f:
             f.write(name+'\n')
         print('{}-------> wrong!'.format(name))
 

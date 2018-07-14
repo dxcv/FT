@@ -19,6 +19,7 @@ def test_one(name):
     print(name)
     df = pd.read_pickle(os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
     df=df.stack().to_frame().swaplevel().sort_index()
+    df.index.names=['stkcd','trd_dt']
     df.columns=[name]
     fdmt = read_local('equity_fundamental_info')
     data=pd.concat([fdmt,df],axis=1,join='inner')
@@ -48,6 +49,12 @@ def test_one(name):
     for k in results.keys():
         results[k].to_csv(os.path.join(directory,k+'.csv'))
 
+def task(name):
+    try:
+        print('Starting:  {}'.format(name))
+        test_one(name)
+    except:
+        print('Wrong------------>{}'.format(name))
 
 def test_all():
     # path = 'indicators.xlsx'
@@ -59,29 +66,44 @@ def test_all():
     checked=[fn for fn in os.listdir(DIR_BACKTEST_RESULT)]
     names=[n for n in names if n not in checked]
     print(len(names))
-    # pool = multiprocessing.Pool(4)
-    # pool.map(test_one, names)
+    pool = multiprocessing.Pool(4)
+    pool.map(task, names)
 
-    for i,name in enumerate(names):
-        try:
-            test_one(name)
-            print(i,name)
-        except:
-            pass
+    # for i,name in enumerate(names):
+    #     try:
+    #         test_one(name)
+    #         print(i,name)
+    #     except:
+    #         pass
 
 def debug():
     name='Q__roe'
-    directory=os.path.join(DIR_BACKTEST_RESULT,name)
-    signal=pd.read_csv(os.path.join(directory,'signal.csv'),index_col=0)
-    start = '2010'
-    end = '2016'
-    results,fig=quick(signal,name,start,end)
-    fig.savefig(os.path.join(directory,name+'.png'))
-    for k in results.keys():
-        results[k].to_csv(os.path.join(directory,k+'.csv'))
+    task(name)
 
 if __name__ == '__main__':
     test_all()
 
 
+#debug: G__divdend3YR
 
+#TODO:analyse the characteristics of the distribution
+
+#TODO if the relative return is negative, revert the signal
+#TODO: 1. smooth;(before signal or afeter signal) 2. out-of-sample( 2010-2015);
+
+
+#TODO:3. weight of signal
+
+
+
+'''
+1. short leg should also be employed to filter the signal. If any stock belong to 
+a short leg, we should be cautious about these stocks.
+
+2. bid/ask spread, price impact of large trades, 
+
+3. transaction cost is different for different stocks, it can be based on many
+    characteristics, for example, size,idiosyncratic volatitlity and so on.
+
+
+'''
