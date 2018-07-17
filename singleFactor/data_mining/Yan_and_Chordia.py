@@ -6,18 +6,11 @@
 # NAME:FT-Yan_and_Chordia.py
 import multiprocessing
 import os
-from functools import partial
 
-import pandas as pd
-import matplotlib.pyplot as plt
-from config import DIR_DM, DIR_DM_RESULT,DIR_DM_TMP
-from data.dataApi import read_local
-from singleFactor.check import check_factor, check_fn, daily_to_monthly
-from singleFactor.financial import quarterly_to_daily
+from config import DIR_DM_RESULT, DIR_DM_TMP
+from singleFactor.calculate_indicators.financial import quarterly_to_daily
+from singleFactor.old.check import check_factor, daily_to_monthly
 from singleFactor.operators import *
-
-
-
 
 base_variables1=['tot_assets', # total assets
                 'tot_cur_assets',# total current assets

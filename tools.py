@@ -133,3 +133,23 @@ def clean(df, col,by='month_end'):
     del df[col + '_zsc']
     df=df.rename(columns={col + '_neu':col})
     return df
+
+
+def myroll(df, d):
+    '''
+    refer to
+        https://stackoverflow.com/questions/39501277/efficient-python-pandas-stock-beta-calculation-on-many-dataframes
+    '''
+
+    # stack df.values d-times shifted once at each stack
+    roll_array = np.dstack([df.values[i:i + d, :] for i in range(len(df.index) - d + 1)]).T
+    # roll_array is now a 3-D array and can be read into
+    # a pandas panel object
+    panel = pd.Panel(roll_array,
+                     items=df.index[d - 1:],
+                     major_axis=df.columns,
+                     minor_axis=pd.Index(range(d), name='roll'))
+    # convert to dataframe and pivot + groupby
+    # is now ready for any action normally performed
+    # on a groupby object
+    return panel.to_frame().unstack().T.groupby(level=0)

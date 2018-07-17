@@ -225,3 +225,8 @@ def get_mould_index():
     with open(os.path.join(D_DRV,'mould_index.pkl'),'wb') as f:
         pickle.dump(mould.index,f)
 
+
+# fdmt=read_local('equity_fundamental_info')
+# trading=read_local('equity_selected_trading_data')
+# ir=read_local('equity_selected_indice_ir')
+

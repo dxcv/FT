@@ -100,11 +100,11 @@ def quick(signal,fig_title,start=None, end=None):
     hedged_perf = portfolio_performance(hedged_returns, benchmark)
     fig=plot_portfolio_performance(trade_returns, turnover_rates, hedged_returns,
                                    benchmark, perf, hedged_perf, fig_title, fig_handler=True)
-    format_year_performance(trade_returns, benchmark, turnover_rates,
-                            fig_title)
+    # format_year_performance(trade_returns, benchmark, turnover_rates,
+    #                         fig_title)
 
-    format_hedged_year_performance(hedged_returns, benchmark,
-                                   fig_title + '_hedged')
+    # format_hedged_year_performance(hedged_returns, benchmark,
+    #                                fig_title + '_hedged')
 
     results = OrderedDict({
         'trade_returns': trade_returns,

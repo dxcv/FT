@@ -6,35 +6,15 @@
 # NAME:FT-a.py
 
 import pandas as pd
-from backtest.main import quick
-import numpy as np
-from config import DIR_BACKTEST_RESULT
-from data.dataApi import read_local
-
+from config import DIR_SINGLE_BACKTEST, DIR_SIGNAL, SINGLE_D_INDICATOR
 import os
 
+from singleFactor.singleTools import convert_indicator_to_signal
 
-name = 'C__est_bookvalue_FT24M_to_close_g_20'
-
-monthly_check=pd.read_pickle(r'E:\FT_Users\HTZhang\tmp\monthly_check.pkl')
-
-directory = os.path.join(DIR_BACKTEST_RESULT, name)
-
-tmp = pd.read_csv(os.path.join(directory, 'signal.csv'), index_col=0,
-                     parse_dates=True)
-
-
-signal=pd.pivot_table(monthly_check,values=name,index='month_end',columns='stkcd')
-signal=signal.reindex(pd.date_range(start=signal.index[0],end=signal.index[-1]))
-signal=signal.ffill(limit=30)
-signal=signal.reindex(tmp.index)
-
-results,fig=quick(signal,fig_title='test',start='2010')
-
-fig.show()
-
-
-
+name = 'V__ebitdaToCap'
+df = pd.read_pickle(os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
+# signal = pd.read_pickle(os.path.join(DIR_SIGNAL, name + '.pkl'))
+convert_indicator_to_signal(df, name)
 
 
 

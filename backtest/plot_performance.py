@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import os
-
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def portfolio_performance(portfolio_return, benchmark_index):
     return_free = 0.0              # 无风险利率估算为3%
@@ -66,9 +68,7 @@ def get_hedged_returns(portfolio_returns, benchmark_index, hedged_period):
 def plot_portfolio_performance(portfolio_return, portfolio_turnover,
                                hedged_return, benchmark_index, perf,
                                hedged_perf, title, fig_handler=False):
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+
     sns.set_style('white', {'axes.linewidth': 1.0, 'axes.edgecolor': '.8'})
     
     portfolio_value = (portfolio_return + 1).cumprod()
@@ -258,7 +258,7 @@ def format_year_performance(returns, benchmark_ind, turnover_rate, title):
                     u'换手率': '{:.3f}'.format}
     perf_year = perf_year.transform(format_funcs)
     print (' '*int((66 - len(title))/2) + title)
-    display(perf_year)
+    # display(perf_year)
     
     
 def format_hedged_year_performance(returns, benchmark_ind, title):

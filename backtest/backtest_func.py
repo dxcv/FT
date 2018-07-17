@@ -132,7 +132,7 @@ def signal_to_effectivelist(day, signal, effective_number, transform_mode=3):
             need_drop_stocks = set([need_drop_stocks])
         else:
             need_drop_stocks = set(need_drop_stocks)
-    effective_list.drop(list(need_drop_stocks), inplace=True)
+    effective_list.drop(list(need_drop_stocks), inplace=True,errors='ignore')
     effective_list.replace([np.inf, -np.inf], np.nan, inplace=True)
     effective_list.dropna(inplace=True)
     effective_list = effective_list.sort_values(ascending=False)[

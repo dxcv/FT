@@ -133,8 +133,7 @@ def adjust_equity_selected_indice_ir():
     df=df.set_index('trd_dt')
     df.to_pickle(os.path.join(D_FT_ADJ,tbname+'.pkl'))
 
-def adjust_consensus_forecast():
-    pass
+
 
 
 # adjust_equity_selected_indice_ir()

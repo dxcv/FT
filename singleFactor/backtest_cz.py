@@ -6,7 +6,7 @@
 # NAME:FT-backtest_cz.py
 import multiprocessing
 
-from config import SINGLE_D_INDICATOR, DIR_SIGNAL, DIR_BACKTEST_RESULT, \
+from config import SINGLE_D_INDICATOR, DIR_SIGNAL, DIR_SINGLE_BACKTEST, \
     LEAST_CROSS_SAMPLE
 import os
 import pandas as pd
@@ -34,12 +34,12 @@ def test_one(name):
     signal=pd.pivot_table(cleaned_data,values=name,index='trd_dt',columns='stkcd').sort_index()
     signal=signal.shift(1)#trick:
 
-    directory=os.path.join(DIR_BACKTEST_RESULT,name)
+    directory=os.path.join(DIR_SINGLE_BACKTEST, name)
     if not os.path.exists(directory):
         os.makedirs(directory)
     signal.to_csv(os.path.join(directory, 'signal.csv'))
 
-    # directory=os.path.join(DIR_BACKTEST_RESULT,name)
+    # directory=os.path.join(DIR_SINGLE_BACKTEST,name)
     # signal=pd.read_csv(os.path.join(directory,'signal.csv'),index_col=0,parse_dates=True)
 
     start='2010'
@@ -63,7 +63,7 @@ def test_all():
     fns=os.listdir(SINGLE_D_INDICATOR)
     names=[fn[:-4] for fn in fns]
     print(len(names))
-    checked=[fn for fn in os.listdir(DIR_BACKTEST_RESULT)]
+    checked=[fn for fn in os.listdir(DIR_SINGLE_BACKTEST)]
     names=[n for n in names if n not in checked]
     print(len(names))
     pool = multiprocessing.Pool(4)
@@ -71,7 +71,7 @@ def test_all():
 
     # for i,name in enumerate(names):
     #     try:
-    #         test_one(name)
+    #         backtest_with_smooth(name)
     #         print(i,name)
     #     except:
     #         pass

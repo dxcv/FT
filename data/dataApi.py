@@ -28,6 +28,9 @@ def read_local(tbname,col=None):
             df=pd.read_pickle(path)
             break
 
+    if df is None:
+        raise('No data named----->{}'.format(tbname))
+
     if col:
         if isinstance(col, str):# read only one column
             return df[[col]]
