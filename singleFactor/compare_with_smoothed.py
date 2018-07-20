@@ -7,36 +7,35 @@
 import multiprocessing
 import pickle
 from functools import partial
-
+import matplotlib.pyplot as plt
 from backtest.main import quick
 from config import DIR_SIGNAL, DIR_SINGLE_BACKTEST, DIR_SIGNAL_SMOOTHED, \
     DIR_SIGNAL_PARAMETER, DIR_TMP
 import os
 import pandas as pd
-from singleFactor.backtest_signal import SMOOTH_PERIODS
+from singleFactor.backtest_signal import SMOOTH_PERIODS, get_signal_direction
 
 
 def find_best_smooth_period():
     names=os.listdir(os.path.join(DIR_SIGNAL_SMOOTHED,'0'))
     ret_df=pd.DataFrame(index=names,columns=SMOOTH_PERIODS,dtype=float)
-    turnover_df=pd.DataFrame(index=names,columns=SMOOTH_PERIODS,dtype=float)
+    # turnover_df=pd.DataFrame(index=names,columns=SMOOTH_PERIODS,dtype=float)
     for name in names:
         for sp in SMOOTH_PERIODS:
             directory = os.path.join(DIR_SIGNAL_SMOOTHED, str(sp),name)
             try:
                 avg_return=pd.read_csv(os.path.join(directory,'hedged_returns.csv'),index_col=0,parse_dates=True).mean()[0]
-                avg_turnover=pd.read_csv(os.path.join(directory,'turnover_rates.csv'),index_col=0,parse_dates=True).mean()[0]
+                # avg_turnover=pd.read_csv(os.path.join(directory,'turnover_rates.csv'),index_col=0,parse_dates=True).mean()[0]
                 ret_df.at[name,sp]=avg_return
-                turnover_df.at[name,sp]=avg_turnover
+                # turnover_df.at[name,sp]=avg_turnover
             except:
                 pass
         print(name)
 
 
     best_ret=ret_df.idxmax(axis=1).sort_values()
-    lowest_turnover=turnover_df.idxmin(axis=1).sort_values()
-
-    best_ret.value_counts()
+    # lowest_turnover=turnover_df.idxmin(axis=1).sort_values()
+    return best_ret
 
 def compare_parameters():
     names=os.listdir(os.path.join(DIR_SIGNAL_SMOOTHED,'0'))
@@ -63,34 +62,36 @@ def compare_parameters():
 def get_return(args):
     name=args[0]
     sp=args[1]
-    signal = -pd.read_pickle(os.path.join(DIR_SIGNAL, name + '.pkl')) #trick: reverse the signal
+    signal = pd.read_pickle(os.path.join(DIR_SIGNAL, name + '.pkl')) #trick: reverse the signal
+    signal=signal*get_signal_direction(name)
     if sp:
         signal=signal.rolling(sp,min_periods=int(sp/2)).mean()
     results, fig = quick(signal, name, start='2010', end='2015')
-
-    # if results['hedged_returns'].sum() < 0:  # reverse the direction if the signal negative
-    #     signal = -signal
-    #     results, fig = quick(signal, name, start='2010', end='2015')
-    print(sp)
     return sp,results['hedged_returns']
 
-def test(name):
+def _select_sp(name):
     pool=multiprocessing.Pool(16)
-    ss=pool.map(get_return,((name,sp) for sp in range(0,31)))
-    with open(os.path.join(DIR_TMP,'ss.pkl'),'wb') as f:
-        pickle.dump(ss,f)
-
-def analyse():
-    with open(os.path.join(DIR_TMP,'ss.pkl'),'rb') as f:
-        ss=pickle.load(f)
-
+    ss=pool.map(get_return,((name,sp) for sp in range(0,101,2)))
+    pool.close()
+    pool.join()
     df=pd.concat([s[1] for s in ss],axis=1,keys=[s[0] for s in ss])
 
+    # df.to_pickle(os.path.join(DIR_TMP,'df.pkl'))
 
-    (1+df.iloc[:,:2]).cumprod().plot().get_figure().show()
-    (1+df).cumprod().plot().get_figure().show()
-    df.iloc[:,:5].cumsum().plot().get_figure().show()
-    df.mean().plot().get_figure().show()
+    # df=pd.read_pickle(os.path.join(DIR_TMP,'df.pkl'))
+
+    fig=df.mean().plot().get_figure()
+    fig.savefig(os.path.join(DIR_TMP,name+'.png'))
+    plt.close()
+
+    # (1+df).cumprod().plot().get_figure().show()
+
+def select_sp():
+    names=[fn[:-4] for fn in os.listdir(DIR_SIGNAL)]
+    for name in names:
+        _select_sp(name)
+
+
 
 # name = 'T__turnover2_std_300'
 # get_return((name,1))
@@ -98,7 +99,10 @@ def analyse():
 
 
 if __name__ == '__main__':
-    name = 'T__turnover2_std_300'
-    test(name)
+    # name = 'C__est_bookvalue_FT24M_to_close_g_20'
+    select_sp()
 
+
+
+#TODO： how to conduct papameter optimization?
 

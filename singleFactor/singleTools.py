@@ -31,6 +31,7 @@ def convert_indicator_to_signal(df,name):
     signal = pd.pivot_table(cleaned_data, values=name, index='trd_dt',
                             columns='stkcd').sort_index()
     signal = signal.shift(1)  # trick:
+    signal=signal.dropna(how='all')
     return signal
 
 

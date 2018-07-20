@@ -15,11 +15,15 @@ import pandas as pd
 START='2010'
 END='2015'
 
-SMOOTH_PERIODS=[0,10,20,30,40,50,60]
+SMOOTH_PERIODS=[0,10,20,30,40,50,60,70,80]
 def get_signal_direction(name):
     hret=pd.read_csv(os.path.join(DIR_SIGNAL_SMOOTHED,'raw',name,'hedged_returns.csv'),index_col=0)
     sign=1 if hret.sum()[0]>=0 else -1
     return sign
+
+def get_smoothed_signal(signal,smooth_period):
+    return signal.rolling(smooth_period,
+                            min_periods=int(smooth_period / 2)).mean()
 
 def backtest_raw(name):
     print(name)
@@ -47,12 +51,12 @@ def backtest_raw_all():
 def backtest_with_smooth(name, smooth_period=0):
     print(name)
     signal=pd.read_pickle(os.path.join(DIR_SIGNAL,name+'.pkl'))
-    signal=signal*get_signal_direction(name)
+    signal=get_signal_direction(name)*signal
 
     if smooth_period==0:
         directory=os.path.join(DIR_SIGNAL_SMOOTHED,'0',name)
     else:
-        signal=signal.rolling(smooth_period,min_periods=int(smooth_period/2)).mean()
+        signal=get_smoothed_signal(signal,smooth_period)
         directory=os.path.join(DIR_SIGNAL_SMOOTHED,str(smooth_period),name)
 
     if os.path.exists(directory):
@@ -85,17 +89,40 @@ def main():
 def debug():
     name = 'T__turnover2_std_300'
     backtest_with_smooth(name, 2)
-    backtest_with_smooth(name, 3)
-    backtest_with_smooth(name, 4)
+    # backtest_with_smooth(name, 3)
+    # backtest_with_smooth(name, 4)
+
 
 if __name__ == '__main__':
-    # backtest_raw_all()
-    main()
+    backtest_raw_all()
+    # main()
+#debug: G__divdend3YR
+
+#TODO: before backtest, we may need to standardize the signal. If we use the raw signal as weight, there may be some abnormal values.
+#TODO:analyse the characteristics of the distribution
+
+#TODO if the relative return is negative, revert the signal
+#TODO: 1. smooth;(before signal or afeter signal) 2. out-of-sample( 2010-2015);
 
 
-# if __name__ == '__main__':
-#     run()
+#TODO:3. weight of signal
 
+#TODO： hit rate
+#TODO: analyse the distribution of the hedged returns
+
+
+
+'''
+1. short leg should also be employed to filter the signal. If any stock belong to 
+a short leg, we should be cautious about these stocks.
+
+2. bid/ask spread, price impact of large trades, 
+
+3. transaction cost is different for different stocks, it can be based on many
+    characteristics, for example, size,idiosyncratic volatitlity and so on.
+
+
+'''
 
 '''
 1. It seems that the signals perform better in bear market?

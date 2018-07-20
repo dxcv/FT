@@ -39,7 +39,7 @@ def portfolio_performance(portfolio_return, benchmark_index):
         'max_drawdown': max_drawdown,
         'return_down_ration': portfolio_annualized_return / max_drawdown
     }
-    return perf
+    return pd.Series(perf)
 
 
 def get_hedged_returns(portfolio_returns, benchmark_index, hedged_period):
@@ -179,6 +179,7 @@ def plot_portfolio_performance(portfolio_return, portfolio_turnover,
 #    plt.savefig(title + '.png', bbox_inches='tight')
 #    plt.show()
     if fig_handler:
+        plt.close()
         return fig
     
     

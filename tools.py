@@ -69,20 +69,21 @@ def filter_st_and_young(df,fdmt_m):
     data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
     return data
 
-def outlier(x, k=4.5):
+def outlier(s, k=4.5):
     '''
     Parameters
     ==========
-    x:
+    s:Series
         原始因子值
     k = 3 * (1 / stats.norm.isf(0.75))
     '''
-    med = np.median(x) #debug: NaN should be removed before apply this function
-    mad = np.median(np.abs(x - med))
+    med = np.median(s) #debug: NaN should be removed before apply this function
+    mad = np.median(np.abs(s - med))
     uplimit = med + k * mad
     lwlimit = med - k * mad
-    y = np.where(x >= uplimit, uplimit, np.where(x <= lwlimit, lwlimit, x))
-    return pd.DataFrame(y, index=x.index)
+    y = np.where(s >= uplimit, uplimit, np.where(s <= lwlimit, lwlimit, s))
+    # return pd.DataFrame(y, index=s.index)
+    return pd.Series(y, index=s.index)
 
 def z_score(x):
     return (x - np.mean(x)) / np.std(x)

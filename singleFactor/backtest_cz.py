@@ -94,6 +94,9 @@ if __name__ == '__main__':
 
 #TODO:3. weight of signal
 
+#TODO： hit rate
+#TODO: analyse the distribution of the hedged returns
+
 
 
 '''

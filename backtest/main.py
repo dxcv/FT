@@ -112,7 +112,8 @@ def quick(signal,fig_title,start=None, end=None):
         'positions_record': positions_record,
         'shares_record': shares_record,
         'transactions_record': transactions_record,
-        'hedged_returns': hedged_returns
+        'hedged_returns': hedged_returns,
+        'hedged_perf':hedged_perf
     })
     return results,fig
 

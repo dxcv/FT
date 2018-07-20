@@ -31,8 +31,11 @@ def run():
     checked=[fn[:-4] for fn in os.listdir(DIR_SIGNAL)]
     names=[n for n in names if n not in checked]
     print('unchecked: {}'.format(len(names)))
-    pool=multiprocessing.Pool(4)
+    pool=multiprocessing.Pool(1)
     pool.map(indicator2signal,names)
 
 if __name__ == '__main__':
     run()
+
+
+# df=pd.read_pickle(os.path.join(SINGLE_D_INDICATOR,'T__idioVol_30.pkl'))

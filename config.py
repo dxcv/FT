@@ -48,13 +48,16 @@ DIR_SIGNAL_SMOOTHED=os.path.join(DIR_ROOT,'singleFactor','smoothed')
 DIR_SINGLE_BACKTEST=os.path.join(DIR_ROOT, 'singleFactor', 'backtest')
 DIR_SIGNAL_PARAMETER=os.path.join(DIR_ROOT,'singleFactor','select_parameters')
 
+DIR_SIGNAL_COMB=os.path.join(DIR_ROOT,'singleFactor','combine')
+
 DIR_DM=os.path.join(DIR_ROOT,'singleFactor','data_mining')
 DIR_DM_TMP=os.path.join(DIR_DM,'tmp')
 
 DIR_DM_RESULT=os.path.join(DIR_DM,'result')
 DIR_DM_SIGNAL=os.path.join(DIR_DM,'signal')
 DIR_DM_BACKTEST=os.path.join(DIR_DM,'backtest')
-
+DIR_DM_BACKTEST_LONG=os.path.join(DIR_DM,'backtest_long')
+DIR_DM_RACE=os.path.join(DIR_DM,'horse_race')
 
 
 DIR_TMP=os.path.join(DIR_ROOT,'tmp')
