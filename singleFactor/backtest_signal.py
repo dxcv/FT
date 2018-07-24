@@ -16,6 +16,21 @@ START='2010'
 END='2015'
 
 SMOOTH_PERIODS=[0,10,20,30,40,50,60,70,80]
+
+def run_backtest(signal, name, directory,start=None,end=None):
+    if os.path.exists(directory) and len(os.listdir(directory))>0:
+        return # skip
+    else:
+        os.makedirs(directory)
+
+    results,fig=quick(signal,name,start=start,end=end)
+
+    fig.savefig(os.path.join(directory,name+'.png'))
+    for k in results.keys():
+        results[k].to_csv(os.path.join(directory,k+'.csv'))
+
+
+
 def get_signal_direction(name):
     hret=pd.read_csv(os.path.join(DIR_SIGNAL_SMOOTHED,'raw',name,'hedged_returns.csv'),index_col=0)
     sign=1 if hret.sum()[0]>=0 else -1
@@ -25,21 +40,28 @@ def get_smoothed_signal(signal,smooth_period):
     return signal.rolling(smooth_period,
                             min_periods=int(smooth_period / 2)).mean()
 
+def get_signal(name,smooth):
+    if name.endswith('.pkl'):
+        fn=name
+    else:
+        fn=name+'.pkl'
+
+    if isinstance(smooth,str):
+        smooth=int(smooth)
+
+    signal=pd.read_pickle(os.path.join(DIR_SIGNAL,fn))
+    signal=signal*get_signal_direction(name)
+    if smooth==0:
+        return signal
+    else:
+        return get_smoothed_signal(signal,smooth)
+
+
 def backtest_raw(name):
     print(name)
     signal = pd.read_pickle(os.path.join(DIR_SIGNAL, name + '.pkl'))
     directory=os.path.join(DIR_SIGNAL_SMOOTHED,'raw',name)
-
-    if os.path.exists(directory):
-        return # skip
-    else:
-        os.makedirs(directory)
-
-    results,fig=quick(signal,name,start=START,end=END)
-
-    fig.savefig(os.path.join(directory,name+'.png'))
-    for k in results.keys():
-        results[k].to_csv(os.path.join(directory,k+'.csv'))
+    run_backtest(signal, name, directory,START,END)
 
 def backtest_raw_all():
     fns = os.listdir(DIR_SIGNAL)
@@ -59,16 +81,7 @@ def backtest_with_smooth(name, smooth_period=0):
         signal=get_smoothed_signal(signal,smooth_period)
         directory=os.path.join(DIR_SIGNAL_SMOOTHED,str(smooth_period),name)
 
-    if os.path.exists(directory):
-        return # skip
-    else:
-        os.makedirs(directory)
-
-    results,fig=quick(signal,name,start=START,end=END)
-
-    fig.savefig(os.path.join(directory,name+'.png'))
-    for k in results.keys():
-        results[k].to_csv(os.path.join(directory,k+'.csv'))
+    run_backtest(signal, name, directory,START,END)
 
 def task(args):
     name=args[0]
@@ -82,7 +95,7 @@ def main():
     for sp in SMOOTH_PERIODS:
         for name in names:
             args.append((name,sp))
-    pool=multiprocessing.Pool(16)
+    pool=multiprocessing.Pool(12)
     pool.map(task,args)
 
 
@@ -94,8 +107,8 @@ def debug():
 
 
 if __name__ == '__main__':
-    backtest_raw_all()
-    # main()
+    # backtest_raw_all()
+    main()
 #debug: G__divdend3YR
 
 #TODO: before backtest, we may need to standardize the signal. If we use the raw signal as weight, there may be some abnormal values.

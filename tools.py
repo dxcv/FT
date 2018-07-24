@@ -153,4 +153,5 @@ def myroll(df, d):
     # convert to dataframe and pivot + groupby
     # is now ready for any action normally performed
     # on a groupby object
-    return panel.to_frame().unstack().T.groupby(level=0)
+    #trick: filter_obsservations=False
+    return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)

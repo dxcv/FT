@@ -58,6 +58,11 @@ def quick(signal,fig_title,start=None, end=None):
     if not end:
         end=trade_date[-1]
 
+    if isinstance(start,int):
+        start=str(start)
+    if isinstance(end,int):
+        end=str(end)
+
     date_range = trade_date[start: end]
     benchmark = zz500[start: end]
 

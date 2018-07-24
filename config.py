@@ -49,8 +49,15 @@ DIR_SINGLE_BACKTEST=os.path.join(DIR_ROOT, 'singleFactor', 'backtest')
 DIR_SIGNAL_PARAMETER=os.path.join(DIR_ROOT,'singleFactor','select_parameters')
 
 DIR_SIGNAL_COMB=os.path.join(DIR_ROOT,'singleFactor','combine')
+DIR_SIGNAL_SPAN=os.path.join(DIR_ROOT, 'singleFactor', 'signal_spanning')
+DIR_HORSE_RACE=os.path.join(DIR_ROOT,'singleFactor','combine','horse_race')
 
-DIR_DM=os.path.join(DIR_ROOT,'singleFactor','data_mining')
+
+
+
+
+DIR_DM=r'F:\FT_Users\HTZhang\data_mining'
+# DIR_DM=os.path.join(DIR_ROOT,'singleFactor','data_mining') #fixme
 DIR_DM_TMP=os.path.join(DIR_DM,'tmp')
 
 DIR_DM_RESULT=os.path.join(DIR_DM,'result')

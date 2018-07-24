@@ -10,8 +10,9 @@ import pandas as pd
 from config import FORWARD_TRADING_DAY
 from data.dataApi import read_local, read_from_sql
 
-df=pd.read_pickle(r'E:\FT_Users\HTZhang\FT\singleFactor\indicators\Q__downturnRisk.pkl')
+df=pd.read_csv(r'E:\FT_Users\HTZhang\FT\singleFactor\combine\combine\mixed_mixed\hedged_returns.csv',index_col=0,parse_dates=True)
 
 
-a=pd.Series(range(2),index=['a','b'])
-a['a']
+
+for Y in [str(i) for i in range(2010,2019)]:
+    print(Y,(1+df[Y]).cumprod().values[-1])

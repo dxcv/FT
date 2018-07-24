@@ -24,6 +24,7 @@ df = pd.concat([zz500_ret_d, ret], axis=1, join='inner')
 df = df.dropna(subset=['zz500_ret_d'])
 df = df.dropna(how='all')
 
+# df=df[-int(df.shape[0]/100):] #fixme
 
 def save_indicator(df,name):
     df.to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
@@ -57,18 +58,20 @@ def idioVol(df, d):
     return pd.Series(resid_std,index=df.columns[1:],name='idiovol')
 
 def cal_betas():
+    #TODO: employ multiprocessing
     for d in [30,60,180,300]:
         name='T__beta_{}'.format(d)
         results=myroll(df, d).apply(beta, d)
-        save_indicator(results,name)
+        save_indicator(results.unstack(),name)
         print(d)
 
 def cal_idioVol():
     for d in [30,60,180,300]:
         name='T__idioVol_{}'.format(d)
         results=myroll(df, d).apply(idioVol, d)
-        save_indicator(results,name)
+        save_indicator(results.unstack(),name)
         print(d)
+
 
 def get_high_minus_low():
     trading = read_local('equity_selected_trading_data')
