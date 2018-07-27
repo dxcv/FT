@@ -12,7 +12,14 @@ from data.dataApi import read_local, read_from_sql
 
 df=pd.read_csv(r'E:\FT_Users\HTZhang\FT\singleFactor\combine\combine\mixed_mixed\hedged_returns.csv',index_col=0,parse_dates=True)
 
+mom=pd.read_pickle(r'E:\FT_Users\HTZhang\FT\singleFactor\indicators\T__mom_20.pkl')
 
+sub=mom['2015-08']
 
-for Y in [str(i) for i in range(2010,2019)]:
-    print(Y,(1+df[Y]).cumprod().values[-1])
+trading = read_local('equity_selected_trading_data')
+
+adjclose = pd.pivot_table(trading, values='adjclose', index='trd_dt',
+                          columns='stkcd')
+
+subclose=adjclose['2015-07']
+

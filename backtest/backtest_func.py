@@ -37,7 +37,7 @@ sell_stocks_price = close_price_backtest
 def backtest(date_range, signal, buy_commission=2e-4, sell_commission=2e-4,
              *args):
     tax_ratio = 0.001  # 印花税
-    capital = 100000000  # 虚拟资本
+    capital = 10000000  # 虚拟资本
 
     trade_returns = pd.Series(index=date_range)  # 组合收益率
     turnover_rates = pd.Series(index=date_range)  # 换手率

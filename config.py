@@ -51,7 +51,7 @@ DIR_SIGNAL_PARAMETER=os.path.join(DIR_ROOT,'singleFactor','select_parameters')
 DIR_SIGNAL_COMB=os.path.join(DIR_ROOT,'singleFactor','combine')
 DIR_SIGNAL_SPAN=os.path.join(DIR_ROOT, 'singleFactor', 'signal_spanning')
 DIR_HORSE_RACE=os.path.join(DIR_ROOT,'singleFactor','combine','horse_race')
-
+DIR_RESULT_SPAN=os.path.join(DIR_ROOT,'singleFactor','combine','spanning_result')
 
 
 
@@ -70,3 +70,9 @@ DIR_DM_RACE=os.path.join(DIR_DM,'horse_race')
 DIR_TMP=os.path.join(DIR_ROOT,'tmp')
 
 
+
+
+
+# empirical directorys
+DIR_EP=r'F:\FT_Users\HTZhang\empirical'
+DIR_KOGAN=os.path.join(DIR_EP,'kogan')

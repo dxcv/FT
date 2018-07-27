@@ -69,44 +69,17 @@ def task(args):
 def get_args_list():
     fns=os.listdir(DIR_SIGNAL)
     args_list=[]
-    for end in range(2009,2020):
+    for end in range(2007,2019):
         for fn in fns:
             args_list.append((end,fn))
     return args_list
 
 def run():
-    multiprocessing.Pool(15).map(task,get_args_list())
+    multiprocessing.Pool(10).map(task,get_args_list())
 
 
 if __name__ == '__main__':
     run()
-
-# for end,name,signal in get_args_list():
-#     print(end,name)
-
-
-
-
-#
-#
-# for end in range(2009,2020):
-#     for (name,signal) in get_all_signals():
-#         print(end,name)
-#         start=end-WINDOW
-#         directory=os.path.join(DIR_HORSE_RACE,str(end),name)
-#
-#         if os.path.exists(directory):
-#             pass
-#         else:
-#             os.makedirs(directory)
-#
-#         results, fig=quick(signal,fig_title=name,start=str(start),end=str(end))
-#         fig.savefig(os.path.join(directory, name + '.png'))
-#         for k in results.keys():
-#             results[k].to_csv(os.path.join(directory, k + '.csv'))
-#
-#
-
 
 
 

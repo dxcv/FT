@@ -37,8 +37,11 @@ def get_signal_direction(name):
     return sign
 
 def get_smoothed_signal(signal,smooth_period):
-    return signal.rolling(smooth_period,
-                            min_periods=int(smooth_period / 2)).mean()
+    if smooth_period==0:
+        return signal
+    else:
+        return signal.rolling(smooth_period,
+                                min_periods=int(smooth_period / 2)).mean()
 
 def get_signal(name,smooth):
     if name.endswith('.pkl'):

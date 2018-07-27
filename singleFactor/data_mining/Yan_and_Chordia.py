@@ -219,7 +219,7 @@ def run():
     calculated=get_calculated()
     alist=[arg for arg in arg_list if arg not in calculated]
     print(len(alist))
-    pool=multiprocessing.Pool(10)
+    pool=multiprocessing.Pool(20)
     pool.map(cal_and_check,alist)
 
 

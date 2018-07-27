@@ -11,8 +11,28 @@ import os
 import pandas as pd
 from singleFactor.backtest_signal import get_signal_direction, get_signal, \
     run_backtest
-from singleFactor.combine import standardize_signal, get_outer_frame
+from singleFactor.combine.combine import standardize_signal, get_outer_frame
 import numpy as np
+
+'''
+1. 频率
+2. window,rolling expanding
+3. 每类指标个数
+4. 加权方式， 大类之间的加权方式
+5. 2009年数据
+6. 评分指标
+7. 200 to 100
+
+'''
+
+PARAMS={
+    'freq':'M',
+    'top_num':2,
+    'baseon':'sharpe',#return_down_ration
+    'effective_num':100,
+    'signal_to_weight_mode':3,
+
+}
 
 
 def get_category(ind_name):
@@ -102,7 +122,6 @@ def get_args_list(sharpe):
 
 
 def combine_signal():
-    for i in range(1)
     args_list=get_args_list(select_based_on_sharpe())
     signal_fragments=multiprocessing.Pool(10).map(task,args_list)
     comb=pd.concat(signal_fragments)
@@ -114,12 +133,4 @@ def combine_signal():
     # combine_signal()
 
 
-'''
-1. 频率
-2. window,rollinng expanding
-3. 每类指标个数
-4. 加权方式， 大类之间的加权方式
-5. 2009年数据
-6. 评分指标
 
-'''
