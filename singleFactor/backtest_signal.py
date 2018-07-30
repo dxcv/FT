@@ -54,11 +54,8 @@ def get_signal(name,smooth):
 
     signal=pd.read_pickle(os.path.join(DIR_SIGNAL,fn))
     signal=signal*get_signal_direction(name)
-    if smooth==0:
-        return signal
-    else:
-        return get_smoothed_signal(signal,smooth)
-
+    signal=get_smoothed_signal(signal,smooth)
+    return signal
 
 def backtest_raw(name):
     print(name)
@@ -112,40 +109,5 @@ def debug():
 if __name__ == '__main__':
     # backtest_raw_all()
     main()
-#debug: G__divdend3YR
-
-#TODO: before backtest, we may need to standardize the signal. If we use the raw signal as weight, there may be some abnormal values.
-#TODO:analyse the characteristics of the distribution
-
-#TODO if the relative return is negative, revert the signal
-#TODO: 1. smooth;(before signal or afeter signal) 2. out-of-sample( 2010-2015);
-
-
-#TODO:3. weight of signal
-
-#TODO： hit rate
-#TODO: analyse the distribution of the hedged returns
-
-
-
-'''
-1. short leg should also be employed to filter the signal. If any stock belong to 
-a short leg, we should be cautious about these stocks.
-
-2. bid/ask spread, price impact of large trades, 
-
-3. transaction cost is different for different stocks, it can be based on many
-    characteristics, for example, size,idiosyncratic volatitlity and so on.
-
-
-'''
-
-'''
-1. It seems that the signals perform better in bear market?
-2. zz500 and zz50 are tradable after 2015-04, the market structure is different before and after this point
-3. 
-
-'''
-
 
 

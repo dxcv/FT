@@ -543,9 +543,9 @@ def backtest(date_range, signal):
 
 def quick(signal,fig_title,start=None, end=None):
     if not start:
-        start=trade_date[0]
+        start=signal.index[0]
     if not end:
-        end=trade_date[-1]
+        end=signal.index[-1]
 
     if isinstance(start,int):
         start=str(start)
@@ -625,6 +625,30 @@ def run_backtest(signal, name, directory,start=None,end=None):
 #TODO: 应该提供几种接口: 1. signal， 2. 股票，
 #TODO: 分别测算每年的对冲收益率，因为实际投资的时候不可能投资５年，所以cumprod实际会夸大效果
 #TODO: hit rate
+
+# TODO: analyse the distribution of the hedged returns
+# TODO: before backtest, we may need to standardize the signal. If we use the raw signal as weight, there may be some abnormal values.
+# TODO:analyse the characteristics of the distribution
+'''
+1. short leg should also be employed to filter the signal. If any stock belong to
+a short leg, we should be cautious about these stocks.
+
+2. bid/ask spread, price impact of large trades,
+
+3. transaction cost is different for different stocks, it can be based on many
+    characteristics, for example, size,idiosyncratic volatitlity and so on.
+
+
+'''
+
+'''
+1. It seems that the signals perform better in bear market?
+2. zz500 and zz50 are tradable after 2015-04, the market structure is different before and after this point
+3. 
+
+'''
+
+
 
 '''
 for Y in [str(i) for i in range(2010,2019)]:

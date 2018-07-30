@@ -2,8 +2,8 @@
 # Python 3.6
 # Author:Zhang Haitao
 # Email:13163385579@163.com
-# TIME:2018-07-26  14:54
-# NAME:FT_hp-select_factors.py
+# TIME:2018-07-28  09:20
+# NAME:FT_hp-optimize_parameters.py
 
 import multiprocessing
 
@@ -25,6 +25,12 @@ from singleFactor.combine.rolling_combination import get_mixed_signals
 5. 2009年开始回测
 6. 选用不同的评分指标
 7. effective number 由200变为100
+8. cluster to get category rather than manually
+9. PCA machine learning
+10. 每天剔除失效的策略,加入新的策略，就如同选股股票调仓的方式，比如定义回撤超过20为失效的策略。
+11. stop loss strategy
+    Han, Y., Zhou, G., and Zhu, Y. (2016). Taming Momentum Crashes: A Simple Stop-Loss Strategy (Rochester, NY: Social Science Research Network).
+
 
 '''
 FREQ='M'
@@ -78,16 +84,15 @@ def get_strategy_ret():
 
 _get_cum_ret=lambda s:(1+s).cumprod().values[-1]-1
 
-
 def rating_strategies(ret,rating_func=_get_cum_ret):
-    days=ret.iloc[:,0].resample('M').apply(lambda df:df.index[-1]).values#trick
+    days=ret.iloc[:,0].resample(FREQ).apply(lambda df:df.index[-1]).values#trick
     days=days[20:] # prune the header
 
 
     mss=[]
 
     for day in days:
-        sub=ret.loc[:day].last('2Y')
+        sub=ret.loc[:day].last(WINDOW)
         #fixme: all the strategies should have been tested for at least 2 years and make sure that all the strategies share the same history window.
         sub=sub.dropna(axis=1,thresh=int(sub.shape[0]*0.95))
         ms=sub.apply(rating_func)
@@ -106,60 +111,50 @@ def rating_strategies(ret,rating_func=_get_cum_ret):
 
     return rating
 
-
 def select_strategies(rating):
     #select the best smooth window
-    selected=rating.groupby(['trd_dt','short_name'],as_index=False,group_keys=False).apply(lambda df:df.loc[df['cum_ret'].idxmax()])
+    selected=rating.groupby(['trd_dt','short_name'],as_index=False,group_keys=False).apply(lambda df:df.loc[df[RATING_METHOD].idxmax()])
 
     #TODO: filter the negative strategies. For example, there are some strategies who have a negative cum_ret.
     selected=selected.groupby(['trd_dt','category'],
-        as_index=False,group_keys=False).apply(lambda df:df.nlargest(NUM_PER_CATEGORY,'cum_ret'))
+        as_index=False,group_keys=False).apply(lambda df:df.nlargest(NUM_PER_CATEGORY,RATING_METHOD))
     selected.drop('short_name',axis=1,inplace=True)
     table=selected.reset_index()
 
     table.to_pickle(os.path.join(DIR_TMP,'table.pkl'))
     return table
 
-ret=get_strategy_ret()
-rating=rating_strategies(ret)
 
-# rating=pd.read_pickle(os.path.join(DIR_TMP,'rating.pkl'))
+def generate_signal(table):
+    trd_dts = table['trd_dt'].unique()
+    # table['next_month'] = pd.to_datetime(table['trd_dt']) + MonthEnd(0) + Day(1)
+    # table['next_month'] = table['next_month'].map(lambda x: x.strftime('%Y-%m'))
 
-table=select_strategies(rating)
+    signal_monthly = []
+    # for trd_dt in trd_dts[:-1]:  # fixme:
+    for i in range(len(trd_dts[:-1])):
+        rb_dt=trd_dts[i]
+        next_rb_dt=trd_dts[i+1]
+        sub = table[table['trd_dt'] == rb_dt]
+        y_signal_l = []
+        for c in sub['category'].unique():
+            ss = sub[sub['category'] == c]
+            c_signal_l = []
+            for _, row in ss.iterrows():
+                name = '__'.join(row.loc['long_name'].split('__')[:-1])
+                sp = row.loc['long_name'].split('_')[-1]
+                c_signal_l.append(get_signal(name,sp)[rb_dt:next_rb_dt][1:])#trick:do not include the trd_dt
+                # next_month = row.loc['next_month']
+                # c_signal_l.append(get_signal(name, sp)[next_month])
+            c_signal = get_mixed_signals(c_signal_l)
+            y_signal_l.append(c_signal)
+        y_signal = get_mixed_signals(y_signal_l)
+        signal_monthly.append(y_signal)
+        print(rb_dt)
 
+    comb_signal = pd.concat(signal_monthly)
 
-trd_dts=table['trd_dt'].unique()
-
-table['next_month']=pd.to_datetime(table['trd_dt'])+MonthEnd(0)+Day(1)
-table['next_month']=table['next_month'].map(lambda x:x.strftime('%Y-%m'))
-
-
-
-
-signal_monthly=[]
-for trd_dt in trd_dts[:-1]:#fixme:
-    sub=table[table['trd_dt']==trd_dt]
-    y_signal_l = []
-    for c in sub['category'].unique():
-        ss=sub[sub['category']==c]
-        c_signal_l=[]
-        for _,row in ss.iterrows():
-            name = '__'.join(row.loc['long_name'].split('__')[:-1])
-            sp = row.loc['long_name'].split('_')[-1]
-            next_month=row.loc['next_month']
-            c_signal_l.append(get_signal(name, sp)[next_month])
-        c_signal = get_mixed_signals(c_signal_l)
-        y_signal_l.append(c_signal)
-    y_signal=get_mixed_signals(y_signal_l)
-    signal_monthly.append(y_signal)
-    print(trd_dt)
-
-comb_signal=pd.concat(signal_monthly)
-
-run_backtest(comb_signal,'test',os.path.join(DIR_TMP,'test_comb_signal'),start='2009')
-
-
-
-
+    run_backtest(comb_signal, 'test', os.path.join(DIR_TMP, 'test_comb_signal'),
+                 start='2009')
 
 

@@ -9,8 +9,8 @@ DFCT= r'\\Ft-research\e\Share\Alpha\FYang\factors'
 DHTZ= r'\\Ft-research\e\FT_Users\HTZhang'
 import os
 
-DIR_ROOT=r'E:\FT_Users\HTZhang\FT'# review
-
+# DIR_ROOT=r'E:\FT_Users\HTZhang\FT'# review
+DIR_ROOT=r'G:\FT_Users\HTZhang\FT'
 
 
 DRAW=os.path.join(DIR_ROOT,'database','raw')
@@ -53,10 +53,11 @@ DIR_SIGNAL_SPAN=os.path.join(DIR_ROOT, 'singleFactor', 'signal_spanning')
 DIR_HORSE_RACE=os.path.join(DIR_ROOT,'singleFactor','combine','horse_race')
 DIR_RESULT_SPAN=os.path.join(DIR_ROOT,'singleFactor','combine','spanning_result')
 
+DIR_BACKTEST_SPANNING=os.path.join(DIR_ROOT,'singleFactor','backtest_spanning')
 
 
-
-DIR_DM=r'F:\FT_Users\HTZhang\data_mining'
+# DIR_DM=r'F:\FT_Users\HTZhang\data_mining'
+DIR_DM=r'G:\FT_Users\HTZhang\FT\data_mining'
 # DIR_DM=os.path.join(DIR_ROOT,'singleFactor','data_mining') #fixme
 DIR_DM_TMP=os.path.join(DIR_DM,'tmp')
 

@@ -15,14 +15,13 @@ from singleFactor.combine.combine import standardize_signal, get_outer_frame
 import numpy as np
 
 '''
-1. 频率
+1. 指标的切换频率由每年调整变为每月调整
 2. window,rolling expanding
 3. 每类指标个数
-4. 加权方式， 大类之间的加权方式
-5. 2009年数据
-6. 评分指标
-7. 200 to 100
-
+4. 调整指标之间的加权方式以及大类之间的加权方式
+5. 2009年开始回测
+6. 选用不同的评分指标
+7. effective number 由200变为100
 '''
 
 PARAMS={
@@ -31,7 +30,6 @@ PARAMS={
     'baseon':'sharpe',#return_down_ration
     'effective_num':100,
     'signal_to_weight_mode':3,
-
 }
 
 

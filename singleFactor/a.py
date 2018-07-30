@@ -16,5 +16,14 @@ df = pd.read_pickle(os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
 # signal = pd.read_pickle(os.path.join(DIR_SIGNAL, name + '.pkl'))
 convert_indicator_to_signal(df, name)
 
+PARAMS = {
+    'freq': 'M',
+    'window': 500,  # trading day
+    'num_per_category': 5,  # select the best n indicator in each category
+    'mix_type': 'equal',
+    'rating_method': 'cumprod_ret',
+    # ['cumprod_ret','return_down_ratio','return_std_ratio']
+    'effective_num': 200
 
+}
 

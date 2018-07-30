@@ -35,6 +35,7 @@ def get_spanning_signals(fn):
 
     '''
     signal = pd.read_pickle(os.path.join(DIR_SIGNAL, fn))
+
     signal = get_signal_direction(fn[:-4]) * signal
     for sp in SMOOTH_PERIODS:
         name='{}__sp_{}'.format(fn[:-4],sp)

@@ -10,7 +10,7 @@ import multiprocessing
 
 import os
 
-from backtest_zht.main import quick
+from backtest_zht.main import quick, run_backtest
 from singleFactor.combine.horse_race import get_spanning_signals
 from config import DIR_SIGNAL,DIR_RESULT_SPAN
 
@@ -33,11 +33,11 @@ def backtest(signal, name, directory,start=None,end=None):
 def do_one_fn(fn):
     for name,signal in get_spanning_signals(fn):
         directory = os.path.join(DIR_RESULT_SPAN,name)
-        backtest(signal,name,directory)
+        run_backtest(signal,name,directory)
 
 def do_all():
     fns = os.listdir(DIR_SIGNAL)
-    multiprocessing.Pool(20).map(do_one_fn,fns)
+    multiprocessing.Pool(15).map(do_one_fn,fns)
 
 
 if __name__ == '__main__':

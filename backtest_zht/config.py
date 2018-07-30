@@ -16,6 +16,6 @@ CONFIG={
         'buy_commission': 2e-3,
         'sell_commission': 2e-3,
         'tax_ratio':0.001,# 印花税
-        'capital':10000000,#虚拟资本
+        'capital':10000000,#虚拟资本,没考虑股指期货所需要的资金
         }
 
