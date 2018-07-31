@@ -3,8 +3,8 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-05-23  10:57
-# NAME:FT-tools.py
-
+# NAME:FT-utils.py
+import multiprocessing
 import time
 import pandas as pd
 from pandas.tseries.offsets import MonthEnd
@@ -155,3 +155,12 @@ def myroll(df, d):
     # on a groupby object
     #trick: filter_obsservations=False
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
+
+
+def multi_task(func, args_list, n=30):
+    pool=multiprocessing.Pool(n)
+    results=pool.map(func,args_list)
+    pool.close()#trick: close the processing every time the pool has finished its task, and pool.close() must be called before pool.join()
+    pool.join()
+    #refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
+    return results

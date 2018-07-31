@@ -407,6 +407,7 @@ class Backtest:
         effective_list = effective_list.sort_index().sort_values(ascending=False,kind='mergesort')[:CONFIG[
             'effective_number']]  # keep the largest n (effective_number) stock
 
+        #fixme: weight 再多加一列去存weight不要直接修改 signal
         if CONFIG['signal_to_weight_mode'] == 1:  # handle the abnormal value
             # if transform_mode == 1:# handle the abnormal value
             mean_ = effective_list.mean()
@@ -652,17 +653,17 @@ class Backtest:
         })
 
     def save_result(self):
-        if os.path.exists(self.directory) and len(os.listdir(self.directory)) > 0:
-            return  # skip
-        elif not os.path.exists(self.directory):
-            os.makedirs(self.directory)
-
         self.fig.savefig(os.path.join(self.directory, self.name + '.png'))
         self.signal.to_csv(os.path.join(self.directory,'signal.csv'))
         for k in self.results.keys():
             self.results[k].to_csv(os.path.join(self.directory, k + '.csv'))
 
     def run(self):
+        if os.path.exists(self.directory) and len(os.listdir(self.directory)) > 0:
+            return  # skip
+        elif not os.path.exists(self.directory):
+            os.makedirs(self.directory)
+
         self.quick()
         self.save_result()
 

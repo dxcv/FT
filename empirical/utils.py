@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-07-26  11:00
-# NAME:FT_hp-tools.py
+# NAME:FT_hp-utils.py
 import numpy as np
 import scipy
 from scipy import stats

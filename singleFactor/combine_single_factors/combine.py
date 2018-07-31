@@ -10,14 +10,16 @@ from contextlib import closing
 
 from backtest_zht.main import run_backtest
 from backtest_zht.main_class import Backtest
-from config import DIR_TMP, DIR_BACKTEST_SPANNING
+from config import DIR_TMP, DIR_BACKTEST_SPANNING, DIR_MIXED_SIGNAL, \
+    DIR_MIXED_SIGNAL_BACKTEST
 import os
 import pandas as pd
 import numpy as np
+from functools import reduce
 
 from singleFactor.combine_single_factors.signal_spanning import \
     get_derive_signal
-from tools import outlier, z_score
+from tools import outlier, z_score, multi_task
 
 '''
 1. 指标的切换频率由每年调整变为每月调整
@@ -71,19 +73,16 @@ def _read_ret(ln):
         pass
 
 
-def _multi_task(func,args_list,n=30):
-    pool=multiprocessing.Pool(n)
-    results=pool.map(func,args_list)
-    pool.close()#trick: close the processing every time the pool has finished its task, and pool.close() must be called before pool.join()
-    pool.join()
-    #refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
-    return results
-
 def get_strategy_ret():
-    long_names=os.listdir(DIR_BACKTEST_SPANNING)
-    ll=_multi_task(_read_ret,long_names)
-    ret=pd.concat([ele[0] for ele in ll],axis=1)
-    ret.columns=[ele[1] for ele in ll]
+    path=os.path.join(DIR_TMP,'ret.pkl')
+    if os.path.exists(path):
+        ret=pd.read_pickle(path)
+    else:
+        long_names=os.listdir(DIR_BACKTEST_SPANNING)
+        ll=multi_task(_read_ret, long_names)
+        ret=pd.concat([ele[0] for ele in ll],axis=1)
+        ret.columns=[ele[1] for ele in ll]
+        ret.to_pickle(os.path.join(DIR_TMP,'ret.pkl'))
     return ret
 
 def _cum_ret(df):
@@ -119,7 +118,7 @@ def _grade(ret, rating_func,freq,window):
     days=days[20:] # prune the header  #TODO:
     args_list=[(ret,window,d,rating_func) for d in days]
 
-    mss=_multi_task(_apply_rating_func,args_list)
+    mss=multi_task(_apply_rating_func, args_list)
     # with closing(multiprocessing.Pool(30)) as p:
     #     mss=p.map(_apply_rating_func,args_list)
 
@@ -135,25 +134,30 @@ def _grade(ret, rating_func,freq,window):
     return rating
 
 def grade_strategy(ret,freq,window):
-    ratings=[]
-    for rating_func in [_cum_ret,_return_down_ratio,_return_std_ratio]:
-        rt=_grade(ret, rating_func,freq,window)
-        ratings.append(rt)
-    comb=pd.concat(ratings,axis=1,keys=['cumprod_ret','return_down_ratio','return_std_ratio'])
+    path=os.path.join(DIR_TMP,'grade_strategy.pkl')
+    if os.path.exists(path):
+        comb=pd.read_pickle(path)
+    else:
+        ratings=[]
+        for rating_func in [_cum_ret,_return_down_ratio,_return_std_ratio]:
+            rt=_grade(ret, rating_func,freq,window)
+            ratings.append(rt)
+        comb=pd.concat(ratings,axis=1,keys=['cumprod_ret','return_down_ratio','return_std_ratio'])
 
-    # r1=_grade(ret,_cum_ret,freq,window)
-    # r2=_grade(ret,_return_down_ratio,freq,window)
-    # r3=_grade(ret,_return_std_ratio,freq,window)
-    # comb=pd.concat([r1,r2,r3],axis=1,keys=['cumprod_ret','return_down_ratio','return_std_ratio'])
+        # r1=_grade(ret,_cum_ret,freq,window)
+        # r2=_grade(ret,_return_down_ratio,freq,window)
+        # r3=_grade(ret,_return_std_ratio,freq,window)
+        # comb=pd.concat([r1,r2,r3],axis=1,keys=['cumprod_ret','return_down_ratio','return_std_ratio'])
 
 
-    comb['long_name']=comb.index.get_level_values('long_name')
-    comb['short_name']=comb['long_name'].map(lambda x:x.split('___')[0])
-    comb['smooth']=comb['long_name'].map(lambda x:int(x.split('___')[1].split('_')[1]))
-    comb['sign']=comb['long_name'].map(lambda x:{'p':1,'n':-1}[x.split('___')[-1]])
-    comb['category']=comb['long_name'].map(get_category)#TODO: cluster
-    #TODO: log the shape of comb before and after .drop()
-    comb=comb.dropna()
+        comb['long_name']=comb.index.get_level_values('long_name')
+        comb['short_name']=comb['long_name'].map(lambda x:x.split('___')[0])
+        comb['smooth']=comb['long_name'].map(lambda x:int(x.split('___')[1].split('_')[1]))
+        comb['sign']=comb['long_name'].map(lambda x:{'p':1,'n':-1}[x.split('___')[-1]])
+        comb['category']=comb['long_name'].map(get_category)#TODO: cluster
+        #TODO: log the shape of comb before and after .drop()
+        comb=comb.dropna()
+        comb.to_pickle(path)
     return comb
 
 def standardize_signal(signal):
@@ -215,8 +219,10 @@ def _one_slice(args):
             smooth = row.loc['smooth']
             sign = row.loc['sign']
             # trick:do not include the trd_dt
-            c_signal_l.append(get_derive_signal(short_name, smooth, sign)[
-                              rb_dt:next_rb_dt][1:])
+            frag = get_derive_signal(short_name, smooth, sign)[
+                   rb_dt:next_rb_dt][1:]
+            if frag.shape[0] > 0:
+                c_signal_l.append(frag)
         c_signal = get_mixed_signals(c_signal_l)
         y_signal_l.append(c_signal)
     y_signal = get_mixed_signals(y_signal_l)
@@ -226,7 +232,7 @@ def _one_slice(args):
 def generate_signal(table):
     trd_dts=table['trd_dt'].unique()
     args_list=[(table,trd_dts,i) for i in range(len(trd_dts[:-1]))]
-    signal_monthly=_multi_task(_one_slice,args_list)
+    signal_monthly=multi_task(_one_slice, args_list, 10)
     # signal_monthly=multiprocessing.Pool(30).map(_one_slice,args_list)
     comb_signal = pd.concat(signal_monthly)
     return comb_signal
@@ -257,117 +263,98 @@ def gen_config(window=500,num_per_category=5,criteria='cumprod_ret',effective_nu
     config['effective_number']=effective_number
     return config
 
-def gen_comb_signal():
-    configs=[]
-    for window in [50,100,300,500,1000]:
-        for num_per_category in [1,3,5,10]:
-            for criteria in ['cumprod_ret','return_down_ratio','return_std_ratio']:
-                for effective_number in [100,150,200,300]:
-                    config=gen_config(window,num_per_category,criteria,effective_number)
-                    configs.append(config)
-
-
-    for config in configs:
-        name = '{}_{}_{}_{}'.format(
-                                    config['window'],
-                                    config['num_per_category'],
-                                    config['criteria'],
-                                    config['effective_number'])
-        print(name,'starting')
-        ret = get_strategy_ret()
-        comb = grade_strategy(ret, config['freq'], config['window'])
-
-        # comb=pd.read_pickle(os.path.join(DIR_TMP,'comb.pkl'))
-
-        table = select_strategies(comb, config['criteria'],
-                                  config['num_per_category'])
-        comb_signal = generate_signal(table)
-
-        # comb_signal=pd.read_pickle(os.path.join(DIR_TMP,'signal_{}.pkl'.format(name)))
-
-        comb.to_pickle(os.path.join(DIR_TMP,'comb_{}.pkl'.format(name)))
-        comb_signal.to_pickle(os.path.join(DIR_TMP,'signal_{}.pkl'.format(name)))
-
-
-def debug(config):
-    name = '{}_{}_{}_{}'.format(
+def _gen_mixed_signal(config):
+    name = '{}_{}_{}'.format(
                                 config['window'],
                                 config['num_per_category'],
-                                config['criteria'],
-                                config['effective_number'])
-
+                                config['criteria'])
+    print(name)
+    signal_path=os.path.join(DIR_MIXED_SIGNAL,name+'.pkl')
+    if os.path.exists(signal_path):
+        return
     ret = get_strategy_ret()
     comb = grade_strategy(ret, config['freq'], config['window'])
-
-    # comb=pd.read_pickle(os.path.join(DIR_TMP,'comb.pkl'))
-
     table = select_strategies(comb, config['criteria'],
                               config['num_per_category'])
     comb_signal = generate_signal(table)
+    comb_signal.to_pickle(signal_path)
 
-    # comb_signal=pd.read_pickle(os.path.join(DIR_TMP,'signal_{}.pkl'.format(name)))
+def gen_mixed_signal():
+    configs=[]
+    for window in [500,300,100,50]:#fixme
+        for num_per_category in [1,3,5,10]:
+            for criteria in ['cumprod_ret','return_down_ratio','return_std_ratio']:
+                # for effective_number in [100,150,200,300]:
+                config=gen_config(window=window,num_per_category=num_per_category,criteria=criteria)
+                configs.append(config)
 
-    comb.to_pickle(os.path.join(DIR_TMP,'comb_{}.pkl'.format(name)))
-    comb_signal.to_pickle(os.path.join(DIR_TMP,'signal_{}.pkl'.format(name)))
+    for config in configs:
+        _gen_mixed_signal(config)
 
-
-
-    # Backtest(comb_signal, name, directory=os.path.join(DIR_TMP, name),
-    #          start='2009', config=config)
-
-
-def run():
-    config1=gen_config()
-    config2=gen_config(window=300)
-    config3=gen_config(num_per_category=2)
-    config4=gen_config(criteria='return_down_ratio') #'cumprod_ret','return_down_ratio','return_std_ratio'
-    config5=gen_config(effective_number=300)
-
-
-    for config in [config1,config2,config3,config4,config5]:
-        print('start',config)
-        debug(config)
-        print('end:',config)
+def _bt(args):
+    signal, name, cfg=args
+    directory=os.path.join(DIR_MIXED_SIGNAL_BACKTEST,name)
+    Backtest(signal,name=name,directory=directory,start='2009',config=cfg)
 
 
-def debug1():
-    config4=gen_config(criteria='return_down_ratio') #'cumprod_ret','return_down_ratio','return_std_ratio'
-    debug(config4)
-
-def _task(args):
-    signal,name,directory,config=args
-    Backtest(signal,name=name,directory=directory,start='2009',config=config)
-
-
-def debug2():
-    fns=[fn for fn in os.listdir(os.path.join(DIR_TMP)) if fn.startswith('signal_') and fn.endswith('.pkl')]
-
+def backtest_mixed_signal():
+    fns=os.listdir(DIR_MIXED_SIGNAL)
     args_list=[]
     for fn in fns:
-        print(fn)
-        signal = pd.read_pickle(os.path.join(DIR_TMP,fn))
-        window,num_per_category,criteria,effective_number=int(fn.split('_')[1]),int(fn.split('_')[2]),'_'.join(fn.split('_')[3:-1]),int(fn.split('_')[-1][:-4])
-        cfg=gen_config(window,num_per_category,criteria,effective_number)
-        name=fn[:-4]
-        args_list.append((signal,name,os.path.join(DIR_TMP,name),cfg))
+        signal=pd.read_pickle(os.path.join(DIR_MIXED_SIGNAL,fn))
+        window,num_per_category,criteria=int(fn.split('_')[0]),int(fn.split('_')[1]),'_'.join(fn.split('_')[2:-1][:-4])
+        for effective_number in [100,150,200,300]:
+            cfg=gen_config(window,num_per_category,criteria,effective_number)
+            name = fn[:-4]
+            args_list.append((signal, name, cfg))
 
-    # _multi_task(_task,args_list,n=20)
+    multi_task(_bt, args_list, n=5)
 
+def debug():
+    # '500_5_return_down_ratio'
+    config=gen_config(window=500,num_per_category=5,criteria='return_down_ratio')
+    ret = get_strategy_ret()
+    comb = grade_strategy(ret, config['freq'], config['window'])
+    table = select_strategies(comb, config['criteria'],
+                              config['num_per_category'])
 
-        Backtest(signal,name=name,directory=os.path.join(DIR_TMP,name),start='2009',config=cfg)
+    trd_dts=table['trd_dt'].unique()
+    args_list=[(table,trd_dts,i) for i in range(len(trd_dts[:-1]))]
 
+    sss=[]
+    for args in args_list:
+        table,trd_dts,i=args
+        rb_dt = trd_dts[i]  # rebalance date
+        next_rb_dt = trd_dts[i + 1]  # next rebalance date
+        sub = table[table['trd_dt'] == rb_dt]
+        y_signal_l = []
+        for c in sub['category'].unique():
+            ss = sub[sub['category'] == c]
+            c_signal_l = []
+            for _, row in ss.iterrows():
+                short_name = row.loc['short_name']
+                smooth = row.loc['smooth']
+                sign = row.loc['sign']
+                # trick:do not include the trd_dt
+                frag=get_derive_signal(short_name, smooth, sign)[
+                                  rb_dt:next_rb_dt][1:]
+                if frag.shape[0]>0:
+                    c_signal_l.append(frag)
+            c_signal = get_mixed_signals(c_signal_l)
+            y_signal_l.append(c_signal)
+        y_signal = get_mixed_signals(y_signal_l)
+        print(i,rb_dt)
+        sss.append(y_signal)
 
+    result=pd.concat(sss)
+    return result
+
+# if __name__ == '__main__':
+#     debug()
 
 
 if __name__ == '__main__':
-    debug2()
-
-
+    gen_mixed_signal()
 
 # if __name__ == '__main__':
-#     debug1()
-
-# if __name__ == '__main__':
-#     gen_comb_signal()
-
-
+#     backtest_mixed_signal()
