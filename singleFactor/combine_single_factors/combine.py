@@ -226,7 +226,7 @@ def _one_slice(args):
 def generate_signal(table):
     trd_dts=table['trd_dt'].unique()
     args_list=[(table,trd_dts,i) for i in range(len(trd_dts[:-1]))]
-    signal_monthly=multi_task(_one_slice, args_list,30)
+    signal_monthly=multi_task(_one_slice, args_list,30)#fixme
     # signal_monthly=multiprocessing.Pool(30).map(_one_slice,args_list)
     comb_signal = pd.concat(signal_monthly)
     return comb_signal
@@ -275,7 +275,7 @@ def _gen_mixed_signal(config):
 
 def gen_mixed_signal():
     configs=[]
-    for window in [500,300,100,50]:#fixme
+    for window in [1000,500,300,100,50]:#fixme
         for num_per_category in [1,3,5,10]:
             for criteria in ['cumprod_ret','return_down_ratio','return_std_ratio']:
                 # for effective_number in [100,150,200,300]:
