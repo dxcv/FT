@@ -5,11 +5,12 @@
 # TIME:2018-07-26  10:54
 # NAME:FT_hp-pricing_assets.py
 
-from config import DIR_KOGAN, DIR_TMP
+
 import os
 import pandas as pd
 import numpy as np
 from empirical.build_models import get_pca_model
+from empirical.config import DIR_KOGAN, DIR_KOGAN_RESULT
 from empirical.utils import GRS_test, run_GRS_test
 from numpy.linalg import LinAlgError
 from tools import multi_task
@@ -31,32 +32,53 @@ def one_model_one_cohort(arg):
         p = np.nan
     return p
 
-def grs_all():
-    fn_models = os.listdir(os.path.join(DIR_KOGAN, 'models', '3'))
-    fn_assets = os.listdir(os.path.join(DIR_KOGAN, 'assets', 'eq'))
-
+def grs_factor_model():
+    nmodels=[i[:-4] for i in os.listdir(os.path.join(DIR_KOGAN,'models','3'))]
+    nassets=[i[:-4] for i in os.listdir(os.path.join(DIR_KOGAN,'assets','eq'))]
     arg_list=[]
-    for fm in fn_models:
-        for fa in fn_assets:
-            arg_list.append((fm[:-4],fa[:-4]))
+    for nm in nmodels:
+        for na in nassets:
+            arg_list.append((nm,na))
     pp=multi_task(one_model_one_cohort,arg_list)
-    df_p=pd.DataFrame(np.array(pp).reshape(len(fn_models),len(fn_assets)),
-                      index=fn_models,columns=fn_assets)
+    grs_factor=pd.DataFrame(np.array(pp).reshape(len(nmodels),len(nassets)),
+                      index=nmodels,columns=nassets)
 
-    df_p.to_csv(os.path.join(DIR_TMP,'df_p.csv'))
+    get_names=lambda x:[x.split('___')[0],x.split('___')[-1]]
 
-    return df_p
+    for ind in grs_factor.index:
+        grs_factor.loc[ind,get_names(ind)]=np.nan
+
+    grs_factor.to_csv(os.path.join(DIR_KOGAN_RESULT,'grs_factor.csv'))
+
+    # return df_p
+
+def grs_pca_model():
+    model=get_pca_model()
+    fn_assets = os.listdir(os.path.join(DIR_KOGAN, 'assets', 'eq'))
+    _ps=[]
+    for fa in fn_assets:
+        asset = pd.read_pickle(os.path.join(DIR_KOGAN, 'assets', 'eq', fa))
+        _,p=run_GRS_test(model,asset)
+        _ps.append(p)
+
+    grs_pca=pd.Series(_ps,index=fn_assets)
+    grs_pca.to_csv(os.path.join(DIR_KOGAN_RESULT,'grs_pca.csv'))
+
+    # return grs_pca
+
+def debug():
+    df_p=grs_factor_model()
+    grsp=grs_pca_model()
+
+    grsp[grsp>0.05].notnull().sum()
+    df_p[df_p>0.05].notnull().sum(axis=1)
 
 
-model=get_pca_model()
-fn_assets = os.listdir(os.path.join(DIR_KOGAN, 'assets', 'eq'))
-_ps=[]
-for fa in fn_assets:
-    asset=pd.read_pickle(os.path.join(DIR_KOGAN,'assets','eq',fa+'.pkl'))
-    _,p=run_GRS_test(model,fa)
-    _ps.append(p)
+    return
 
-grsp=pd.Series(_ps,index=fn_assets)
+if __name__ == '__main__':
+    grs_factor_model()
+    grs_pca_model()
 
 
 
@@ -64,4 +86,4 @@ grsp=pd.Series(_ps,index=fn_assets)
 
 
 # if __name__ == '__main__':
-#     grs_all()
+#     grs_factor_model()

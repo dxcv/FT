@@ -76,6 +76,3 @@ DIR_TMP=os.path.join(DIR_ROOT,'tmp')
 
 
 
-# empirical directorys
-DIR_EP=r'G:\FT_Users\HTZhang\empirical'
-DIR_KOGAN=os.path.join(DIR_EP,'kogan')

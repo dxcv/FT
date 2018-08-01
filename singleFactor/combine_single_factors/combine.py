@@ -35,7 +35,8 @@ from tools import outlier, z_score, multi_task
 10. 每天剔除失效的策略,加入新的策略，就如同选股股票调仓的方式，比如定义回撤超过20为失效的策略。
 11. stop loss strategy
     Han, Y., Zhou, G., and Zhu, Y. (2016). Taming Momentum Crashes: A Simple Stop-Loss Strategy (Rochester, NY: Social Science Research Network).
-
+12. constant volatility
+13. ex post mean-variance efficient portfolios
 
 '''
 
@@ -134,7 +135,7 @@ def _grade(ret, rating_func,freq,window):
     return rating
 
 def grade_strategy(ret,freq,window):
-    path=os.path.join(DIR_TMP,'grade_strategy.pkl')
+    path=os.path.join(DIR_TMP,'grade_strategy__{}_{}.pkl'.format(freq,window))
     if os.path.exists(path):
         comb=pd.read_pickle(path)
     else:
@@ -143,13 +144,6 @@ def grade_strategy(ret,freq,window):
             rt=_grade(ret, rating_func,freq,window)
             ratings.append(rt)
         comb=pd.concat(ratings,axis=1,keys=['cumprod_ret','return_down_ratio','return_std_ratio'])
-
-        # r1=_grade(ret,_cum_ret,freq,window)
-        # r2=_grade(ret,_return_down_ratio,freq,window)
-        # r3=_grade(ret,_return_std_ratio,freq,window)
-        # comb=pd.concat([r1,r2,r3],axis=1,keys=['cumprod_ret','return_down_ratio','return_std_ratio'])
-
-
         comb['long_name']=comb.index.get_level_values('long_name')
         comb['short_name']=comb['long_name'].map(lambda x:x.split('___')[0])
         comb['smooth']=comb['long_name'].map(lambda x:int(x.split('___')[1].split('_')[1]))
@@ -232,7 +226,7 @@ def _one_slice(args):
 def generate_signal(table):
     trd_dts=table['trd_dt'].unique()
     args_list=[(table,trd_dts,i) for i in range(len(trd_dts[:-1]))]
-    signal_monthly=multi_task(_one_slice, args_list, 10)
+    signal_monthly=multi_task(_one_slice, args_list,30)
     # signal_monthly=multiprocessing.Pool(30).map(_one_slice,args_list)
     comb_signal = pd.concat(signal_monthly)
     return comb_signal
@@ -355,6 +349,4 @@ def debug():
 
 if __name__ == '__main__':
     gen_mixed_signal()
-
-# if __name__ == '__main__':
-#     backtest_mixed_signal()
+    # backtest_mixed_signal()

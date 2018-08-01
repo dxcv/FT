@@ -8,9 +8,9 @@ import multiprocessing
 import os
 import itertools
 import pandas as pd
+from empirical.config import DIR_KOGAN, NUM_FACTOR
 from sklearn.decomposition import PCA
 import numpy as np
-from config import  DIR_KOGAN
 from tools import multi_task
 
 
@@ -33,7 +33,7 @@ def build_models():
     multi_task(_generate_models, names_list)
 
 
-def get_pca_model(n=3):
+def get_pca_model(n=NUM_FACTOR):
     directory=os.path.join(DIR_KOGAN,'port_ret','eq')
     fns=os.listdir(directory)
 
@@ -52,8 +52,37 @@ def get_pca_model(n=3):
                         columns=['pca{}'.format(i) for i in range(1,n+1)])
 
 
+directory=os.path.join(DIR_KOGAN,'port_ret','eq')
+fns=os.listdir(directory)
+
+dfs=[]
+for fn in fns:
+    df=pd.read_pickle(os.path.join(directory,fn))['tb']
+    dfs.append(df)
+
+comb=pd.concat(dfs,axis=1,keys=[fn[:-4] for fn in fns])
+comb=comb.dropna(thresh=int(comb.shape[1]*0.8))
+comb=comb.fillna(0)
+
+X=comb.values
+
+rs=[]
+for n in range(1,X.shape[1]+1):
+    pca=PCA(n_components=n)
+    pca.fit(X)
+    a=pca.fit_transform(X)
+    ratio=np.sum(pca.explained_variance_ratio_)
+    rs.append(ratio)
+
+variation_explained=pd.Series(rs,index=range(1,X.shape[1]+1))
+
+variation_explained.plot().get_figure().show()
 
 
+pca=PCA(n_components=NUM_FACTOR)
+pca.fit(X)
+
+factor_loading=pd.DataFrame(pca.components_.T,index=comb.columns,columns=['pca{}'.format(i) for i in range(1,NUM_FACTOR+1)])
 
 
 

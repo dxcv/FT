@@ -13,6 +13,8 @@
           <option value="backtest.test.format_year_performance" />
           <option value="backtest.test.format_hedged_year_performance" />
           <option value="backtest.plot_performance" />
+          <option value="int.sum" />
+          <option value="float.sort_values" />
         </list>
       </option>
     </inspection_tool>
