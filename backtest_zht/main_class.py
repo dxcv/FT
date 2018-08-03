@@ -12,7 +12,7 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import backtest_zht.base_func as bf
-from backtest_zht.config import DIR_BACKTEST,CONFIG
+from backtest_zht.config import DIR_BACKTEST
 from collections import OrderedDict
 
 
@@ -23,7 +23,7 @@ DEFAULT_CONFIG={
         # 'decay_num': 1,　＃TODO：　used to smooth the signal
         # 'delay_num': 1,
         'hedged_period': 60, #trick: 股指的rebalance时间窗口，也可以考虑使用风险敞口大小来作为relance与否的依据
-        'buy_commission': 2e-3,
+        'buy_commission': 2e-3,#tric: 实际应该是2e-4左右，我们这里用的是2e-3是把冲击成本也加在里边了
         'sell_commission': 2e-3,
         'tax_ratio':0.001,# 印花税
         'capital':10000000,#虚拟资本,没考虑股指期货所需要的资金
@@ -50,6 +50,12 @@ benchmark_returns_zz500.name = 'benchmark'
 
 
 close_price_backtest = close_price_post
+'''
+回测用的是后复权的价格，算涨跌停用的是不复权价格，前复权价格基本不用，
+实际交易的时候虽然用的是不复权价格，但是回测如果用不复权价格的话，由于拆股分红的影响，
+会影响回测。虽然用后复权价格会导致回测中的买卖股票数量与实际不同，但是股票数量并不是我们
+核心关注的数据，我们更关心的是每只股票持有的金额，以及这个金额的变动。
+'''
 trade_date = close_price_backtest.index.to_series()
 last_close_price_none = close_price_none.shift(1)
 
@@ -98,7 +104,7 @@ def portfolio_performance(portfolio_return, benchmark_index):
     }
     return pd.Series(perf)
 
-def get_hedged_returns(portfolio_returns, benchmark_index):
+def get_hedged_returns(portfolio_returns, benchmark_index,hedged_period):
     corrected_ratio = 1.0
 
     benchmark_returns = benchmark_index.pct_change()
@@ -106,11 +112,11 @@ def get_hedged_returns(portfolio_returns, benchmark_index):
 
     temp_hedged_value = []
     last_net_val = 1
-    for i in range(0, len(portfolio_returns), CONFIG['hedged_period']):
+    for i in range(0, len(portfolio_returns), hedged_period):
         temp_unit_val = (
-        portfolio_returns[i: (i + CONFIG['hedged_period'])] + 1).cumprod()
+        portfolio_returns[i: (i + hedged_period)] + 1).cumprod()
         temp_bch_unit_val = (
-        benchmark_returns[i: (i + CONFIG['hedged_period'])] + 1).cumprod()
+        benchmark_returns[i: (i + hedged_period)] + 1).cumprod()
 
         temp_val = (temp_unit_val - temp_bch_unit_val + 1) * last_net_val
         temp_hedged_value.append(temp_val)
@@ -404,11 +410,11 @@ class Backtest:
         sorted output". However, sort_index gives you the option to choose 'mergesort',
          which IS a stable sorting algorithm.  https://stackoverflow.com/questions/33699555/pandas-sorting-by-value-and-then-by-index
         '''
-        effective_list = effective_list.sort_index().sort_values(ascending=False,kind='mergesort')[:CONFIG[
-            'effective_number']]  # keep the largest n (effective_number) stock
-
+        # effective_list = effective_list.sort_index().sort_values(ascending=False,kind='mergesort')[:self.config['effective_number']]  # keep the largest n (effective_number) stock
+        #trick: 这里使用mergesort 排序，保证在value相同的时候结果的稳定
+        effective_list=effective_list.sort_values(ascending=False,kind='mergesort')[:self.config['effective_number']]
         #fixme: weight 再多加一列去存weight不要直接修改 signal
-        if CONFIG['signal_to_weight_mode'] == 1:  # handle the abnormal value
+        if self.config['signal_to_weight_mode'] == 1:  # handle the abnormal value
             # if transform_mode == 1:# handle the abnormal value
             mean_ = effective_list.mean()
             std_ = effective_list.std()
@@ -420,26 +426,34 @@ class Backtest:
             normal_max = normal.max()
             effective_list[effective_list < left_3std] = normal_min
             effective_list[effective_list > right_3std] = normal_max
-        elif CONFIG['signal_to_weight_mode'] == 2:  # transform with arctan
+        elif self.config['signal_to_weight_mode'] == 2:  # transform with arctan
             effective_list -= effective_list.mean()
             k = 1 / effective_list.abs().sum()
             effective_list *= k
             effective_list = effective_list.apply(np.arctan)
-        elif CONFIG['signal_to_weight_mode'] == 3:  # equally weighted
-            effective_list[:] = 1
+        elif self.config['signal_to_weight_mode'] == 3:  # equally weighted
+            effective_list[:] = 1 #
 
-        if CONFIG['signal_to_weight_mode'] in [0, 1, 2]:
+        if self.config['signal_to_weight_mode'] in [0, 1, 2]:
             min_ = effective_list.min()
-            max_ = effective_list.max()
-            if min_ < 0:
-                effective_list -= min_  # 此处得出的最小值为0
-                effective_list += abs(min_)  # 平移一下，避免0值
+            if min_<0:
+                effective_list-=2*min_ #平移，避免0值
+            # if min_ < 0:
+            #     effective_list -= min_  # 此处得出的最小值为0
+            #     effective_list += abs(min_)  # 平移一下，避免0值
         # effective_list += max_
 
-        effective_list = effective_list[effective_list != 0]
+        # effective_list = effective_list[effective_list != 0]
+        '''
+        #trick: 这里的effective_list 是按照最原始的signal 值排序的，且是稳定的。
+        后边在使用effective_list 的时候不能再做不稳定的排序了，否则由于在
+        signal_to_weight_mode ==3 的情形下，由于effective_list 中存的数值都相等，
+        使用不稳定的排序会导致结果的不确定性。
+
+        '''
         return effective_list
 
-    def effectivelist_to_targetlist(self,day, effective_list, last_hold_list):
+    def effectivelist_to_targetlist(self,day, effective_list, last_hold_list,signal):
         if not effective_list.empty:
             price = close_price_none.loc[day]
             last_price = last_close_price_none.loc[
@@ -448,49 +462,60 @@ class Backtest:
                 price > 1.095 * last_price].index  # 涨停的股票
             sell_limited_AStocks = price[
                 price < 0.905 * last_price].index  # 跌停的股票
-            AStocks_opened = (
-            stocks_opened.loc[day] == 1)  # review: simplify this two rows
+            AStocks_opened = (stocks_opened.loc[day] == 1)  # review: simplify this two rows
             opened_AStocks = AStocks_opened[AStocks_opened].index
             # 用effective_list 这种方式去确定调不调仓有点naive,也可以考虑用比例，实际情况可能需考虑持仓和市场行情
             # 不需要调仓的股票
-            coincident_list = last_hold_list[
-                last_hold_list.index.isin(
-                    effective_list.index)]  # trick： effective_list cover more stock than target_number, and we only sell those stocks that are no longer covered by effective list.
-            selling_stocks = set(last_hold_list.index) - set(
-                coincident_list.index) - set(
-                buy_limited_AStocks)  # 不卖涨停的股票，即便根据信号来说该卖
-            sellable_stocks = (selling_stocks & set(opened_AStocks)) - set(
-                sell_limited_AStocks)
+            coincident_list = last_hold_list[last_hold_list.index.isin(effective_list.index)]  # trick： effective_list cover more stock than target_number, and we only sell those stocks that are no longer covered by effective list.
+            selling_stocks = set(last_hold_list.index) - set(coincident_list.index) - set(buy_limited_AStocks)  # 不卖涨停的股票，即便根据信号来说该卖
+            sellable_stocks = (selling_stocks & set(opened_AStocks)) - set(sell_limited_AStocks)
             hold_list = last_hold_list.drop(list(sellable_stocks))
-            if len(hold_list) < CONFIG['target_number']:
-                buyable_stocks = (
-                    (set(effective_list.index) & set(opened_AStocks)) -
-                    set(buy_limited_AStocks) - set(
-                        sell_limited_AStocks))  # 不买跌停股，即便根据信号来说该买
-                effective_list = effective_list[list(buyable_stocks)]
-                alternative_list = effective_list.drop(hold_list.index,
-                                                       errors='ignore')  # rebalance时候考虑的股票池
-                #fixme: 选股问题，同上
-                alternative_list=alternative_list.sort_index().sort_values(ascending=False,kind='mergesort')
-                complement_number = CONFIG['target_number'] - len(
-                    hold_list)  # 这种定量持有100股的持仓方式可以优化一下，不一定非要持有100股
+            if len(hold_list) < self.config['target_number']:
+                buyable_stocks = ((set(effective_list.index) & set(opened_AStocks)) -set(buy_limited_AStocks) - set(sell_limited_AStocks))  # 不买跌停股，即便根据信号来说该买
+                effective_list=effective_list[effective_list.index.isin(buyable_stocks)]
+                # effective_list = effective_list[list(buyable_stocks)]
+                alternative_list = effective_list.drop(hold_list.index,errors='ignore')  # rebalance时候考虑的股票池
+                # alternative_list=alternative_list.sort_index().sort_values(ascending=False,kind='mergesort')
+                complement_number = self.config['target_number'] - len(hold_list)  # 这种定量持有100股的持仓方式可以优化一下，不一定非要持有100股
                 buy_list = alternative_list[:complement_number]
-                if len(buy_list) != 0:
-                    if buy_list.sum() != 0:
-                        buy_list /= buy_list.sum()
-                    else:
-                        buy_list[:] = 1 / len(buy_list)
+
+                if len(buy_list)>0:
+                    buy_list/=buy_list.sum()
                     buy_list = buy_list.round(8)  # 有时候有些数值特别小，这种情况就直接省略对应的股票
                     buy_list = buy_list[buy_list != 0]
 
-                if len(buy_list) < complement_number:  # trick:由于上一步删除了数值较小的股票，为了达到持有100只股票的目的，这里应该继续追加股票，但是，更好的方式是少卖一些股票，这样可以减少卖出和买入交易成本
-                    #fixme: 选股问题，同上,但是这里的问题是，last_hold_list中的value是上一个交易日的持有金额，而上面的value是signal值
-                    sellable_list = last_hold_list[sellable_stocks].sort_index().sort_values(ascending=False,kind='mergesort')
-                    substitute_list = sellable_list[:complement_number - len(buy_list)]
+                # if len(buy_list) != 0:
+                #     if buy_list.sum() != 0:
+                #         buy_list /= buy_list.sum()
+                #     else:
+                #         buy_list[:] = 1 / len(buy_list)
+                #     buy_list = buy_list.round(8)  # 有时候有些数值特别小，这种情况就直接省略对应的股票
+                #     buy_list = buy_list[buy_list != 0]
+
+                if len(buy_list) < complement_number:#这个函数被调用的概率比较低
+                    '''
+                    由于上一步删除了数值较小的股票，为了达到持有100只股票的目的，
+                    这里应该继续追加股票，但是，更好的方式是少卖一些股票，
+                    这样可以减少卖出和买入交易成本。此处我们直接是保留了哪些
+                    '''
+                    substitute_num=complement_number-len(buy_list)
+                    '''get n substitute stocks from sellable_list based on the rank of signal'''
+                    signal_today = signal.loc[day]
+                    substitute_stocks = signal_today[sellable_stocks].sort_values(ascending=False, kind='mergesort')[:substitute_num].index
+                    substitute_list=last_hold_list[substitute_stocks]
+                    print('substitute_list is calculated')
+
+                    # sellable_list=last_hold_list[sellable_stocks].sort_values(ascending=False,kind='mergesort')
+                    # sellable_list = last_hold_list[sellable_stocks].sort_index().sort_values(ascending=False,kind='mergesort')
+                    # substitute_list = sellable_list[:complement_number - len(buy_list)]
                 else:
                     substitute_list = pd.Series()
+                '''
+                trick: 逻辑问题，hold_list 和substitute_list里边存的是shares,但是buy_list 里边是买入权重，
+                虽然这里他们的量纲不同，但是我们后边主要关心的是他们相对上一个交易日的
+                变动。
+                '''
                 target_list = hold_list.append([buy_list, substitute_list])
-
             else:
                 target_list = last_hold_list
 
@@ -503,7 +528,7 @@ class Backtest:
         if day in signal.index:
             effective_list = self.signal_to_effectivelist(day, signal)
             target_list = self.effectivelist_to_targetlist(day, effective_list,
-                                                      last_hold_list)
+                                                      last_hold_list,signal)
         else:
             target_list = last_hold_list
 
@@ -517,7 +542,7 @@ class Backtest:
         transactions_record = []  # 交易记录
 
         new_hold_shares = pd.Series()
-        today_market_value = CONFIG['capital']
+        today_market_value = self.config['capital']
         for day in self.date_range:  # 在策略第一天运行的时候肯定不能直接这样在第一天建仓100只股票，会造成市场冲击，所以，策略在高换手率期间应该有所优化
             print('backtesting: {}'.format(day))
             # 记录昨日持仓权重和股数，以及昨日收盘价
@@ -549,31 +574,20 @@ class Backtest:
                 sell_shares.index]  # 实际卖出的时候一般不会是收盘价，这里可以优化一下，交易算法可以单独一个模块来写，这里的买卖价格应该由交易算法模块传过来，而非直接使用开盘价收盘价
             sell_values_sum = sum(sell_values)
             # sell_fee = sell_values_sum * (tax_ratio + sell_commission)
-            sell_fee = sell_values_sum * (
-            CONFIG['tax_ratio'] + CONFIG['sell_commission'])
-
+            sell_fee = sell_values_sum * (self.config['tax_ratio'] + self.config['sell_commission'])
             if last_hold_shares.empty:
-                # buy_values_sum=capital/(1+buy_commission)
-                buy_values_sum = CONFIG['capital'] / (
-                1 + CONFIG['buy_commission'])
+                buy_values_sum = self.config['capital'] / (1 + self.config['buy_commission'])
             else:
-                buy_values_sum = (sell_values_sum - sell_fee) / (
-                1 + CONFIG['buy_commission'])
-                # buy_values_sum=(sell_values_sum-sell_fee)/(1+buy_commission)
+                buy_values_sum = (sell_values_sum - sell_fee) / (1 + self.config['buy_commission'])
 
             buy_list /= buy_list.sum()  # 买入的各股相对权重
             buy_values = buy_values_sum * buy_list
-            buy_shares = buy_values / AStocks_buy_price[
-                buy_values.index]  # review:不考虑数值调整吗？比如最小交易数量为一手 100股
+            buy_shares = buy_values / AStocks_buy_price[buy_values.index]  # review:不考虑数值调整吗？比如最小交易数量为一手 100股
+            # review: 只要在invariable_list中的就不变了吗？不改变权重吗？ 万一某只股票持有了很久导致在总仓位中占比较高的话，应该有所调整
+            invariable_shares = last_hold_shares[invariable_list.index]  # 获取今日持仓不动股票份额
+            new_hold_shares = pd.concat([invariable_shares, buy_shares])  # 更新今日最新持仓股票份额
 
-            invariable_shares = last_hold_shares[
-                # review: 只要在invariable_list中的就不变了吗？不改变权重吗？ 万一某只股票持有了很久导致在总仓位中占比较高的话，应该有所调整
-                invariable_list.index]  # 获取今日持仓不动股票份额
-            new_hold_shares = pd.concat(
-                [invariable_shares, buy_shares])  # 更新今日最新持仓股票份额
-
-            new_hold_values = new_hold_shares * AStocks_close_price[
-                new_hold_shares.index]
+            new_hold_values = new_hold_shares * AStocks_close_price[new_hold_shares.index]
 
             today_market_value = new_hold_values.sum()  # 计算今日持仓总市值
             if (last_hold_shares.empty) | (last_market_value == 0):
@@ -630,7 +644,7 @@ class Backtest:
         perf = portfolio_performance(trade_returns, self.benchmark)
         perf_yearly = format_year_performance(trade_returns, self.benchmark,
                                               turnover_rates)
-        hedged_returns = get_hedged_returns(trade_returns, self.benchmark)
+        hedged_returns = get_hedged_returns(trade_returns, self.benchmark,self.config['hedged_period'])
         hedged_perf = portfolio_performance(hedged_returns, self.benchmark)
         hedged_perf_yearly = format_hedged_year_performance(hedged_returns,
                                                             self.benchmark)

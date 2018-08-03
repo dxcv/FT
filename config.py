@@ -56,6 +56,7 @@ DIR_RESULT_SPAN=os.path.join(DIR_ROOT,'singleFactor','combine','spanning_result'
 DIR_BACKTEST_SPANNING=os.path.join(DIR_ROOT,'singleFactor','backtest_spanning')
 DIR_MIXED_SIGNAL=os.path.join(DIR_ROOT,'singleFactor','mixed_signal')
 DIR_MIXED_SIGNAL_BACKTEST=os.path.join(DIR_ROOT,'singleFactor','mixed_signal_backtest')
+DIR_MIXED_SUM=os.path.join(DIR_ROOT,'singleFactor','mixed_summary')
 
 
 # DIR_DM=r'F:\FT_Users\HTZhang\data_mining'
