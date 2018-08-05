@@ -230,9 +230,9 @@ def plot_portfolio_performance(portfolio_return, portfolio_turnover,
     ax1.set_title(title, fontproperties=font, fontsize=20)
 
     ax2 = fig.add_subplot(gs[4:10])
-    ax2.plot(portfolio_value - 1, c=red, lw=2, label=u'策略')
+    # ax2.plot(portfolio_value - 1, c=red, lw=2, label=u'策略')
     ax2.plot(hedged_value - 1, c=blue, lw=2, label=u'对冲')
-    ax2.plot(benchmark_value - 1, c='gray', lw=2, label=u'基准')
+    # ax2.plot(benchmark_value - 1, c='gray', lw=2, label=u'基准')
 
     ax2.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter('{x:.2%}'))
     ax2.legend(loc='best', prop=font)
@@ -372,7 +372,7 @@ def format_hedged_year_performance(returns, benchmark_ind):
 
 
 class Backtest:
-    def __init__(self,signal, name, directory, start=None, end=None,config=DEFAULT_CONFIG):
+    def __init__(self,signal, name, directory, start='2009', end=None,config=DEFAULT_CONFIG):
         self.signal=signal
         self.name=name
         self.directory=directory
@@ -496,14 +496,20 @@ class Backtest:
                     '''
                     由于上一步删除了数值较小的股票，为了达到持有100只股票的目的，
                     这里应该继续追加股票，但是，更好的方式是少卖一些股票，
-                    这样可以减少卖出和买入交易成本。此处我们直接是保留了哪些
+                    这样可以减少卖出和买入交易成本。
+                    
+                    另外，如果我们的effective_number==100, 可能effective_list 传进来
+                    就少于100只，那么，此处也会被调用，但是在交易的第一天，由于last_hold_list
+                    为空，那么最后我们还是没法保证100只的持仓量
+                    
+                    如果sellable_stocks 里边的股票太少,也有可能导致没法保证len(substitute_list)==substitute_num
                     '''
                     substitute_num=complement_number-len(buy_list)
                     '''get n substitute stocks from sellable_list based on the rank of signal'''
                     signal_today = signal.loc[day]
                     substitute_stocks = signal_today[sellable_stocks].sort_values(ascending=False, kind='mergesort')[:substitute_num].index
                     substitute_list=last_hold_list[substitute_stocks]
-                    print('substitute_list is calculated')
+                    # print('{}:"{}" substitute'.format(day,len(substitute_list)))
 
                     # sellable_list=last_hold_list[sellable_stocks].sort_values(ascending=False,kind='mergesort')
                     # sellable_list = last_hold_list[sellable_stocks].sort_index().sort_values(ascending=False,kind='mergesort')
@@ -521,7 +527,8 @@ class Backtest:
 
         else:
             target_list = last_hold_list
-
+        if len(target_list)<self.config['target_number']:
+            print(day,len(target_list))
         return target_list
 
     def signal_to_targetlist(self,day, signal, last_hold_list):
@@ -544,7 +551,7 @@ class Backtest:
         new_hold_shares = pd.Series()
         today_market_value = self.config['capital']
         for day in self.date_range:  # 在策略第一天运行的时候肯定不能直接这样在第一天建仓100只股票，会造成市场冲击，所以，策略在高换手率期间应该有所优化
-            print('backtesting: {}'.format(day))
+            # print('backtesting: {}'.format(day))
             # 记录昨日持仓权重和股数，以及昨日收盘价
             last_hold_shares = new_hold_shares
             last_market_value = today_market_value
@@ -668,7 +675,7 @@ class Backtest:
 
     def save_result(self):
         self.fig.savefig(os.path.join(self.directory, self.name + '.png'))
-        self.signal.to_csv(os.path.join(self.directory,'signal.csv'))
+        # self.signal.to_csv(os.path.join(self.directory,'signal.csv'))
         for k in self.results.keys():
             self.results[k].to_csv(os.path.join(self.directory, k + '.csv'))
 

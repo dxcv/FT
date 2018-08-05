@@ -12,7 +12,9 @@ import numpy as np
 
 import os
 
-from config import DIR_BACKTEST_SPANNING, DIR_TMP
+from backtest_zht.main_class import Backtest, DEFAULT_CONFIG
+from config import DIR_BACKTEST_SPANNING, DIR_TMP, DIR_MIXED_SIGNAL_BACKTEST, \
+    DIR_MIXED_SIGNAL
 from singleFactor.combine_single_factors.signal_spanning import \
     get_derive_signal
 from tools import outlier, z_score, multi_task
@@ -36,6 +38,10 @@ from tools import outlier, z_score, multi_task
     Han, Y., Zhou, G., and Zhu, Y. (2016). Taming Momentum Crashes: A Simple Stop-Loss Strategy (Rochester, NY: Social Science Research Network).
 12. constant volatility
 13. ex post mean-variance efficient portfolios
+14. 之所以在2017年之后表现不好，是因为我们选的因子都是从研报里来的，这些因子都已经被证明
+    在研报发布以前表现良好，在2017年和2018年，实际这些因子相当于是做样本外测试，因为
+    在2017年之后可能，由于有些机构开始大规模的使用这些因子，使得他们失效了。如何实证这些因子
+    确实已经被使用到了市场？
 
 '''
 
@@ -169,6 +175,7 @@ def get_outer_frame(dflist):
 
 def get_month_data(grade,rb_dt,criteria,N):
     month_data= grade.loc[(slice(None), rb_dt), :]
+    #select the best smoothing period and direction
     month_data = month_data.groupby(['trd_dt', 'short_name'],
                                   as_index=False, group_keys=False) \
         .apply(lambda df: df.loc[df[criteria].idxmax()])
@@ -212,35 +219,43 @@ def get_mixed_signal_of_next_month(month_data,rb_dt,next_rb_dt,iw,cw):
     return mixed
 
 def _mix_one_slice(args):
-    grade,criteria,trd_dts,i,N=args
+    grade,criteria,trd_dts,i,N,iw,cw=args
     rb_dt = trd_dts[i]  # rebalance date
     print(rb_dt)
     next_rb_dt = trd_dts[i + 1]  # next rebalance date
     month_data = get_month_data(grade, rb_dt, criteria, N)
-    iw = 'iw2'
-    cw = 'cw3'
     mixed_signal = get_mixed_signal_of_next_month(month_data, rb_dt, next_rb_dt,
                                                   iw, cw)
     return mixed_signal
     # mixed_signal_frags.append(mixed_signal)
 
+def gen_args(grade,criteria,N,trd_dts,iw,cw):#trick: use this way to save memoery,
+    for i in range(len(trd_dts)-1):
+        yield (grade,criteria,trd_dts,i,N,iw,cw)
 
-def get_signal(grade,criteria,N,trd_dts):
-    args_list=[(grade,criteria,trd_dts,i,N) for i in range(len(trd_dts)-1)]
-    mixed_signal_frags=multi_task(_mix_one_slice,args_list,20)
+def get_signal(grade,criteria,N,trd_dts,iw,cw):
+    # args_list=[(grade,criteria,trd_dts,i,N,iw,cw) for i in range(len(trd_dts)-1)]
+    args_generator=gen_args(grade,criteria,N,trd_dts,iw,cw)
+    mixed_signal_frags=multi_task(_mix_one_slice,args_generator,5)
     signal=pd.concat(mixed_signal_frags)
     return signal
 
 def generate_signal():
     # grade=pd.read_pickle(r'G:\FT_Users\HTZhang\FT\tmp\grade_strategy__M_500.pkl')
     ret=get_strategy_ret()
-    grade=grade_strategy(ret,freq='M',window=500)#fixme:
-    criteria = 'criteria1'
-    N = 5
-    trd_dts= grade.index.get_level_values('trd_dt').unique().sort_values()[:-1]
-    signal=get_signal(grade,criteria,N,trd_dts)
-    signal.to_pickle(os.path.join(DIR_TMP,'signal.pkl'))
-
+    for window in [1000,500,300,100,50]:
+        grade=grade_strategy(ret,freq='M',window=window)#fixme:
+        trd_dts = grade.index.get_level_values('trd_dt').unique().sort_values()[:-1]
+        for iw in ['iw1','iw2','iw3']:
+            for cw in ['cw1','cw2','cw3']:
+                for N in [1, 3, 5, 10, 100]:
+                    for criteria in ['criteria1','criteria2','criteria3']:
+                        name='{}_{}_{}_{}_{}.pkl'.format(window,iw,cw,N,criteria)
+                        path=os.path.join(DIR_MIXED_SIGNAL,name)
+                        if not os.path.exists(path):
+                            signal=get_signal(grade,criteria,N,trd_dts,iw,cw)
+                            signal.to_pickle(path)
+                        print(name)
 
 def debug():
     ret=get_strategy_ret()
@@ -255,7 +270,26 @@ def debug():
         frag=_mix_one_slice(args)
         frags.append(frag)
 
+def backtest_mixed_signal():
+    fns=os.listdir(DIR_MIXED_SIGNAL)
+    for fn in fns:
+        signal=pd.read_pickle(os.path.join(DIR_MIXED_SIGNAL,fn))
+        for effective_number in [100,150,200,300]:
+            for signal_weight_mode in [1,2,3]:
+                name='{}_{}_{}'.format(fn[:-4],effective_number,signal_weight_mode)
+                directory=os.path.join(DIR_MIXED_SIGNAL_BACKTEST,name)
+
+                cfg=DEFAULT_CONFIG
+                cfg['effective_number']=effective_number
+                cfg['signal_to_weight_mode']=signal_weight_mode
+                Backtest(signal, name=name, directory=directory, start='2009',
+                         config=cfg)
+
+
+
 
 if __name__ == '__main__':
-    generate_signal()
+    # generate_signal()
     # debug()
+    backtest_mixed_signal()
+

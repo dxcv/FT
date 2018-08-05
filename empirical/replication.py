@@ -10,7 +10,6 @@ import itertools
 import pandas as pd
 import seaborn as sns
 import matplotlib.pylab as plt
-from config import DIR_TMP
 from sklearn.decomposition import PCA
 import statsmodels.api as sm
 import numpy as np
@@ -21,6 +20,7 @@ from empirical.config import DIR_KOGAN, DIR_KOGAN_RESULT, CRITICAL
 from empirical.utils import run_GRS_test
 from numpy.linalg import LinAlgError
 from tools import multi_task
+from matplotlib.colors import ListedColormap
 
 #TODO:make sure that all the assets share the same window
 #TODO:if the model contains the underline factor of the testing asset,skip it
@@ -82,7 +82,6 @@ def _grs_bench(args):
     _,p=run_GRS_test(model,asset)
     return p
 
-
 def grs_benchmodel():
     bench_names=['capmM', 'ff3M', 'ffcM', 'ff5M', 'hxz4M', 'ff6M']
     fn_assets = os.listdir(os.path.join(DIR_KOGAN, 'assets', 'eq'))
@@ -101,8 +100,6 @@ def grs_all():
     grs_factor_model()
     grs_pca_model()
     grs_benchmodel()
-
-
 
 def _generate_models(names):
     directory=os.path.join(DIR_KOGAN,'port_ret','eq')
@@ -179,10 +176,7 @@ def get_heatmap():
     # pca_factors=get_pca_factors(n=3)
 
     factors=pd.concat([raw_factors,pca_model4],axis=1).dropna()
-
-
     corr=factors.corr()
-
     with sns.axes_style('white'):
         ax=sns.heatmap(corr,linewidth=0.5,cmap='YlGnBu')
         plt.show()
@@ -203,7 +197,6 @@ def spanning_regression():
         r=model.fit()
         values.append((r.params[0], r.tvalues[0], r.rsquared_adj))
     spanning_result=pd.DataFrame(values,index=raw_factors.columns,columns=['alpha','t','adj_r2'])
-
 
 def get_performance(weight=0):
     '''
@@ -230,47 +223,101 @@ def get_performance(weight=0):
     perf=perf.sort_values(ascending=False,kind='mergesort')
     return perf
 
-weight=0
+def get_performance_distribution(weight=1):
+    '''
+    figure2: factor model performance distribution
+    Args:
+        weight:
 
-grs_factor = pd.read_csv(os.path.join(DIR_KOGAN_RESULT, 'grs_factor.csv'),
-                         index_col=0)
-grs_pca = pd.read_csv(os.path.join(DIR_KOGAN_RESULT, 'grs_pca.csv'),
-                      index_col=0)
-grs_benchmark = pd.read_csv(
-    os.path.join(DIR_KOGAN_RESULT, 'grs_benchmark.csv'), index_col=0)
+    Returns:
 
-comb=pd.concat([grs_factor,grs_pca,grs_benchmark],axis=1,sort=False)
-comb[comb>=CRITICAL]=1
-comb[comb<CRITICAL]=0
-#fixme: it's unjustice to compare three factor model with ff6
-if weight==0:
-    perf_factor_model=comb[grs_factor.columns].sum()/(comb.shape[0]-NUM_FACTOR+1)
-    perf_pca=comb[grs_pca.columns].sum()/comb.shape[0]
-    perf_benchmark=comb[grs_benchmark.columns].sum()/comb.shape[0]
-    perf=pd.concat([perf_factor_model,perf_pca,perf_benchmark]).sort_values(ascending=False,kind='mergesort')
-else:
-    freq_weight=1-comb[grs_factor.columns].sum(axis=1)/grs_factor.shape[1]
-    perf_factor_model=(comb[grs_factor.columns].T*freq_weight).T.sum()/(comb.shape[0]-NUM_FACTOR+1)
-    perf_pca=(comb[grs_pca.columns].T*freq_weight).T.sum()/comb.shape[0]
-    perf_benchmark=(comb[grs_benchmark.columns].T*freq_weight).T.sum()/comb.shape[0]
-    perf=pd.concat([perf_factor_model,perf_pca,perf_benchmark]).sort_values(ascending=False,kind='mergesort')
+    '''
+    grs_factor = pd.read_csv(os.path.join(DIR_KOGAN_RESULT, 'grs_factor.csv'),
+                             index_col=0)
+    grs_pca = pd.read_csv(os.path.join(DIR_KOGAN_RESULT, 'grs_pca.csv'),
+                          index_col=0)
+    grs_benchmark = pd.read_csv(
+        os.path.join(DIR_KOGAN_RESULT, 'grs_benchmark.csv'), index_col=0)
 
-distribution=perf.sort_values().to_frame()
-distribution.columns=['performance']
-distribution['percentile']=np.arange(1,distribution.shape[0]+1)/distribution.shape[0]
+    comb=pd.concat([grs_factor,grs_pca,grs_benchmark],axis=1,sort=False)
+    comb[comb>=CRITICAL]=1
+    comb[comb<CRITICAL]=0
+    #fixme: it's unjustice to compare three factor model with ff6
+    if weight==0:
+        perf_factor_model=comb[grs_factor.columns].sum()/(comb.shape[0]-NUM_FACTOR+1)
+        perf_pca=comb[grs_pca.columns].sum()/comb.shape[0]
+        perf_benchmark=comb[grs_benchmark.columns].sum()/comb.shape[0]
+        perf=pd.concat([perf_factor_model,perf_pca,perf_benchmark]).sort_values(ascending=False,kind='mergesort')
+    else:
+        freq_weight=1-comb[grs_factor.columns].sum(axis=1)/grs_factor.shape[1]
+        perf_factor_model=(comb[grs_factor.columns].T*freq_weight).T.sum()/(comb.shape[0]-NUM_FACTOR+1)
+        perf_pca=(comb[grs_pca.columns].T*freq_weight).T.sum()/comb.shape[0]
+        perf_benchmark=(comb[grs_benchmark.columns].T*freq_weight).T.sum()/comb.shape[0]
+        perf=pd.concat([perf_factor_model,perf_pca,perf_benchmark]).sort_values(ascending=False,kind='mergesort')
 
-distribution.set_index('percentile')['performance'].plot().get_figure().show()
-specials=grs_pca.columns.tolist()+grs_benchmark.columns.tolist()
-plt.plot(distribution['percentile'],distribution['performance'],markevery=distribution.index.isin(specials))
+    distribution=perf.sort_values().to_frame()
+    distribution.columns=['performance']
+    distribution['percentile']=np.arange(1,distribution.shape[0]+1)/distribution.shape[0]
+
+    distribution.set_index('percentile')['performance'].plot().get_figure().show()
+    specials=grs_pca.columns.tolist()+grs_benchmark.columns.tolist()
+
+    plt.plot(distribution['percentile'],distribution['performance'])
+    for n in specials:
+        x,y=distribution.at[n,'percentile'],distribution.at[n,'performance']
+        plt.plot(x,y,'--bo',label=n)
+        plt.annotate(n,xy=(x,y))
+    plt.show()
+
+def get_factor_model_performance():
+    '''
+    figure 3: Factor Model Performance
+    Returns:
+
+    '''
+    grs_factor = pd.read_csv(os.path.join(DIR_KOGAN_RESULT, 'grs_factor.csv'),
+                             index_col=0)
+
+    grs_factor[grs_factor >= CRITICAL]=1
+    grs_factor[grs_factor < CRITICAL]=0
+
+    models_ascending=grs_factor.sum().sort_values(kind='mergesort').index
+    factors_ascending=grs_factor.sum(axis=1).sort_values(kind='mergesort').index
+
+    df=grs_factor.reindex(index=factors_ascending,columns=models_ascending)
+    df=df.fillna(-1)
+    df.columns=np.linspace(0,1,df.shape[1])
 
 
+    sns.set(font_scale=0.8)
+    # cmap is now a list of colors
+    cmap = sns.cubehelix_palette(start=2.8, rot=.1, light=0.9, n_colors=3)
 
-for n in specials:
-    plt.plot(distribution.at[n,'percentile'],distribution.at[n,'performance'],'g*')
+    # Create two appropriately sized subplots
+    grid_kws = {'width_ratios': (0.9, 0.03), 'wspace': 0.18}
 
+    fig, (ax, cbar_ax) = plt.subplots(1, 2, gridspec_kw=grid_kws,figsize=(df.shape[1]/10,df.shape[0]/10))
 
-plt.savefig(os.path.join(DIR_TMP,'distribution.png'))
+    ax = sns.heatmap(df, ax=ax, cbar_ax=cbar_ax, cmap=ListedColormap(cmap),
+                     linewidths=0.01, linecolor='lightgray',
+                     cbar_kws={'orientation': 'vertical'})
 
+    # Customize tick marks and positions
+    cbar_ax.set_yticklabels(['None','<{}'.format(CRITICAL),'>={}'.format(CRITICAL)])
+    cbar_ax.yaxis.set_ticks([-1,0,1])
+
+    # X - Y axis labels
+    ax.set_ylabel('FROM')
+    ax.set_xlabel('TO')
+
+    # Rotate tick labels
+    locs, labels = plt.xticks()
+
+    plt.setp(labels, rotation=0)
+    locs, labels = plt.yticks()
+    plt.setp(labels, rotation=0)
+
+    plt.show()
 
 
 
