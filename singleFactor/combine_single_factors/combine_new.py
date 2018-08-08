@@ -17,6 +17,7 @@ from config import DIR_BACKTEST_SPANNING, DIR_TMP, DIR_MIXED_SIGNAL_BACKTEST, \
     DIR_MIXED_SIGNAL
 from singleFactor.combine_single_factors.signal_spanning import \
     get_derive_signal
+from singleFactor.combine_single_factors.summary import summarize
 from tools import outlier, z_score, multi_task
 
 
@@ -28,6 +29,7 @@ from tools import outlier, z_score, multi_task
 3. 每类指标个数
 4. 调整指标之间的加权方式以及大类之间的加权方式,signal,rank,equal,expotential decay
     IC,IC_IR....  https://zhuanlan.zhihu.com/p/31753606
+    quantile as weight
 5. 2009年开始回测
 6. 选用不同的评分指标
 7. effective number 由200变为100
@@ -121,7 +123,12 @@ def _grade(ret, rating_func,freq,window):
     days=days[20:] # prune the header  #TODO:
     args_list=[(ret,window,d,rating_func) for d in days]
 
-    mss=multi_task(_apply_rating_func, args_list)
+    # mss=multi_task(_apply_rating_func, args_list) #fixme:
+    mss=[]
+    for args in args_list:
+        s=_apply_rating_func(args)
+        mss.append(s)
+
     rating=pd.concat(mss,axis=1,keys=days)
     rating=rating.stack()
     rating.index.names=['long_name','trd_dt']
@@ -198,6 +205,7 @@ def get_month_data(grade,rb_dt,criteria,N):
     return month_data
 
 def get_mixed_signal_of_next_month(month_data,rb_dt,next_rb_dt,iw,cw):
+    #TODO: this function is really slow
     month_data['weight']= month_data[iw] * month_data[cw]
     month_data['weight']/=month_data['weight'].sum()
     frags=[]
@@ -206,12 +214,16 @@ def get_mixed_signal_of_next_month(month_data,rb_dt,next_rb_dt,iw,cw):
         short_name=row.loc['short_name']
         smooth=row.loc['smooth']
         sign=row.loc['sign']
-        frag = get_derive_signal(short_name, smooth, sign)[rb_dt:next_rb_dt][1:]
+        '''
+        .copy() to save momery, if .copy() is not called, the whole DataFrame will
+        be stored in RAM, but we just need to use part of them (.loc[rb_dt:next_rb_dt][1:]).
+        If .copy() is used, only those indexed part will be stored in RAM.
+        '''
+        frag = get_derive_signal(short_name, smooth, sign).loc[rb_dt:next_rb_dt][1:].copy()
         if frag.shape[0]>0:
             frags.append(frag)
             ws.append(row.loc['weight'])
-
-    signals=[standardize_signal(fr) for fr in frags]
+    signals=[standardize_signal(fr) for fr in frags]#TODO: too slow
     signals=get_outer_frame(signals)
     signals = [s * w for s, w in zip(signals, ws)]
     mixed = pd.DataFrame(np.nanmean([s.values for s in signals], axis=0),
@@ -230,20 +242,44 @@ def _mix_one_slice(args):
     # mixed_signal_frags.append(mixed_signal)
 
 def gen_args(grade,criteria,N,trd_dts,iw,cw):#trick: use this way to save memoery,
-    for i in range(len(trd_dts)-1):
+    for i in range(len(trd_dts)-1):#fixme:
+    # for i in range(len(trd_dts)-5,len(trd_dts)-4):
         yield (grade,criteria,trd_dts,i,N,iw,cw)
+
+def get_signal_debug(grade,criteria,N,trd_dts,iw,cw):
+    args_generator = gen_args(grade, criteria, N, trd_dts, iw, cw)
+    signal=pd.concat([_mix_one_slice(args) for args in args_generator])
+    return signal
+
 
 def get_signal(grade,criteria,N,trd_dts,iw,cw):
     # args_list=[(grade,criteria,trd_dts,i,N,iw,cw) for i in range(len(trd_dts)-1)]
     args_generator=gen_args(grade,criteria,N,trd_dts,iw,cw)
-    mixed_signal_frags=multi_task(_mix_one_slice,args_generator,5)
+    mixed_signal_frags=multi_task(_mix_one_slice,args_generator,10)
     signal=pd.concat(mixed_signal_frags)
     return signal
 
 def generate_signal():
     # grade=pd.read_pickle(r'G:\FT_Users\HTZhang\FT\tmp\grade_strategy__M_500.pkl')
+    # total number: 675
     ret=get_strategy_ret()
-    for window in [1000,500,300,100,50]:
+    for window in [1000,500,200,50]:
+        grade=grade_strategy(ret,freq='M',window=window)#fixme:
+        trd_dts = grade.index.get_level_values('trd_dt').unique().sort_values()[:-1]
+        for iw in ['iw1','iw2','iw3']:
+            for cw in ['cw1','cw2','cw3']:
+                for N in [1, 3, 5, 10, 100]:
+                    for criteria in ['criteria1','criteria2','criteria3']:
+                        name='{}_{}_{}_{}_{}.pkl'.format(window,iw,cw,N,criteria)
+                        path=os.path.join(DIR_MIXED_SIGNAL,name)
+                        if not os.path.exists(path):
+                            signal=get_signal(grade,criteria,N,trd_dts,iw,cw)
+                            signal.to_pickle(path)
+                        print(name)
+
+def debug_generate_signal():
+    ret=get_strategy_ret()
+    for window in [200,50]:
         grade=grade_strategy(ret,freq='M',window=window)#fixme:
         trd_dts = grade.index.get_level_values('trd_dt').unique().sort_values()[:-1]
         for iw in ['iw1','iw2','iw3']:
@@ -259,37 +295,83 @@ def generate_signal():
 
 def debug():
     ret=get_strategy_ret()
-    grade=grade_strategy(ret,freq='M',window=500)
-    criteria = 'criteria1'
-    N = 5
-    trd_dts = grade.index.get_level_values('trd_dt').unique().sort_values()[:-1]
-    args_list=[(grade,criteria,trd_dts,i,N) for i in range(len(trd_dts)-1)]
-    frags=[]
-    for args in args_list:
-        print(args[3])
-        frag=_mix_one_slice(args)
-        frags.append(frag)
+    freq='M'
+    window=200
+    ratings = []
+    names = []
+    for name, func in rating_func_map.items():
+        days = ret.iloc[:, 0].resample(freq).apply(
+            lambda df: df.index[-1]).values  # trick
+        days = days[20:]  # prune the header  #TODO:
+        args_list = [(ret, window, d, func) for d in days]
+        mss=[]
+        for args in args_list:
+            print(args[1],args[2],name)
+            m=_apply_rating_func(args)
+            mss.append(m)
+        rating = pd.concat(mss, axis=1, keys=days)
+        rating = rating.stack()
+        rating.index.names = ['long_name', 'trd_dt']
+        ratings.append(rating)
+        names.append(name)
+    grade = pd.concat(ratings, axis=1, keys=names)
+    grade['long_name'] = grade.index.get_level_values('long_name')
+    grade['short_name'] = grade['long_name'].map(lambda x: x.split('___')[0])
+    grade['smooth'] = grade['long_name'].map(
+        lambda x: int(x.split('___')[1].split('_')[1]))
+    grade['sign'] = grade['long_name'].map(
+        lambda x: {'p': 1, 'n': -1}[x.split('___')[-1]])
+    grade['category'] = grade['long_name'].map(get_category)  # TODO: cluster
+    # TODO: log the shape of comb before and after .drop()
+    grade = grade.dropna()
+
+    # criteria = 'criteria1'
+    # N = 1
+    # iw='iw1'
+    # cw='cw1'
+    # trd_dts = grade.index.get_level_values('trd_dt').unique().sort_values()[:-1]
+    # args_list=[(grade,criteria,trd_dts,i,N,iw,cw) for i in range(len(trd_dts)-1)]
+    # frags=[]
+    # for args in args_list:
+    #     print(args[3])
+    #     frag=_mix_one_slice(args)
+    #     frags.append(frag)
+
+
+def _task_bt(fn):
+    signal = pd.read_pickle(os.path.join(DIR_MIXED_SIGNAL, fn))
+    for effective_number in [100, 150, 200, 300]:
+        for signal_weight_mode in [1, 2, 3]:
+            name = '{}_{}_{}'.format(fn[:-4], effective_number,signal_weight_mode)
+            directory = os.path.join(DIR_MIXED_SIGNAL_BACKTEST, name)
+
+            cfg = DEFAULT_CONFIG
+            cfg['effective_number'] = effective_number
+            cfg['signal_to_weight_mode'] = signal_weight_mode
+            Backtest(signal, name=name, directory=directory, start='2009',
+                     config=cfg)
+
+def debug1():
+    fn='1000_iw2_cw1_100_criteria1.pkl'
+    _task_bt(fn)
+
+
 
 def backtest_mixed_signal():
     fns=os.listdir(DIR_MIXED_SIGNAL)
-    for fn in fns:
-        signal=pd.read_pickle(os.path.join(DIR_MIXED_SIGNAL,fn))
-        for effective_number in [100,150,200,300]:
-            for signal_weight_mode in [1,2,3]:
-                name='{}_{}_{}'.format(fn[:-4],effective_number,signal_weight_mode)
-                directory=os.path.join(DIR_MIXED_SIGNAL_BACKTEST,name)
+    multi_task(_task_bt,fns,30)
 
-                cfg=DEFAULT_CONFIG
-                cfg['effective_number']=effective_number
-                cfg['signal_to_weight_mode']=signal_weight_mode
-                Backtest(signal, name=name, directory=directory, start='2009',
-                         config=cfg)
 
+
+
+# if __name__ == '__main__':
+#
+#     debug1()
 
 
 
 if __name__ == '__main__':
     # generate_signal()
-    # debug()
-    backtest_mixed_signal()
-
+    debug_generate_signal()
+    # backtest_mixed_signal()
+    # summarize()
