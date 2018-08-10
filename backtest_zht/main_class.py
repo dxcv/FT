@@ -379,7 +379,7 @@ class Backtest:
         self.start=start if start else self.signal.index[0]
         self.end=end if end else self.signal.index[-1]
         self.config=config
-        self.date_range=trade_date[start:end]
+        self.date_range=trade_date[start:end]#fixme: trade_date should be set according to the given signal and indice
         self.benchmark=zz500[self.start:self.end]
         self.run()
 
@@ -677,7 +677,7 @@ class Backtest:
         self.fig.savefig(os.path.join(self.directory, self.name + '.png'))
         # self.signal.to_csv(os.path.join(self.directory,'signal.csv'))
         for k in self.results.keys():
-            self.results[k].to_csv(os.path.join(self.directory, k + '.csv'))
+            self.results[k].to_csv(os.path.join(self.directory, k + '.csv'),encoding='gbk')
 
     def run(self):
         if os.path.exists(self.directory) and len(os.listdir(self.directory)) > 0:

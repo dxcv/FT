@@ -19,8 +19,8 @@ def _task(fn):
     ret = pd.read_csv(
         os.path.join(DIR_MIXED_SIGNAL_BACKTEST, fn, 'hedged_returns.csv'),
         index_col=0, header=None).iloc[:, 0]
-    cum_ret = (1 + ret).cumprod()[-1] - 1
-    criterias.loc['cumulative return'] = cum_ret
+    # cum_ret = (1 + ret).cumprod()[-1] - 1
+    # criterias.loc['cumulative return'] = cum_ret
     yearly = pd.read_csv(
         os.path.join(DIR_MIXED_SIGNAL_BACKTEST, fn, 'hedged_perf_yearly.csv'),
         index_col=0).iloc[:, 0]
@@ -47,22 +47,18 @@ def summarize():
 
     # review: 对于任意两个趋势有持续正收益的序列相关性都会很强，这种直接用收益率求相关性的方式不太准确
 
-    # _ca=pd.concat([alpha]+rets,axis=1,keys=['alpha']+fns).dropna()
-    # _c1=pd.concat([s1]+rets,axis=1,keys=['s1']+fns).dropna()
-    # _c2=pd.concat([s2]+rets,axis=1,keys=['s2']+fns).dropna()
+    _ca=pd.concat([alpha]+rets,axis=1,keys=['alpha']+fns).dropna()
+    _c1=pd.concat([s1]+rets,axis=1,keys=['s1']+fns).dropna()
+    _c2=pd.concat([s2]+rets,axis=1,keys=['s2']+fns).dropna()
+    summary['corr_alpha']=_ca.corrwith(_ca['alpha'])
+    summary['corr_s1']=_ca.corrwith(_c1['s1'])
+    summary['corr_s2']=_ca.corrwith(_c2['s2'])
 
-    # summary['corr_alpha']=np.np.corrcoef(_c1,rowvar=False)[:,0]
-    # summary['corr_s1']=np.corrcoef(_c1,rowvar=False)[:,0]
-    # summary['corr_s2']=np.corrcoef(_c2,rowvar=False)[:,0]
-
-    summary['corr_alpha']=pd.concat([alpha]+rets,axis=1,keys=['alpha']+fns).dropna().corr()['alpha']
-    summary['corr_s1']=pd.concat([s1]+rets,axis=1,keys=['s1']+fns).dropna().corr()['s1']
-    summary['corr_s2']=pd.concat([s2]+rets,axis=1,keys=['s2']+fns).dropna().corr()['s2']
-    summary=summary.sort_values('cumulative return',kind='mergesort',ascending=False)
+    # summary['corr_alpha']=pd.concat([alpha]+rets,axis=1,keys=['alpha']+fns).dropna().corr()['alpha']
+    # summary['corr_s1']=pd.concat([s1]+rets,axis=1,keys=['s1']+fns).dropna().corr()['s1']
+    # summary['corr_s2']=pd.concat([s2]+rets,axis=1,keys=['s2']+fns).dropna().corr()['s2']
+    summary=summary.sort_values('portfolio_total_return',kind='mergesort',ascending=False)
     summary.to_csv(os.path.join(DIR_MIXED_SUM,'summary.csv'))
-
-
-
 
 
 if __name__ == '__main__':

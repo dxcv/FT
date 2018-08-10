@@ -255,7 +255,7 @@ def get_signal_debug(grade,criteria,N,trd_dts,iw,cw):
 def get_signal(grade,criteria,N,trd_dts,iw,cw):
     # args_list=[(grade,criteria,trd_dts,i,N,iw,cw) for i in range(len(trd_dts)-1)]
     args_generator=gen_args(grade,criteria,N,trd_dts,iw,cw)
-    mixed_signal_frags=multi_task(_mix_one_slice,args_generator,10)
+    mixed_signal_frags=multi_task(_mix_one_slice,args_generator,30)
     signal=pd.concat(mixed_signal_frags)
     return signal
 

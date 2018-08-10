@@ -157,7 +157,7 @@ def myroll(df, d):
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
 
-def multi_task(func, args_iter, n=30):
+def multi_task(func, args_iter, n=32):
     pool=multiprocessing.Pool(n)
     results=pool.map(func, args_iter)
     pool.close()#trick: close the processing every time the pool has finished its task, and pool.close() must be called before pool.join()

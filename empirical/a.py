@@ -6,19 +6,36 @@
 # NAME:FT_hp-a.py
 
 
-
+import os
 import pandas as pd
 import numpy as np
 
+path=r'G:\FT_Users\HTZhang\FT\singleFactor\mixed_summary\summary.csv'
 
-df=pd.DataFrame(np.random.random((3,5)),index=['a','b','c'])
+df=pd.read_csv(path)
+
+def func(s):
+    a,b=s.split('_')[1],s.split('_')[2]
+    if a=='iw1' and b=='cw1':
+        return True
+    else:
+        return False
+test=df[[func(i) for i in df.iloc[:,0].values]]
 
 
+# test.to_csv(r'G:\FT_Users\HTZhang\FT\singleFactor\mixed_summary\test.csv')
 
-df.apply(lambda s:s[[s.name.split('_')[0],s.name.split('_')[-1][:-4]]].reindex(s.index))
 
+ss=[]
+for name in ['alpha','s1','s2']:
+    s=pd.read_csv(os.path.join(r'G:\FT_Users\HTZhang\FT\singleFactor\mixed_summary',name+'.csv'),index_col=0,parse_dates=True).iloc[:,0]
+    if name=='alpha':
+        s/=100
+    s.name=name
+    ss.append(s)
 
-s=pd.Series(range(3),index=['a','b','c'])
-
-s[['a','b']].reindex(s.index)
+df=pd.concat(ss,axis=1)
+df=df[:'2017']
+corr=df.corr()
+print(corr)
 

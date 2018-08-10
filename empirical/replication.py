@@ -27,7 +27,8 @@ from matplotlib.colors import ListedColormap
 
 
 
-def one_model_one_cohort(arg):
+def _pricing_with_grs(arg):
+    '''get the GRS with one model and one set of assets'''
     fm,fa=arg
     model = pd.read_pickle(os.path.join(DIR_KOGAN, 'models', '3', fm+'.pkl'))
     asset = pd.read_pickle(os.path.join(DIR_KOGAN, 'assets', 'eq', fa+'.pkl'))
@@ -40,13 +41,19 @@ def one_model_one_cohort(arg):
     return p
 
 def grs_factor_model():
+    '''
+    get GRS for each possible three factor models with market factor and two return facotrs
+
+    Returns:
+
+    '''
     nmodels=[i[:-4] for i in os.listdir(os.path.join(DIR_KOGAN,'models','3'))]
     nassets=[i[:-4] for i in os.listdir(os.path.join(DIR_KOGAN,'assets','eq'))]
     arg_list=[]
     for nm in nmodels:
         for na in nassets:
             arg_list.append((nm,na))
-    pp=multi_task(one_model_one_cohort,arg_list)
+    pp=multi_task(_pricing_with_grs, arg_list)
     grs_factor=pd.DataFrame(np.array(pp).reshape(len(nmodels),len(nassets)),
                       index=nmodels,columns=nassets)
 
@@ -57,9 +64,12 @@ def grs_factor_model():
 
     grs_factor.T.to_csv(os.path.join(DIR_KOGAN_RESULT,'grs_factor.csv'))
 
-    # return df_p
-
 def grs_pca_model():
+    '''
+    get GRS for pca model with respect to the 21 sets of assets constructed by sorting on characteristics
+    Returns:
+
+    '''
     model=get_pca_model()
     fn_assets = os.listdir(os.path.join(DIR_KOGAN, 'assets', 'eq'))
     _ps=[]
@@ -96,10 +106,12 @@ def grs_benchmodel():
                                index=[f[:-4] for f in fn_assets], columns=bench_names)
     grs_benchmark.to_csv(os.path.join(DIR_KOGAN_RESULT,'grs_benchmark.csv'))
 
-def grs_all():
+def pricing_with_grs_all():
     grs_factor_model()
     grs_pca_model()
     grs_benchmodel()
+
+
 
 def _generate_models(names):
     directory=os.path.join(DIR_KOGAN,'port_ret','eq')
@@ -114,12 +126,14 @@ def _generate_models(names):
     comb.to_pickle(os.path.join(DIR_KOGAN,'models',str(len(names)+1),'___'.join(names)+'.pkl'))
 
 def build_models():
+    '''generate all the possible 3-factor models and 4-factor models'''
     directory=os.path.join(DIR_KOGAN,'port_ret','eq')
     names=[fn[:-4] for fn in os.listdir(directory)]
     names_list=list(itertools.combinations(names,2))+list(itertools.combinations(names,3))
     multi_task(_generate_models, names_list)
 
 def get_raw_factors():
+    '''get high-minu-low factors'''
     directory = os.path.join(DIR_KOGAN, 'port_ret', 'eq')
     fns = os.listdir(directory)
 
@@ -132,6 +146,37 @@ def get_raw_factors():
     raw_factors = raw_factors.dropna(thresh=int(raw_factors.shape[1] * 0.8))
     raw_factors = raw_factors.fillna(0)
     return raw_factors
+
+def match_based_on_alpha_pvalue():
+    '''use all the possible 3-factor models to pricing the factor returns and use pvalue of
+    the alpha as the matching criterion. Count the number each of the 3-factor model can
+    match with respect to the 21 factor returns'''
+
+    modelnames=os.listdir(os.path.join(DIR_KOGAN,'models','3'))
+    factors=get_raw_factors()
+
+    _matched_l=[]
+    _names_l=[]
+    for mname in modelnames:
+        model=pd.read_pickle(os.path.join(DIR_KOGAN,'models','3',mname))
+        comb=pd.concat([model,factors],axis=1)
+        matched_num=0
+        for f in factors.columns:
+            if f not in model.columns:
+                sub=comb[model.columns.tolist()+[f]].dropna()
+                Y=sub[f]
+                X=sm.add_constant(sub[model.columns])
+                r=sm.OLS(Y,X).fit()
+                p=r.pvalues.loc['const']
+                if p>CRITICAL:
+                    matched_num+=1
+        print(mname)
+        _matched_l.append(matched_num)
+        _names_l.append(mname)
+
+    index=pd.MultiIndex.from_tuples((mn[:-4].split('___') for mn in _names_l))
+    matched=pd.Series(_matched_l,index=index)
+    return matched
 
 def get_pca_factors(n=3):
     raw_factors=get_raw_factors()
@@ -148,6 +193,7 @@ def get_pca_model(n=NUM_FACTOR):
     return pca_model
 
 def get_table2():
+    '''Table 2:variation explained- principle-component analysis of return factors'''
     comb=get_raw_factors()
     X=comb.values
     rs=[]
@@ -162,6 +208,7 @@ def get_table2():
     variation_explained.plot().get_figure().show()
 
 def get_table3():
+    '''Table 3: principle-component factor loadings'''
     raw_factors=get_raw_factors()
     X=raw_factors.values
     pca=PCA(n_components=NUM_FACTOR)
@@ -179,7 +226,7 @@ def get_heatmap():
     corr=factors.corr()
     with sns.axes_style('white'):
         ax=sns.heatmap(corr,linewidth=0.5,cmap='YlGnBu')
-        plt.show()
+        plt.savefig(os.path.join(DIR_KOGAN_RESULT,'factor_correlation_heatmap.pdf'))
 
 def spanning_regression():
     '''table4: factor regression on the principal-component model'''
@@ -197,31 +244,6 @@ def spanning_regression():
         r=model.fit()
         values.append((r.params[0], r.tvalues[0], r.rsquared_adj))
     spanning_result=pd.DataFrame(values,index=raw_factors.columns,columns=['alpha','t','adj_r2'])
-
-def get_performance(weight=0):
-    '''
-    p>CRITICAL  denotes the model can not pricing the assets perfectly
-
-    Args:
-        weight:{0,1},0 denote equal weighed,1 denotes Characteristic Matching Frequency
-    Returns:
-
-    '''
-    grs_factor=pd.read_csv(os.path.join(DIR_KOGAN_RESULT,'grs_factor.csv'),index_col=0)
-    grs_pca=pd.read_csv(os.path.join(DIR_KOGAN_RESULT,'grs_pca.csv'),index_col=0)
-    grs_benchmark=pd.read_csv(os.path.join(DIR_KOGAN_RESULT,'grs_benchmark.csv'),index_col=0)
-
-    grs_factor[grs_factor >= CRITICAL] = 1
-    grs_factor[grs_factor < CRITICAL] = 0
-    if weight==0:
-        #performace1: equal weight
-        perf=grs_factor.sum(axis=1)/(grs_factor.shape[1]-NUM_FACTOR+1)
-    else:
-        weight=1-grs_factor.sum()/grs_factor.shape[0]
-        # weight=1-grs_model[grs_model>CRITICAL].notnull().sum()/grs_model.shape[0]
-        perf=(grs_factor*weight).sum(axis=1)/(grs_factor.shape[1]-NUM_FACTOR+1)
-    perf=perf.sort_values(ascending=False,kind='mergesort')
-    return perf
 
 def get_performance_distribution(weight=1):
     '''
@@ -267,7 +289,14 @@ def get_performance_distribution(weight=1):
         x,y=distribution.at[n,'percentile'],distribution.at[n,'performance']
         plt.plot(x,y,'--bo',label=n)
         plt.annotate(n,xy=(x,y))
-    plt.show()
+    # plt.show()
+    figname='factor model performance distribution_{}.png'.format('Characteristic Freq' if weight else 'Equal-weighted')
+    plt.savefig(os.path.join(DIR_KOGAN_RESULT,figname))
+    plt.close()
+
+# get_performance_distribution(0)
+# get_performance_distribution(1)
+
 
 def get_factor_model_performance():
     '''
@@ -317,9 +346,9 @@ def get_factor_model_performance():
     locs, labels = plt.yticks()
     plt.setp(labels, rotation=0)
 
-    plt.show()
+    plt.savefig(os.path.join(DIR_KOGAN_RESULT,'factor model performance.pdf'))
 
 
 
 # if __name__ == '__main__':
-#     grs_all()
+#     pricing_with_grs_all()
