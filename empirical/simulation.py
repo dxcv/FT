@@ -12,7 +12,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-from empirical.config import DIR_KOGAN, CRITICAL, DIR_KOGAN_RESULT
+from empirical.config_ep import DIR_KOGAN, CRITICAL, DIR_KOGAN_RESULT
 from empirical.get_basedata import get_benchmark
 from empirical.replication import get_raw_factors, match_based_on_alpha_pvalue
 from tools import multi_task
@@ -39,8 +39,23 @@ def get_estimated_coefs(raw_factors,benchmark):
     realized_params=sm.add_constant(realized_params)
     return betas,alpha_stderr,realized_params
 
+def _get_matched_num(args):
+    sim_factors,draw_params,_names=args
+    # 'const' serve as the intercept in regression
+    sim_model = pd.concat(
+        [draw_params[['const', 'rp']], sim_factors[list(_names)]], axis=1)
+    fns = [fn for fn in sim_factors.columns if fn not in _names]
+    matched_num=0
+    for _fn in fns:  # factor names
+        Y = sim_factors[_fn]
+        r = sm.OLS(Y, sim_model).fit()
+        p = r.pvalues.loc['const']  # p value of the alpha
+        if p > CRITICAL:
+            matched_num += 1
+    return matched_num,_names
+
 def simulate_one_time(args):
-    realized_params, betas, alpha_stderr, anomaly_num=args
+    i,realized_params, betas, alpha_stderr, anomaly_num=args
     is_anomaly_l=[True]*anomaly_num+[False]*(betas.shape[0]-anomaly_num)
     random.shuffle(is_anomaly_l)
     is_anomaly_d=dict(zip(betas.index,is_anomaly_l))
@@ -64,38 +79,24 @@ def simulate_one_time(args):
     test each possible three-factor model's performance, consisting of the simulated
     market portfolio and two simulated factors among our 21 simulated return factors.
     
-    evaluate the performace based on the p-value of alpha, different with the empirical
-    part where GRS is used.
-     
+    evaluate the performace based on the p-value of alpha (time series regression), different with the empirical
+    part where GRS is used ( panel regression).
+
     '''
-    _matched_l=[]
-    _names_l=[]
-    for _names in list(itertools.combinations(sim_factors.columns,2)):
-        #'const' serve as the intercept in regression
-        sim_model=pd.concat([draw_params[['const','rp']],sim_factors[list(_names)]],axis=1)
-        matched_num=0
-        for _fn in sim_factors.columns:
-            if _fn not in _names:
-                Y=sim_factors[_fn]
-                r=sm.OLS(Y,sim_model).fit()
-                p=r.pvalues.loc['const']# p value of the alpha
-                if p>CRITICAL:
-                    matched_num+=1
-        _matched_l.append(matched_num)
-        _names_l.append(_names)
+    args_generator=((sim_factors,draw_params,_names) for _names in itertools.combinations(sim_factors.columns,2))
+    result=multi_task(_get_matched_num,args_generator)
+    _matched_l=[r[0] for r in result]
+    _names_l=[r[1] for r in result]
     index=pd.MultiIndex.from_tuples(_names_l)
-    matched=pd.Series(_matched_l,index=index)
-    # matched=pd.DataFrame(_matched_l,columns=['model_factors','matched'])
-    return matched
-    # matched['matched'].plot.kde().get_figure().show()
-
-
+    matched_series=pd.Series(_matched_l,index=index)
+    print(i)
+    return matched_series
 
 def gen_args_list(realized_params,betas,alpha_stderr,anomaly_num,n):
     for i in range(n):
-        yield (realized_params,betas,alpha_stderr,anomaly_num)
+        yield (i,realized_params,betas,alpha_stderr,anomaly_num)
 
-def get_kde(sim_num=100,anomaly_numbers=(0,5,10,15,20)):
+def get_sampled_result(sim_num=100, anomaly_number=10):
     '''Figure 5: factor model performance histogram
 
     for visulization methods, refer to
@@ -104,20 +105,19 @@ def get_kde(sim_num=100,anomaly_numbers=(0,5,10,15,20)):
     '''
     raw_factors=get_raw_factors()
     # bench_names = ['capmM', 'ff3M', 'ffcM', 'ff5M', 'hxz4M', 'ff6M'] #TODO: add pca model
-    benchmark = get_benchmark('ff3M')#fixme: set pca_modela s benchmark
+    benchmark = get_benchmark('ff3M')#fixme: set pca_model as benchmark
     betas,alpha_stderr,realized_params=get_estimated_coefs(raw_factors,benchmark)
 
-    result_l=[]
-    for anomaly_num in anomaly_numbers:
-        print(anomaly_num)
-        args_generator=gen_args_list(realized_params,betas,alpha_stderr,anomaly_num,sim_num)
-        _result=pd.concat(multi_task(simulate_one_time, args_generator), axis=1).stack()
-        result_l.append(_result)
-        # a=mcs.mean(axis=1).sort_values() #TODO: analysis whether the matched number for each model is stable. Some model may always match more factors
+    args_generator = gen_args_list(realized_params, betas, alpha_stderr,
+                                   anomaly_number, sim_num)
+    matched_ss=[]
+    for args in args_generator:
+        matched_ss.append(simulate_one_time(args))
+    sampled_result=pd.concat(matched_ss,axis=1)
+    sampled_result.to_pickle(os.path.join(DIR_KOGAN_RESULT,'sampled_match_{}_{}.pkl'.format(anomaly_number,sim_num)))
+    # TODO: analysis whether the matched number for each model is stable. Some model may always match more factors
 
-    result=pd.concat(result_l,axis=1,keys=anomaly_numbers)
-    result.to_csv(os.path.join(DIR_KOGAN_RESULT,'frequency_{}.csv'.format(sim_num)))
-    result.plot.kde(bw_method=0.3).get_figure().savefig(os.path.join(DIR_KOGAN_RESULT,'kde_{}.png'.format(sim_num)))
+    # result.plot.kde(bw_method=0.3).get_figure().savefig(os.path.join(DIR_KOGAN_RESULT,'kde_{}.png'.format(sim_num)))
 
 def sampling_distribution(anomaly_num,sim_num=100):
     '''
@@ -162,10 +162,20 @@ def get_fig6():
         sampling_distribution(n)
         print(n)
 
+
 if __name__ == '__main__':
-    get_fig6()
+    get_sampled_result(sim_num=10,anomaly_number=10)
 
-# if __name__ == '__main__':
-#     for n in [10,30,70,100]:
-#         get_kde(sim_num=n)
+    # for n in [10,30,70,100]:
+    #     get_sampled_result(sim_num=n)
 
+
+
+'''
+Ideas:
+1. bootstrap with the original factor returns to get the distribution of the matched number for each benchmark
+
+
+#TODO: compare the distribution of the number of anomalies based on different benchmarks
+
+'''

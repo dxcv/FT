@@ -30,6 +30,7 @@ from tools import outlier, z_score, multi_task
 4. 调整指标之间的加权方式以及大类之间的加权方式,signal,rank,equal,expotential decay
     IC,IC_IR....  https://zhuanlan.zhihu.com/p/31753606
     quantile as weight
+    use regression to combine different indicators (just like Fama macbeth regression)
 5. 2009年开始回测
 6. 选用不同的评分指标
 7. effective number 由200变为100

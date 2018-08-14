@@ -124,7 +124,7 @@ def clean(df, col,by='month_end'):
     df[col + '_out']=df.groupby(by)[col].apply(outlier) #trick: dropna before applying function outlier
     df[col + '_zsc']=df.groupby(by)[col + '_out'].apply(z_score)
     df['wind_2'] = df['wind_indcd'].apply(str).str.slice(0, 6) # wind 2 级行业代码
-    df = df.join(pd.get_dummies(df['wind_2'], drop_first=True))
+    df = df.join(pd.gevt_dummies(df['wind_2'], drop_first=True))
     df['ln_cap'] = np.log(df['cap'])
     industry = list(np.sort(df['wind_2'].unique()))[1:]
     df[col + '_neu'] = df.groupby(by, group_keys=False).apply(neutralize, col + '_zsc', industry)
@@ -157,7 +157,7 @@ def myroll(df, d):
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
 
-def multi_task(func, args_iter, n=32):
+def multi_task(func, args_iter, n=20):
     pool=multiprocessing.Pool(n)
     results=pool.map(func, args_iter)
     pool.close()#trick: close the processing every time the pool has finished its task, and pool.close() must be called before pool.join()

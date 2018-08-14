@@ -6,7 +6,7 @@
 # NAME:FT_hp-get_basedata.py
 import pandas as pd
 import os
-from empirical.config import DIR_KOGAN
+from empirical.config_ep import DIR_KOGAN
 
 # rpM.pkl is copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_unfiltered
 rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))

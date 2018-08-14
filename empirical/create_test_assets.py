@@ -9,8 +9,7 @@ import os
 
 import itertools
 import pandas as pd
-
-from config import  DIR_KOGAN
+from empirical.config_ep import DIR_KOGAN
 
 
 def create_assets():
@@ -20,8 +19,9 @@ def create_assets():
         df=pd.read_pickle(os.path.join(directory,fn)).drop('tb',axis=1)
         # fixme:create eret,rather than the raw return
         df.to_pickle(os.path.join(DIR_KOGAN,'assets','eq',fn))
+        print(fn)
 
-
-
+if __name__ == '__main__':
+    create_assets()
 
 
