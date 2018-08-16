@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-08-04  09:44
-# NAME:FT-master-simulation.py
+# NAME:FT-master-kogan_part2.py
 import itertools
 import os
 import pandas as pd
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from empirical.config_ep import DIR_KOGAN, CRITICAL, DIR_KOGAN_RESULT
 from empirical.get_basedata import get_benchmark
-from empirical.replication import get_raw_factors, match_based_on_alpha_pvalue
+from empirical.kogan_part1 import get_raw_factors, match_based_on_alpha_pvalue
 from tools import multi_task
 
 DIR_TMP=r'G:\FT_Users\HTZhang\FT\tmp'
@@ -119,6 +119,19 @@ def get_sampled_result(sim_num=100, anomaly_number=10):
 
     # result.plot.kde(bw_method=0.3).get_figure().savefig(os.path.join(DIR_KOGAN_RESULT,'kde_{}.png'.format(sim_num)))
 
+def analyze_10_10():
+    sampled_result=pd.read_pickle(os.path.join(DIR_KOGAN_RESULT,'sampled_match_10_10.pkl'))
+    # sampled_result.stack().plot.kde(bw_method=0.3)
+    # plt.show()
+
+    # sampled_result.stack().hist(bins=200)
+    # plt.show()
+    counts=sampled_result.stack().value_counts().reindex(range(200))
+    plt.figure(figsize=(20,8))
+    counts.plot.bar()
+    plt.savefig(os.path.join(DIR_KOGAN_RESULT,'sampled_10_10.pdf'))
+
+
 def sampling_distribution(anomaly_num,sim_num=100):
     '''
     Fig 6: Factor model performance histogram -sampling distribution
@@ -166,8 +179,7 @@ def get_fig6():
 if __name__ == '__main__':
     get_sampled_result(sim_num=10,anomaly_number=10)
 
-    # for n in [10,30,70,100]:
-    #     get_sampled_result(sim_num=n)
+
 
 
 

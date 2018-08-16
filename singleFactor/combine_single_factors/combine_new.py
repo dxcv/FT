@@ -256,7 +256,7 @@ def get_signal_debug(grade,criteria,N,trd_dts,iw,cw):
 def get_signal(grade,criteria,N,trd_dts,iw,cw):
     # args_list=[(grade,criteria,trd_dts,i,N,iw,cw) for i in range(len(trd_dts)-1)]
     args_generator=gen_args(grade,criteria,N,trd_dts,iw,cw)
-    mixed_signal_frags=multi_task(_mix_one_slice,args_generator,30)
+    mixed_signal_frags=multi_task(_mix_one_slice,args_generator,20)
     signal=pd.concat(mixed_signal_frags)
     return signal
 
@@ -360,7 +360,7 @@ def debug1():
 
 def backtest_mixed_signal():
     fns=os.listdir(DIR_MIXED_SIGNAL)
-    multi_task(_task_bt,fns,30)
+    multi_task(_task_bt,fns,5)
 
 
 
@@ -373,6 +373,6 @@ def backtest_mixed_signal():
 
 if __name__ == '__main__':
     # generate_signal()
-    debug_generate_signal()
-    # backtest_mixed_signal()
-    # summarize()
+    # debug_generate_signal()
+    backtest_mixed_signal()
+    summarize()

@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-08-09  13:28
-# NAME:FT_hp-panel_regression.py
+# NAME:FT_hp-harvey.py
 import os
 import pandas as pd
 import statsmodels.api as sm
@@ -12,7 +12,7 @@ import numpy as np
 from empirical.config_ep import DIR_KOGAN
 from scipy import stats
 
-from empirical.replication import get_raw_factors
+from empirical.kogan_part1 import get_raw_factors
 from tools import multi_task
 
 DIR_TMP=r'G:\FT_Users\HTZhang\FT\tmp'

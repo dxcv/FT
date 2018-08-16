@@ -12,7 +12,7 @@ from empirical.config_ep import DIR_KOGAN
 rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
 
 
-#benchmark models are all copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_filtered
+#benchmark models are all copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_unfiltered
 
 def get_benchmark(name):
     df=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata',name+'.pkl'))

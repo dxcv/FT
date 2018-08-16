@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-07-25  08:54
-# NAME:FT_hp-replication.py
+# NAME:FT_hp-kogan_part1.py
 import multiprocessing
 import os
 import itertools
@@ -150,7 +150,10 @@ def get_raw_factors():
     arg_generator=(os.path.join(directory,fn) for fn in fns)
     ss=multi_task(_get_tb,arg_generator)
     raw_factors = pd.concat(ss, axis=1, keys=[fn[:-4] for fn in fns])
-    raw_factors = raw_factors.dropna(thresh=int(raw_factors.shape[1] * 0.8))
+    #trick: delete those months with too small sample
+    raw_factors = raw_factors.dropna(axis=0,thresh=int(raw_factors.shape[1] * 0.8))
+    #trick: delete those factors with too short history
+    raw_factors=raw_factors.dropna(axis=1,thresh=int(raw_factors.shape[0]*0.8))
     raw_factors = raw_factors.fillna(0)
     return raw_factors
 
@@ -362,14 +365,16 @@ def get_factor_model_performance():
 
     plt.savefig(os.path.join(DIR_KOGAN_RESULT,'factor model performance.pdf'))
 
-
-
-if __name__ == '__main__':
-    # pricing_with_grs_all()
-    # build_models()
-    # match_based_on_alpha_pvalue()
-    # get_table2()
-    # get_corr_heatmap()
-    # spanning_regression()
+def run():
+    pricing_with_grs_all()
+    build_models()
+    match_based_on_alpha_pvalue()
+    get_table2()
+    get_corr_heatmap()
+    spanning_regression()
     get_performance_distribution(0)
     get_performance_distribution(1)
+
+
+# if __name__ == '__main__':
+#     run()
