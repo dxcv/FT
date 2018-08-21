@@ -6,24 +6,10 @@
 # NAME:FT_hp-a.py
 import pandas as pd
 import numpy as np
+from data.dataApi import read_local
 from tools import myroll
 
 
-def _cal_beta(df, min_periods):
-    df=df.dropna(thresh=min_periods, axis=1)
-    df=df.fillna(df.mean()) #Trick: fillna with average
-    # df=df.fillna(0)
-    # first column is the market
-    X = df.values[:, [0]]
-    # prepend a column of ones for the intercept
-    X = np.concatenate([np.ones_like(X), X], axis=1)
-    # matrix algebra
-    b = np.linalg.pinv(X.T.dot(X)).dot(X.T).dot(df.values[:, 1:])
-    return pd.Series(b[1],index= df.columns[1:], name='beta')
+zz500_ret_d = read_local('equity_selected_indice_ir')['zz500_ret_d']
 
-
-window=12
-min_periods=10
-
-comb=pd.read_pickle(r'F:\FT_Users\HTZhang\comb.pkl')
-results=myroll(comb, window).apply(_cal_beta, min_periods)
+zz500_ret_d.to_pickle(r'G:\FT_Users\HTZhang\haitong\zz500.pkl')

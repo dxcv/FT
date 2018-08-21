@@ -19,14 +19,22 @@ def _task(fn):
     ret = pd.read_csv(
         os.path.join(DIR_MIXED_SIGNAL_BACKTEST, fn, 'hedged_returns.csv'),
         index_col=0, header=None).iloc[:, 0]
+
     # cum_ret = (1 + ret).cumprod()[-1] - 1
     # criterias.loc['cumulative return'] = cum_ret
-    yearly = pd.read_csv(
-        os.path.join(DIR_MIXED_SIGNAL_BACKTEST, fn, 'hedged_perf_yearly.csv'),
-        index_col=0).iloc[:, 0]
+    try:
+        yearly = pd.read_csv(
+            os.path.join(DIR_MIXED_SIGNAL_BACKTEST, fn, 'hedged_perf_yearly.csv'),
+            index_col=0,encoding='utf8').iloc[:, 0]
+    except: #trick: some file are encoded as utf8 and the others are encoded as gbk
+        yearly = pd.read_csv(
+            os.path.join(DIR_MIXED_SIGNAL_BACKTEST, fn,
+                         'hedged_perf_yearly.csv'),
+            index_col=0,encoding='gbk').iloc[:, 0]
     s = pd.concat([criterias, yearly])
     print(fn)
     return s,ret
+
 
 def summarize():
     alpha = pd.read_csv(os.path.join(DIR_MIXED_SUM, 'alpha.csv'), index_col=0,
@@ -40,7 +48,12 @@ def summarize():
 
 
     fns=os.listdir(DIR_MIXED_SIGNAL_BACKTEST)
+    print(len(fns))
+    fns=[fn for fn in fns if os.path.exists(os.path.join(DIR_MIXED_SIGNAL_BACKTEST,fn,'hedged_perf.csv'))]
+    print(len(fns))
+
     results=multi_task(_task,fns)
+
     ss=[r[0] for r in results]
     rets=[r[1] for r in results]
     summary=pd.concat(ss,axis=1,sort=True,keys=fns).T

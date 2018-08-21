@@ -124,7 +124,7 @@ def clean(df, col,by='month_end'):
     df[col + '_out']=df.groupby(by)[col].apply(outlier) #trick: dropna before applying function outlier
     df[col + '_zsc']=df.groupby(by)[col + '_out'].apply(z_score)
     df['wind_2'] = df['wind_indcd'].apply(str).str.slice(0, 6) # wind 2 级行业代码
-    df = df.join(pd.gevt_dummies(df['wind_2'], drop_first=True))
+    df = df.join(pd.get_dummies(df['wind_2'], drop_first=True))
     df['ln_cap'] = np.log(df['cap'])
     industry = list(np.sort(df['wind_2'].unique()))[1:]
     df[col + '_neu'] = df.groupby(by, group_keys=False).apply(neutralize, col + '_zsc', industry)

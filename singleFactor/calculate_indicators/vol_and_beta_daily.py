@@ -57,6 +57,7 @@ def idioVol(df, d):
     resid_std=np.std(resid,axis=0)
     return pd.Series(resid_std,index=df.columns[1:],name='idiovol')
 
+
 def cal_betas():
     #TODO: employ multiprocessing
     for d in [30,60,180,300]:
@@ -66,6 +67,7 @@ def cal_betas():
         print(d)
 
 def cal_idioVol():
+    #fixme: shape is (154,1223), missing value problem
     for d in [30,60,180,300]:
         name='T__idioVol_{}'.format(d)
         results=myroll(df, d).apply(idioVol, d)
