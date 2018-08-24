@@ -21,12 +21,16 @@ def save_indicator(df,name):
 
 def cal():
     con = read_raw('equity_consensus_forecast')
+    # con = read_raw('equity_consensus_forecast')
 
-    con['trd_dt'] = pd.to_datetime(con['trd_dt'].map(str))
-    con['benchmark_yr'] = pd.to_datetime(
-        con['benchmark_yr'].map(lambda x: str(x).split('.')[0]))
-    con['rating_dt'] = pd.to_datetime(
-        con['rating_dt'].map(lambda x: str(x).split('.')[0]))
+    con['trd_dt'] = pd.to_datetime(con['trd_dt'])
+    # con['benchmark_yr'] = pd.to_datetime(
+    #     con['benchmark_yr'].map(lambda x: str(x).split('.')[0]))
+    con['benchmark_yr']=pd.to_datetime(con['benchmark_yr'])
+    # con['rating_dt'] = pd.to_datetime(
+    #     con['rating_dt'].map(lambda x: str(x).split('.')[0]))
+
+    con['rating_dt']=pd.to_datetime(con['rating_dt'])
 
     trading = read_local('equity_selected_trading_data')
     comb = pd.merge(trading.reset_index()[['trd_dt', 'stkcd', 'close']],con,

@@ -6,6 +6,8 @@
 # NAME:FT-utils.py
 import multiprocessing
 import time
+from multiprocessing.pool import ThreadPool
+
 import pandas as pd
 from pandas.tseries.offsets import MonthEnd
 import numpy as np
@@ -105,7 +107,7 @@ def neutralize(df, col, industry, cap='ln_cap'):
     a = np.array(df.loc[:, industry + [cap]])
     A = np.hstack([a, np.ones([len(a), 1])])
     y = df.loc[:, col]
-    beta = np.linalg.lstsq(A, y,rcond=None)[0]
+    beta = np.linalg.lstsq(A, y)[0] #fixme: rcond=None?
     res = y - np.dot(A, beta)
     return res
 
@@ -156,11 +158,27 @@ def myroll(df, d):
     #trick: filter_obsservations=False
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
+def multi_process(func,args_iter,n=20,multi_paramters=False):
+    pool = multiprocessing.Pool(n)
+    if multi_paramters:
+        results = pool.starmap(func, args_iter)
+    else:
+        results = pool.map(func, args_iter)
+    pool.close()  # trick: close the processing every time the pool has finished its task, and pool.close() must be called before pool.join()
+    pool.join()
+    # refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
+    return results
 
-def multi_task(func, args_iter, n=20):
+
+def multi_process_old(func, args_iter, n=20):
     pool=multiprocessing.Pool(n)
     results=pool.map(func, args_iter)
     pool.close()#trick: close the processing every time the pool has finished its task, and pool.close() must be called before pool.join()
     pool.join()
     #refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
     return results
+
+def multi_thread(func,args_iter,n=50):
+    results=ThreadPool(n).map(func,args_iter)
+    return results
+

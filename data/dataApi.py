@@ -11,11 +11,14 @@ from functools import reduce
 import pandas as pd
 import pickle
 import pymysql
-from config import DRAW, DPKL, D_FT_ADJ, D_FILESYNC_ADJ, DCC, D_DRV
+from config import DRAW, DPKL, D_FT_ADJ, D_FILESYNC_ADJ, DCC, D_DRV, D_FT_RAW
 
 
+# def read_raw(tbname):
+#     return pd.read_csv(os.path.join(DRAW, tbname + '.csv'),index_col=0)
 def read_raw(tbname):
-    return pd.read_csv(os.path.join(DRAW, tbname + '.csv'),index_col=0)
+    return pd.read_pickle(os.path.join(D_FT_RAW,tbname+'.pkl'))
+
 
 def read_local(tbname,col=None):
     #DEBUG: 不能这么弄，这样会导致数据很混乱
@@ -173,12 +176,12 @@ def _get_fields_map():
     # 'equity_selected_income_sheet',
     'equity_selected_income_sheet_q',
     'equity_cash_dividend',
-    'shr_and_cap'
+    # 'shr_and_cap'
     ]
     
-    tbs_derivatives=['ebit','grossIncome','indice_m','netAsset','NetNonOI',
-                     'payable','periodCost','receivable']
-    # tbs_derivatives=[f[:-4] for f in os.listdir(D_DRV)]
+    # tbs_derivatives=['ebit','grossIncome','indice_m','netAsset','NetNonOI',
+    #                  'payable','periodCost','receivable']
+    tbs_derivatives=[f[:-4] for f in os.listdir(D_DRV)]
     tbs_filesync=['asharefinancialindicator']
 
     shared_cols=['stkcd','trd_dt','ann_dt','report_period']

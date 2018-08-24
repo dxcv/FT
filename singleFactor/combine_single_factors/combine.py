@@ -19,7 +19,7 @@ from functools import reduce
 import scipy.stats
 from singleFactor.combine_single_factors.signal_spanning import \
     get_derive_signal
-from tools import outlier, z_score, multi_task
+from tools import outlier, z_score, multi_process
 
 '''
 1. 变成每天调整
@@ -80,7 +80,7 @@ def get_strategy_ret():
         ret=pd.read_pickle(path)
     else:
         long_names=os.listdir(DIR_BACKTEST_SPANNING)
-        ll=multi_task(_read_ret, long_names)
+        ll=multi_process(_read_ret, long_names)
         ret=pd.concat([ele[0] for ele in ll],axis=1)
         ret.columns=[ele[1] for ele in ll]
         ret.to_pickle(os.path.join(DIR_TMP,'ret.pkl'))
@@ -119,7 +119,7 @@ def _grade(ret, rating_func,freq,window):
     days=days[20:] # prune the header  #TODO:
     args_list=[(ret,window,d,rating_func) for d in days]
 
-    mss=multi_task(_apply_rating_func, args_list)
+    mss=multi_process(_apply_rating_func, args_list)
     rating=pd.concat(mss,axis=1,keys=days)
     rating=rating.stack()
     rating.index.names=['long_name','trd_dt']
@@ -253,7 +253,7 @@ def _mixed_one_month(args):
 def generate_signal(table,config):
     trd_dts=table['trd_dt'].unique()
     args_list=[(table,trd_dts,i,config) for i in range(len(trd_dts[:-1]))]
-    signal_monthly=multi_task(_mixed_one_month, args_list, 30)#fixme
+    signal_monthly=multi_process(_mixed_one_month, args_list, 30)#fixme
     # signal_monthly=multiprocessing.Pool(30).map(_mixed_one_month,args_list)
     comb_signal = pd.concat(signal_monthly)
     return comb_signal
@@ -331,7 +331,7 @@ def backtest_mixed_signal():
             name = '{}__{}'.format(fn[:-4],effective_number)
             args_list.append((signal, name, cfg))
 
-    multi_task(_bt, args_list, n=30)
+    multi_process(_bt, args_list, n=30)
 
 
 def debug():

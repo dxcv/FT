@@ -6,24 +6,14 @@
 # NAME:FT-a.py
 
 import pandas as pd
-from config import DIR_SINGLE_BACKTEST, DIR_SIGNAL, SINGLE_D_INDICATOR
 import os
 
-from singleFactor.singleTools import convert_indicator_to_signal
 
-name = 'V__ebitdaToCap'
-df = pd.read_pickle(os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
-# signal = pd.read_pickle(os.path.join(DIR_SIGNAL, name + '.pkl'))
-convert_indicator_to_signal(df, name)
+ret_new=pd.read_csv(r'G:\FT_Users\HTZhang\FT\singleFactor\mixed_signal_backtest\500_iw2_cw3_3_criteria3_100_1\hedged_returns.csv',index_col=0,parse_dates=True)
+ret_old=pd.read_csv(r'G:\FT_Users\HTZhang\FT\singleFactor\mixed_signal_backtest_backup\500_iw2_cw3_3_criteria3_100_1\hedged_returns.csv',index_col=0,parse_dates=True)
 
-PARAMS = {
-    'freq': 'M',
-    'window': 500,  # trading day
-    'num_per_category': 5,  # select the best n indicator in each category
-    'mix_type': 'equal',
-    'rating_method': 'cumprod_ret',
-    # ['cumprod_ret','return_down_ratio','return_std_ratio']
-    'effective_num': 200
+comb=pd.concat([ret_new.iloc[:,0],ret_old.iloc[:,0]],axis=1,keys=['new','old'])
 
-}
+comb=comb.dropna()
 
+(1+comb).cumprod().plot().get_figure().show()

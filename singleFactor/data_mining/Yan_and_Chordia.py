@@ -203,9 +203,6 @@ def cal_and_check(args):
             f.write(name+'\n')
         print('{}-------> wrong!'.format(name))
 
-#TODO: 要每期筛选
-
-
 def get_calculated():
     fns=os.listdir(DIR_DM_RESULT)
     handled=[]
@@ -225,14 +222,6 @@ def run():
 
 if __name__ == '__main__':
     run()
-
-
-
-
-
-#TODO: select those indicators with enough sample
-
-
 
 
 

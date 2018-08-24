@@ -5,15 +5,15 @@
 # TIME:2018-08-09  13:28
 # NAME:FT_hp-harvey.py
 import os
+import random
+
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-import random
-import numpy as np
 from empirical.config_ep import DIR_KOGAN
+from empirical.kogan.kogan_part1 import get_raw_factors
 from scipy import stats
-
-from empirical.kogan_part1 import get_raw_factors
-from tools import multi_task
+from tools import multi_process
 
 DIR_TMP=r'G:\FT_Users\HTZhang\empirical\harvey\tmp'
 
@@ -184,7 +184,7 @@ def resample_ntime(assets, pre_selected, candidates, method, n=1000):
     else:
         pseudo_factors = get_pseudo_factors(pre_selected, candidates)
         args_generator=((assets,pre_selected,pseudo_factors,method,i) for i in range(n))
-        si_sampled=pd.concat(multi_task(_resample_onetime,args_generator,32),axis=1)
+        si_sampled=pd.concat(multi_process(_resample_onetime, args_generator, 32), axis=1)
         si_sampled.to_pickle(path)
         return si_sampled
 

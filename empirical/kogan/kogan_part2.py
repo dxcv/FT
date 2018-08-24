@@ -6,16 +6,16 @@
 # NAME:FT-master-kogan_part2.py
 import itertools
 import os
+import random
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
-import numpy as np
-import random
-import matplotlib.pyplot as plt
-
-from empirical.config_ep import DIR_KOGAN, CRITICAL, DIR_KOGAN_RESULT
+from empirical.config_ep import CRITICAL, DIR_KOGAN_RESULT
 from empirical.get_basedata import get_benchmark
-from empirical.kogan_part1 import get_raw_factors, match_based_on_alpha_pvalue
-from tools import multi_task
+from empirical.kogan.kogan_part1 import get_raw_factors, \
+    match_based_on_alpha_pvalue
+from tools import multi_process
 
 DIR_TMP=r'G:\FT_Users\HTZhang\FT\tmp'
 
@@ -84,7 +84,7 @@ def simulate_one_time(args):
 
     '''
     args_generator=((sim_factors,draw_params,_names) for _names in itertools.combinations(sim_factors.columns,2))
-    result=multi_task(_get_matched_num,args_generator)
+    result=multi_process(_get_matched_num, args_generator)
     _matched_l=[r[0] for r in result]
     _names_l=[r[1] for r in result]
     index=pd.MultiIndex.from_tuples(_names_l)
@@ -148,7 +148,7 @@ def sampling_distribution(anomaly_num,sim_num=100):
     betas,alpha_stderr,realized_params=get_estimated_coefs(raw_factors,benchmark)
     args_generator = gen_args_list(realized_params, betas, alpha_stderr,
                                    anomaly_num, sim_num)
-    _result=pd.concat(multi_task(simulate_one_time,args_generator),axis=1)
+    _result=pd.concat(multi_process(simulate_one_time, args_generator), axis=1)
     _result.to_pickle(os.path.join(DIR_TMP,'_result.pkl'))
 
 

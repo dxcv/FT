@@ -14,7 +14,7 @@ from numba import jit
 from line_profiler import LineProfiler
 
 from empirical.bootstrap import bootstrap_kogan, get_data, pricing_assets
-from tools import multi_task
+from tools import multi_process
 
 CRITIC=0.05
 
@@ -110,7 +110,7 @@ def simulate_onetime():
             i+=1
             yield i,_names,simulated_factors
 
-    results=multi_task(_for_one_combination,args_generator())
+    results=multi_process(_for_one_combination, args_generator())
     _names_l=[r[0] for r in results]
     _matched_l=[r[1] for r in results]
     index=pd.MultiIndex.from_tuples(_names_l)
@@ -133,7 +133,7 @@ def test():
             i += 1
             yield i, _names, simulated_factors
 
-    # results = multi_task(_for_one_combination, args_generator())
+    # results = multi_process(_for_one_combination, args_generator())
 
     results=[_for_one_combination(args) for args in args_generator()]
     _names_l = [r[0] for r in results]

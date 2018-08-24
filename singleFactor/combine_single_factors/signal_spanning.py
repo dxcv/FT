@@ -7,11 +7,15 @@
 import multiprocessing
 import os
 import pandas as pd
-from backtest_zht.main import run_backtest
+# from backtest_zht.main import run_backtest
+from backtest_zht.main_class import Backtest
 
-from config import DIR_SIGNAL, DIR_BACKTEST_SPANNING
-from singleFactor.backtest_signal import SMOOTH_PERIODS, get_smoothed_signal
+from config import DIR_SIGNAL, DIR_BACKTEST_SPANNING, DIR_BACKTEST_SPANNING
+# from singleFactor.backtest_signal import SMOOTH_PERIODS, get_smoothed_signal
+from tools import multi_process
 
+
+SMOOTH_PERIODS=[0,10,20,30,40,50,60,70,80]
 
 def derive_signal(raw_signal, smooth, sign):
     raw_signal= raw_signal * sign
@@ -30,14 +34,16 @@ def _bt_one_set(fn):
         for sign in [1, -1]:  # 1 denote positive, and -1 denotes negative
             name = '{}___smooth_{}___{}'.format(fn[:-4], smooth,
                                                 {1: 'p', -1: 'n'}[sign])
-            directory = os.path.join(DIR_BACKTEST_SPANNING, name)
+            directory = os.path.join(DIR_BACKTEST_SPANNING, name)#fixme:
             signal=derive_signal(raw_signal,smooth,sign)
-            run_backtest(signal, name, directory)
+            Backtest(signal,name,directory)#fixme:
+            # run_backtest(signal, name, directory)
             print(name)
 
 def bt_all_spanning_signal():
     fns=os.listdir(DIR_SIGNAL)
-    multiprocessing.Pool(20).map(_bt_one_set,fns)
+    multi_process(_bt_one_set,fns,10,multi_paramters=False)
+    # multiprocessing.Pool(20).map(_bt_one_set,fns)
 
 def debug():
     fns=os.listdir(DIR_SIGNAL)

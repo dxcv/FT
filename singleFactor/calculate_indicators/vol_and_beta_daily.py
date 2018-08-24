@@ -42,7 +42,6 @@ def beta(df, d):
     b = np.linalg.pinv(X.T.dot(X)).dot(X.T).dot(df.values[:, 1:])
     return pd.Series(b[1],index= df.columns[1:], name='beta')
 
-
 def idioVol(df, d):
     df=df.dropna(thresh=int(d / 2), axis=1)
     df=df.fillna(df.mean())
@@ -56,7 +55,6 @@ def idioVol(df, d):
     resid=df.values[:,1:]-X.dot(b)# real value - fitted value
     resid_std=np.std(resid,axis=0)
     return pd.Series(resid_std,index=df.columns[1:],name='idiovol')
-
 
 def cal_betas():
     #TODO: employ multiprocessing
@@ -73,7 +71,6 @@ def cal_idioVol():
         results=myroll(df, d).apply(idioVol, d)
         save_indicator(results.unstack(),name)
         print(d)
-
 
 def get_high_minus_low():
     trading = read_local('equity_selected_trading_data')
@@ -107,3 +104,9 @@ def get_vol_amount():#TODO： std/mean    idiosyncratic
         save_indicator(vol_amount,name)
         print(day)
 
+if __name__ == '__main__':
+    cal_betas()
+    cal_idioVol()
+    get_high_minus_low()
+    get_std()
+    get_vol_amount()

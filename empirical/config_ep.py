@@ -9,12 +9,14 @@ import os
 # empirical directorys
 DIR_EP=r'G:\FT_Users\HTZhang\empirical'
 
+#------------------kogan-----------------------------------------
 DIR_KOGAN=os.path.join(DIR_EP,'kogan')
 DIR_KOGAN_RESULT=os.path.join(DIR_EP,'kogan','results')
-
+DIR_B1=os.path.join(DIR_KOGAN,'bootstrap1')
 
 NUM_FACTOR=3
 CRITICAL=0.05
 
-
+#-----------------yan--------------------------------
+DIR_YAN=os.path.join(DIR_EP,'yan')
 

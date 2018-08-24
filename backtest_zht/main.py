@@ -12,7 +12,7 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import backtest_zht.base_func as bf
-from backtest_zht.config import DIR_BACKTEST,CONFIG
+# from backtest_zht.cfg import DIR_BACKTEST,CONFIG
 from collections import OrderedDict
 
 (close_price_none,

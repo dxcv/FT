@@ -14,6 +14,7 @@
           <option value="backtest.plot_performance" />
           <option value="int.sum" />
           <option value="float.sort_values" />
+          <option value="empirical.get_basedata.multi_thread" />
         </list>
       </option>
     </inspection_tool>

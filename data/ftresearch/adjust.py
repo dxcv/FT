@@ -136,15 +136,16 @@ def adjust_equity_selected_indice_ir():
 
 
 
-# adjust_equity_selected_indice_ir()
 
 
 
 
 
-# if __name__ == '__main__':
-    # adjust_three_sheets()
-    # adjust_equity_cash_dividend()
-    # adjust_equity_fundamental_info()
-    # adjust_equity_selected_trading_data()
+if __name__ == '__main__':
+    create_cache()
+    adjust_three_sheets()
+    adjust_equity_cash_dividend()
+    adjust_equity_fundamental_info()
+    adjust_equity_selected_trading_data()
+    adjust_equity_selected_indice_ir()
 

@@ -5,15 +5,15 @@
 # TIME:2018-08-09  13:28
 # NAME:FT_hp-harvey.py
 import os
+import random
+
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-import random
-import numpy as np
 from empirical.config_ep import DIR_KOGAN
+from empirical.kogan.kogan_part1 import get_raw_factors
 from scipy import stats
-
-from empirical.kogan_part1 import get_raw_factors
-from tools import multi_task
+from tools import multi_process
 
 DIR_TMP=r'G:\FT_Users\HTZhang\FT\tmp'
 
@@ -94,7 +94,7 @@ def get_sampled_summary_statistics(method='mean',n=1000):
     # orthogonalized candidates
     orth_candidates=candidates-candidates.mean()# trick: different with realized data,we demean the candidates at this place
     args_generator=((assets,orth_candidates,method,i) for i in range(n))
-    df=pd.concat(multi_task(_get_summary_statistics_sampled,args_generator),axis=1)
+    df=pd.concat(multi_process(_get_summary_statistics_sampled, args_generator), axis=1)
     df.to_pickle(os.path.join(DIR_TMP,'sampled_{}_{}.pkl'.format(method,n)))
 
 def analyze_result():

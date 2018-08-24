@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from backtest.backtest_func import trade_date, backtest, buy_stocks_price, \
-    sell_stocks_price, close_price_backtest
+# from backtest.backtest_func import trade_date, backtest, buy_stocks_price, \
+#     sell_stocks_price, close_price_backtest
 from config import DIR_BACKTEST
 
 sns.set_style('white', {'axes.linewidth': 1.0, 'axes.edgecolor': '.8'})

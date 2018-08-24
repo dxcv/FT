@@ -225,6 +225,19 @@ def get_mould_index():
     with open(os.path.join(D_DRV,'mould_index.pkl'),'wb') as f:
         pickle.dump(mould.index,f)
 
+if __name__ == '__main__':
+    cal_ebitda()
+    cal_netAsset()
+    cal_netNonOI()
+    cal_periodCost()
+    cal_receivable()
+    cal_payable()
+    cal_grossIncome()
+    get_monthly_trading_data()
+    get_monthly_cap()
+    get_monthly_indice_ir()
+    get_fdmt_m()
+
 
 # fdmt=read_local('equity_fundamental_info')
 # trading=read_local('equity_selected_trading_data')

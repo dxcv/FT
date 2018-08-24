@@ -12,16 +12,16 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 import backtest_zht.base_func as bf
-from backtest_zht.config import DIR_BACKTEST
 from collections import OrderedDict
 
+from config import DIR_BACKTEST
 
 DEFAULT_CONFIG={
         'effective_number': 200,
         'target_number': 100,
         'signal_to_weight_mode': 3, #等权重
         # 'decay_num': 1,　＃TODO：　used to smooth the signal
-        # 'delay_num': 1,
+        # 'delay_num': 1, #TODO: refer to base_function
         'hedged_period': 60, #trick: 股指的rebalance时间窗口，也可以考虑使用风险敞口大小来作为relance与否的依据
         'buy_commission': 2e-3,#tric: 实际应该是2e-4左右，我们这里用的是2e-3是把冲击成本也加在里边了
         'sell_commission': 2e-3,
@@ -30,20 +30,31 @@ DEFAULT_CONFIG={
         }
 
 
-(close_price_none,
- close_price_post,
- open_price_post,
- vwap_post,
- stocks_opened,
- stocks_need_drop) = bf.read_trade_data('close_price_none',
-                                        'close_price_post',
-                                        'open_price_post',
-                                        'vwap_post',
-                                        'stocks_opened',
-                                        'stocks_need_drop',
-                                        data_path=os.path.join(DIR_BACKTEST,'backtest_data.h5'))
+# (close_price_none,
+#  close_price_post,
+#  open_price_post,
+#  vwap_post,
+#  stocks_opened,
+#  stocks_need_drop) = bf.read_trade_data('close_price_none',
+#                                         'close_price_post',
+#                                         'open_price_post',
+#                                         'vwap_post',
+#                                         'stocks_opened',
+#                                         'stocks_need_drop',
+#                                         data_path=os.path.join(DIR_BACKTEST,'backtest_data.h5'))
+#
+# zz500, = bf.read_trade_data('zz500', data_path=os.path.join(DIR_BACKTEST,'backtest_data.h5'))
 
-zz500, = bf.read_trade_data('zz500', data_path=os.path.join(DIR_BACKTEST,'backtest_data.h5'))
+read_pkl=lambda x:pd.read_pickle(os.path.join(DIR_BACKTEST,x+'.pkl'))
+close_price_none=read_pkl('close_price_none')
+close_price_post=read_pkl('close_price_post')
+open_price_post=read_pkl('open_price_post')
+vwap_post=read_pkl('vwap_post')
+stocks_opened=read_pkl('stocks_opened')
+stocks_need_drop=read_pkl('stocks_need_drop')
+zz500=read_pkl('zz500')
+
+
 
 benchmark_returns_zz500 = zz500.pct_change()
 benchmark_returns_zz500.name = 'benchmark'
@@ -372,7 +383,7 @@ def format_hedged_year_performance(returns, benchmark_ind):
 
 
 class Backtest:
-    def __init__(self,signal, name, directory, start='2009', end=None,config=DEFAULT_CONFIG):
+    def __init__(self,signal, name, directory, start=None, end=None,config=DEFAULT_CONFIG):
         self.signal=signal
         self.name=name
         self.directory=directory
@@ -675,9 +686,9 @@ class Backtest:
 
     def save_result(self):
         self.fig.savefig(os.path.join(self.directory, self.name + '.png'))
-        # self.signal.to_csv(os.path.join(self.directory,'signal.csv'))
         for k in self.results.keys():
-            self.results[k].to_csv(os.path.join(self.directory, k + '.csv'),encoding='gbk')
+            if k not in ['positions_record','shares_record','transactions_record','turnover_rates']:#only save part of the results
+                self.results[k].to_csv(os.path.join(self.directory, k + '.csv'),encoding='gbk')
 
     def run(self):
         if os.path.exists(self.directory) and len(os.listdir(self.directory)) > 0:

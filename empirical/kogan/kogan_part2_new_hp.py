@@ -167,7 +167,7 @@ def simulate_onetime(_id,benchmark,raw_factors,realized_result,anomaly_num):
             i+=1
             yield i,_names,simulated_factors
 
-    # results=multi_task(_for_one_combination,args_generator(),8)#fixme:
+    # results=multi_process(_for_one_combination,args_generator(),8)#fixme:
     results=[_for_one_combination(args) for args in args_generator()]
     _names_l=[r[0] for r in results]
     _matched_l=[r[1] for r in results]

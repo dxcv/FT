@@ -4,17 +4,15 @@
 # Email:13163385579@163.com
 # TIME:2018-08-14  10:55
 # NAME:FT_hp-yan.py
-import random
-
 import os
-from scipy import stats
+import random
 
 import pandas as pd
 import statsmodels.api as sm
-
 from empirical.get_basedata import get_benchmark
-from empirical.kogan_part1 import get_raw_factors
-from tools import multi_task
+from empirical.kogan.kogan_part1 import get_raw_factors
+from scipy import stats
+from tools import multi_process
 
 BENCH='ff3M'
 
@@ -27,38 +25,38 @@ def get_data():
     #trick: unify the index
     return benchmark.reindex(base_index),raw_factors.reindex(base_index)
 
-def get_realized_params(benchmark,raw_factors):
-    # E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\empirical\kogan_part2.py
-    comb = pd.concat([benchmark, raw_factors], axis=1).dropna()
-    resids_l = []
-    betas_l = []
-    stderr_l = []
-    for factorName in raw_factors.columns:
-        Y = comb[factorName]
-        X = comb[benchmark.columns]
-        X = sm.add_constant(X)
-        r = sm.OLS(Y, X).fit()
-        resids_l.append(r.resid)
-        betas_l.append(r.params[1:])
-        stderr_l.append(r.bse['const'])
-    betas = pd.concat(betas_l, axis=1, keys=raw_factors.columns).T
-    alpha_stderr = pd.Series(stderr_l, index=raw_factors.columns)
-    resid = pd.DataFrame(resids_l, index=raw_factors.columns, columns=comb.index).T
-    return betas,alpha_stderr,resid
-
-def _get_t_alpha(benchmark, factors):
-    ts = []
-    alphas = []
-    X = sm.add_constant(benchmark)
-    for ps in factors.columns:
-        Y = factors[ps]
-        r = sm.OLS(Y, X).fit()
-        ts.append(r.tvalues['const'])
-        alphas.append(r.params['const'])
-
-    ts = pd.Series(ts, index=factors.columns)
-    alphas = pd.Series(alphas, index=factors.columns)
-    return ts,alphas
+# def get_realized_params(benchmark,raw_factors):
+#     # E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\empirical\kogan_part2.py
+#     comb = pd.concat([benchmark, raw_factors], axis=1).dropna()
+#     resids_l = []
+#     betas_l = []
+#     stderr_l = []
+#     for factorName in raw_factors.columns:
+#         Y = comb[factorName]
+#         X = comb[benchmark.columns]
+#         X = sm.add_constant(X)
+#         r = sm.OLS(Y, X).fit()
+#         resids_l.append(r.resid)
+#         betas_l.append(r.params[1:])
+#         stderr_l.append(r.bse['const'])
+#     betas = pd.concat(betas_l, axis=1, keys=raw_factors.columns).T
+#     alpha_stderr = pd.Series(stderr_l, index=raw_factors.columns)
+#     resid = pd.DataFrame(resids_l, index=raw_factors.columns, columns=comb.index).T
+#     return betas,alpha_stderr,resid
+#
+# def _get_t_alpha(benchmark, factors):
+#     ts = []
+#     alphas = []
+#     X = sm.add_constant(benchmark)
+#     for ps in factors.columns:
+#         Y = factors[ps]
+#         r = sm.OLS(Y, X).fit()
+#         ts.append(r.tvalues['const'])
+#         alphas.append(r.params['const'])
+#
+#     ts = pd.Series(ts, index=factors.columns)
+#     alphas = pd.Series(alphas, index=factors.columns)
+#     return ts,alphas
 
 def bootstrap_onetime(args):
     i,raw_factors,benchmark,resid,betas=args
@@ -74,10 +72,11 @@ def bootstrap_onetime(args):
 
 def bootstrap_N(N=100):
     benchmark,raw_factors=get_data()
+
     betas,alpha_stderr,resid=get_realized_params(benchmark,raw_factors)
     args_generator=((i,raw_factors,benchmark,resid,betas) for i in range(N))
     # results=[bootstrap_onetime(args) for args in args_generator]
-    results=multi_task(bootstrap_onetime,args_generator)
+    results=multi_process(bootstrap_onetime, args_generator)
     sample_tvalue_df=pd.concat([r[0] for r in results],axis=1)
     sample_alpha_df=pd.concat([r[1] for r in results],axis=1)
     sample_alpha_df.to_pickle(os.path.join(DIR_RESULT,'sample_alpha_df.pkl'))

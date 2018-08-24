@@ -48,7 +48,10 @@ def get_mom_maxRet_20():
     g=ret.rolling(day).max()
     save_indicator(g,name)
 
-
-
+if __name__ == '__main__':
+    get_mom()
+    get_mom_maxRet_20()
+    get_mom_mc()
+    get_mom_maxRet_20()
 
 

@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-05-23  10:54
-# NAME:FT-config.py
+# NAME:FT-cfg.py
 
 DFCT= r'\\Ft-research\e\Share\Alpha\FYang\factors'
 DHTZ= r'\\Ft-research\e\FT_Users\HTZhang'
@@ -14,8 +14,10 @@ DIR_ROOT=r'G:\FT_Users\HTZhang\FT'
 
 
 DRAW=os.path.join(DIR_ROOT,'database','raw')
-DCSV=os.path.join(DIR_ROOT,'database','csv')
+# DCSV=os.path.join(DIR_ROOT,'database','csv')
 DPKL=os.path.join(DIR_ROOT,'database','pkl')
+
+
 DCC=os.path.join(DIR_ROOT,'TMP')
 D_FT_RAW=os.path.join(DIR_ROOT,'database','ftresearch_based','raw','pkl')
 D_FT_ADJ=os.path.join(DIR_ROOT,'database','ftresearch_based','adjusted','pkl')

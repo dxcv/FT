@@ -8,12 +8,10 @@ import random
 
 import pandas as pd
 import statsmodels.api as sm
+from empirical.get_basedata import get_benchmark, get_data
 
 
-
-#TODO：make sure all the assets and benchmark share the same time index.
-from empirical.get_basedata import get_benchmark
-from empirical.kogan_part1 import get_raw_factors
+# from empirical.kogan.kogan_part1 import get_raw_factors
 
 
 def pricing_assets(benchmark, assets):
@@ -49,7 +47,10 @@ def bootstrap_residual_independently(benchmark,assets,realized_result):
 
     #bootstrap residual independently for each asset and use the realized fixed term
     '''
-    only resample residual, and use realized benchmark and factors.
+    resample residual (independently)
+    
+    1. only resample residual, and use realized benchmark and factors.
+    
     resample residual independently for each asset.
     '''
     fixed_term=pd.DataFrame(benchmark.values@realized_result['betas'].values,columns=realized_result['betas'].columns)
@@ -66,6 +67,9 @@ def bootstrap_residual_and_factor(benchmark,assets,realized_result):
     get_random_index = lambda: random.choices(benchmark.index,
                                               k=benchmark.shape[0])
     '''
+    resample residual (independently)
+    resample fixed term (dependently)
+    
     2. resample both the residuals and factor returns and resample them independently. 
     When resampling factor returns, we use the same draw across all funds 
     (to preserve the correlation of factor returns on all funds).
@@ -84,6 +88,8 @@ def bootstrap_cross_sectional(benchmark,assets,realized_result):
     get_random_index = lambda: random.choices(benchmark.index,
                                               k=benchmark.shape[0])
     '''
+    resample residual (dependently)
+    
     In this procedure, rather than drawing sequences of time periods t_i that are unique 
     to each fund i, we draw T time periods from the set { t=1,...,T} and then 
     resample residuals for this reindexed time sequence across all funds, 
@@ -99,17 +105,50 @@ def bootstrap_ff(benchmark,assets,realized_result):
     get_random_index = lambda: random.choices(benchmark.index,
                                               k=benchmark.shape[0])
     '''
+    
     substract the estimated alpha from the original data to get the psuedo
     asset and then bootstrap the time index ( that is, all the assets share 
     the same random sample of time index)
     '''
     adjusted_assets=assets-realized_result['alpha']
-    pseudo_assets=adjusted_assets.loc[get_random_index()]
-    pseudo_assets.index=assets.index
+    sampled_index=get_random_index()
+    pseudo_assets=adjusted_assets.loc[sampled_index]
+    pseudo_benchmark=benchmark.loc[sampled_index]
+    pseudo_assets.reset_index(drop=True,inplace=True) #trick:handle the problem of duplicated index
+    pseudo_benchmark.reset_index(drop=True,inplace=True)
+    re=pricing_assets(pseudo_benchmark,pseudo_assets)
+    return re
 
-    re=pricing_assets(benchmark,pseudo_assets)
+def bootstrap_both_factor_and_model(benchmark,assets):
+    '''
+    Do not change the structure of the original data, just resample from the original data.
+
+    The only difference with bootstrap_ff is that this method to not substract the 'alpha'
+    from the assets.
+
+    Args:
+        benchmark:
+        assets:
+    Returns:
+
+    '''
+    random_index=random.choice(benchmark.index,k=benchmark.shape[0])
+    sp_benchmark=benchmark.loc[random_index]
+    sp_assets=assets.loc[random_index]
+    return sp_benchmark,sp_assets
 
 def bootstrap_kogan(benchmark, assets, realized_result, anomaly_num):
+    '''
+    just like bootstrap_ff, but you can assign an anomaly_num for the assets
+    Args:
+        benchmark:
+        assets:
+        realized_result:
+        anomaly_num:
+
+    Returns:
+
+    '''
     get_random_index = lambda: random.choices(benchmark.index,
                                               k=benchmark.shape[0])
 
@@ -127,18 +166,7 @@ def bootstrap_kogan(benchmark, assets, realized_result, anomaly_num):
 def bootstrap_yan(benchmark,assets,realized_result):
     return bootstrap_ff(benchmark,assets,realized_result)
 
-
-
-def get_data():
-    BENCH='ff3M'
-    benchmark = get_benchmark(BENCH)
-    raw_factors = get_raw_factors()
-    base_index=benchmark.index.intersection(raw_factors.index)
-    #trick: unify the index
-    return benchmark.reindex(base_index),raw_factors.reindex(base_index)
-
 if __name__ == '__main__':
-
     benchmark,raw_factors=get_data()
     realized_result=pricing_assets(benchmark,raw_factors)
     # re=bootstrap_residual_independently(benchmark,raw_factors)

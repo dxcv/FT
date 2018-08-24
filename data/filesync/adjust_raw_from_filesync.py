@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 from config import DRAW,D_FILESYNC_ADJ
-from data.dataApi import read_raw, read_local_pkl, read_local_sql
+from data.dataApi import read_raw, read_local_pkl, read_local_sql, read_from_sql
 from tools import number2dateStr
 
 from sqlalchemy import create_engine
@@ -39,56 +39,70 @@ def save_df(df,name):
     df.to_sql(name=name,con=con,if_exists='replace',dtype={'stkcd':VARCHAR(9)})
     #TODO: add comments for columns
 
+
 def adjust_filesync(tbname):
+    df=read_from_sql(tbname)
+
     dateFields = ['report_period', 'trd_dt', 'ann_dt', 'holder_enddate',
-                  'listdate','actual_ann_dt']
-    # actual_ann_dt 指的是“更正公告的日期”
-    df = pd.read_csv(os.path.join(DRAW, tbname + '.csv'), index_col=0)
+                  'listdate', 'actual_ann_dt']
 
-    #adjust column format
-    df.columns=[str.lower(c) for c in df.columns]
 
-    #adjust date format
+
+    df.columns = [str.lower(c) for c in df.columns]
+
+
     for datef in dateFields:
         if datef in df.columns:
-            df[datef]=df[datef].map(lambda x:str(x)[:8])
-            df[datef] = pd.to_datetime(df[datef])
+            df[datef]=pd.to_datetime(df[datef])
 
-    #map ann_date to trading date
-    calendar=read_raw('asharecalendar')
-    trd_dt=pd.to_datetime(calendar['TRADE_DAYS'].map(str)).drop_duplicates().sort_values()
-    df['trd_dt']=df['ann_dt'].map(lambda x:trd_dt.values[trd_dt.searchsorted(x)[0]])
+    for col in df.columns:
+        if col not in dateFields:
+            df[col]=df[col].astype(float,errors='ignore')
+
+    # cols_drop=['object_id','crncy_code','s_info_compcode','opdate','opmode','s_info_windcode','wind_code']
+    # test=df.drop(labels=cols_drop,axis=1)
+    # for dt in test.columns:
+    #     if dt not in dateFields:
+    #         test[dt]=test[dt].astype(dt)
+
+    # test['s_info_windcode'].tail()
+
+    cols=[c for c in df.columns if c.startswith('s_fa')]
+    for c in cols:
+        df[c]=df[c].astype(float)
+
+    calendar = read_from_sql('AshareCalendar')
+    trd_dt = pd.to_datetime(calendar['TRADE_DAYS']).drop_duplicates().sort_values()
+    df['trd_dt'] = df['ann_dt'].map(
+        lambda x: trd_dt.values[trd_dt.searchsorted(x)[0]])
+
 
     # reindex with qrange
     def _reindex_with_qrange(x):
-        x=x.set_index('report_period')
+        x = x.set_index('report_period')
         # qrange=pd.date_range(x.index.min(), x.index.max(), freq='Q')
         # result2=x.reindex(pd.Index(qrange,name='report_period'))
-        x=x.resample('Q').asfreq()
+        x = x.resample('Q').asfreq()
         return x
 
-    #handle duplicates,keep the last one
-    #keep the first one,since in real life,we can only trade based on the first
-    #one.
-    df=df.sort_values(['wind_code','report_period','trd_dt'])
-    df=df[~df.duplicated(['wind_code','report_period'],keep='first')]
-    df=df.groupby('wind_code').apply(_reindex_with_qrange)
 
-    df=df.drop(['object_id','s_info_windcode','wind_code'],axis=1)
-    df=df.reset_index().rename(columns={'wind_code':'stkcd'})
+    # handle duplicates,keep the last one
+    # keep the first one,since in real life,we can only trade based on the first
+    # one.
+    df = df.sort_values(['wind_code', 'report_period', 'trd_dt'])
+    df = df[~df.duplicated(['wind_code', 'report_period'], keep='first')]
+    df = df.groupby('wind_code').apply(_reindex_with_qrange)
 
-    df=df.set_index(['stkcd','report_period'])
-    df=df.sort_index()
+    df = df.drop(['object_id', 's_info_windcode', 'wind_code'], axis=1)
+    df = df.reset_index().rename(columns={'wind_code': 'stkcd'})
 
-    #reorder the columns
-    newcols=['trd_dt']+[c for c in df.columns if c!= 'trd_dt']
-    df=df[newcols]
+    df = df.set_index(['stkcd', 'report_period'])
+    df = df.sort_index()
 
-    # df.to_csv(os.path.join(DCSV,tbname+'.csv'))
+    # reorder the columns
+    newcols = ['trd_dt'] + [c for c in df.columns if c != 'trd_dt']
+    df = df[newcols]
     df.to_pickle(os.path.join(D_FILESYNC_ADJ, tbname + '.pkl'))
-
-    #TODO:notice that do not apply sort and dropna on df
-    #TODO:notice that there are some NaT in index
 
 def adjust_asharefinancialindicator():
     tbname='asharefinancialindicator'
@@ -214,6 +228,10 @@ def calculate_q_sheet():
 
         #TODO: float type rather than str
     single_q=df.groupby(['stkcd',df['report_period'].dt.year]).apply(_adjust)
+
+
+if __name__ == '__main__':
+    adjust_asharefinancialindicator()
 
 
 # calculate_q_sheet()

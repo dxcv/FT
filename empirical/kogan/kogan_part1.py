@@ -15,17 +15,35 @@ import statsmodels.api as sm
 import numpy as np
 from empirical.config_ep import NUM_FACTOR
 import os
-from empirical.get_basedata import get_benchmark
+from empirical.get_basedata import get_benchmark, get_raw_factors
 from empirical.config_ep import DIR_KOGAN, DIR_KOGAN_RESULT, CRITICAL
 from empirical.utils import run_GRS_test
 from numpy.linalg import LinAlgError
-from tools import multi_task
+from tools import multi_process
 from matplotlib.colors import ListedColormap
 
 #TODO:make sure that all the assets share the same window
 #TODO:if the model contains the underline factor of the testing asset,skip it
 
 
+def _generate_models(names):
+    directory=os.path.join(DIR_KOGAN,'port_ret','eq')
+    factors=[]
+    for name in names:
+        factor=pd.read_pickle(os.path.join(directory,name+'.pkl'))['tb']
+        factor.name=name
+        factors.append(factor)
+
+    rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
+    comb=pd.concat(factors+[rpM],axis=1).dropna()
+    comb.to_pickle(os.path.join(DIR_KOGAN,'models',str(len(names)+1),'___'.join(names)+'.pkl'))
+
+def build_models():
+    '''generate all the possible 3-factor models and 4-factor models'''
+    directory=os.path.join(DIR_KOGAN,'port_ret','eq')
+    names=[fn[:-4] for fn in os.listdir(directory)]
+    names_list=list(itertools.combinations(names,2))+list(itertools.combinations(names,3))
+    multi_process(_generate_models, names_list)
 
 def _pricing_with_grs(arg):
     '''get the GRS with one model and one set of assets'''
@@ -57,7 +75,7 @@ def _grs_factor_model():
     for nm in nmodels:
         for na in nassets:
             arg_list.append((nm,na))
-    pp=multi_task(_pricing_with_grs, arg_list)
+    pp=multi_process(_pricing_with_grs, arg_list)
     grs_factor=pd.DataFrame(np.array(pp).reshape(len(nmodels),len(nassets)),
                       index=nmodels,columns=nassets)
 
@@ -110,7 +128,7 @@ def _grs_benchmodel():
         for bn in bench_names:
             args_list.append((fa,bn))
 
-    _ps=multi_task(_grs_bench,args_list)
+    _ps=multi_process(_grs_bench, args_list)
 
     grs_benchmark=pd.DataFrame(np.array(_ps).reshape((len(fn_assets),len(bench_names))),
                                index=[f[:-4] for f in fn_assets], columns=bench_names)
@@ -121,41 +139,6 @@ def pricing_with_grs_all():
     _grs_pca_model()
     _grs_benchmodel()
 
-def _generate_models(names):
-    directory=os.path.join(DIR_KOGAN,'port_ret','eq')
-    factors=[]
-    for name in names:
-        factor=pd.read_pickle(os.path.join(directory,name+'.pkl'))['tb']
-        factor.name=name
-        factors.append(factor)
-
-    rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
-    comb=pd.concat(factors+[rpM],axis=1).dropna()
-    comb.to_pickle(os.path.join(DIR_KOGAN,'models',str(len(names)+1),'___'.join(names)+'.pkl'))
-
-def build_models():
-    '''generate all the possible 3-factor models and 4-factor models'''
-    directory=os.path.join(DIR_KOGAN,'port_ret','eq')
-    names=[fn[:-4] for fn in os.listdir(directory)]
-    names_list=list(itertools.combinations(names,2))+list(itertools.combinations(names,3))
-    multi_task(_generate_models, names_list)
-
-def _get_tb(path):
-    return pd.read_pickle(path)['tb']
-
-def get_raw_factors():
-    '''get high-minu-low factors'''
-    directory = os.path.join(DIR_KOGAN, 'port_ret', 'eq')
-    fns = os.listdir(directory)
-    arg_generator=(os.path.join(directory,fn) for fn in fns)
-    ss=multi_task(_get_tb,arg_generator)
-    raw_factors = pd.concat(ss, axis=1, keys=[fn[:-4] for fn in fns])
-    #trick: delete those months with too small sample
-    raw_factors = raw_factors.dropna(axis=0,thresh=int(raw_factors.shape[1] * 0.8))
-    #trick: delete those factors with too short history
-    raw_factors=raw_factors.dropna(axis=1,thresh=int(raw_factors.shape[0]*0.8))
-    raw_factors = raw_factors.fillna(0)
-    return raw_factors
 
 def _match_for_one_model(args):
     i,mname,factors=args
@@ -188,7 +171,7 @@ def match_based_on_alpha_pvalue():
     factors=get_raw_factors()
     args_generator=((i,mname,factors) for i,mname in enumerate(modelnames))
 
-    _matched_l=multi_task(_match_for_one_model,args_generator,60)
+    _matched_l=multi_process(_match_for_one_model, args_generator, 60)
     index=pd.MultiIndex.from_tuples((mn[:-4].split('___') for mn in modelnames))
     matched=pd.Series(_matched_l,index=index)
     matched.to_pickle(os.path.join(DIR_KOGAN_RESULT,'matched.pkl'))
@@ -366,8 +349,8 @@ def get_factor_model_performance():
     plt.savefig(os.path.join(DIR_KOGAN_RESULT,'factor model performance.pdf'))
 
 def run():
-    pricing_with_grs_all()
     build_models()
+    pricing_with_grs_all()
     match_based_on_alpha_pvalue()
     get_table2()
     get_corr_heatmap()
@@ -376,5 +359,5 @@ def run():
     get_performance_distribution(1)
 
 
-# if __name__ == '__main__':
-#     run()
+if __name__ == '__main__':
+    run()

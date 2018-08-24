@@ -7,7 +7,7 @@
 import multiprocessing
 from functools import partial
 
-from backtest.main import quick
+# from backtest.main import quick
 from config import DIR_SIGNAL, DIR_SINGLE_BACKTEST, DIR_SIGNAL_SMOOTHED
 import os
 import pandas as pd

@@ -13,7 +13,8 @@ import os
 import re
 
 from singleFactor.operators import *
-from tools import daily2monthly
+from tools import daily2monthly, multi_process
+
 
 def save_indicator(df,name):
     df.to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
@@ -182,6 +183,36 @@ def cal_sheet_equation():
     # for _,s in df.iterrows():
     #     parse_a_row(s)
 
+
+def task(args):
+    func_id,func,kwarg,indicator=args
+    name = 'G_{}_{}__{}'.format(func_id[func], kwarg['q'], indicator)
+    df = get_dataspace(indicator)
+    df[name] = eval(func)(df[indicator], **kwarg)
+    df = df.dropna(subset=[name])
+    if df.shape[0] > 0:
+        daily = quarterly_to_daily(df, name)
+        save_indicator(daily, name)
+
+def multi_cal_sheet_growth():
+    func_id = {'x_pct_chg': 'pct',
+               'x_history_compound_growth': 'hcg',
+               'x_history_std': 'std',
+               'x_history_growth_std':'hgstd'}
+
+    path = 'indicators.xlsx'
+    df = pd.read_excel(path, sheet_name='growth', index_col=0)
+    indicators = df['indicator']
+    args_list=[]
+    for _,s in df[['function','kwarg']].dropna().iterrows():
+        func = s['function']
+        kwarg = parse_args(s['kwarg'])
+        for indicator in indicators:
+            args_list.append((func_id,func,kwarg,indicator))
+
+    multi_process(task,args_list,30)
+
+
 def cal_sheet_growth():
     func_id={'x_pct_chg':'pct',
              'x_history_compound_growth':'hcg',
@@ -204,6 +235,7 @@ def cal_sheet_growth():
             print(func,indicator,kwarg['q'])
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
     # cal_sheet_equation()
     # cal_sheet_growth()
+    multi_cal_sheet_growth()

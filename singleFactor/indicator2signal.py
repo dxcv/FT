@@ -13,6 +13,7 @@ from config import SINGLE_D_INDICATOR, DIR_SIGNAL
 import os
 import pandas as pd
 from singleFactor.singleTools import convert_indicator_to_signal
+from tools import multi_process
 
 
 def indicator2signal(name):
@@ -31,8 +32,12 @@ def run():
     checked=[fn[:-4] for fn in os.listdir(DIR_SIGNAL)]
     names=[n for n in names if n not in checked]
     print('unchecked: {}'.format(len(names)))
-    pool=multiprocessing.Pool(1)
-    pool.map(indicator2signal,names)
+    multi_process(indicator2signal,names,5)
+    for name in names:
+        indicator2signal(name)
+
+    # pool=multiprocessing.Pool(1)
+    # pool.map(indicator2signal,names)
 
 if __name__ == '__main__':
     run()
