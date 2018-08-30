@@ -42,7 +42,7 @@ def _bt_one_set(fn):
 
 def bt_all_spanning_signal():
     fns=os.listdir(DIR_SIGNAL)
-    multi_process(_bt_one_set,fns,10,multi_paramters=False)
+    multi_process(_bt_one_set,fns,20,multi_paramters=False)
     # multiprocessing.Pool(20).map(_bt_one_set,fns)
 
 def debug():
@@ -50,10 +50,9 @@ def debug():
     for fn in fns:
         _bt_one_set(fn)
 
-
 if __name__ == '__main__':
     bt_all_spanning_signal()
-
+    # debug()
 '''
 employ stop loss strategy on the factors
 

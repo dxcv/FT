@@ -254,7 +254,7 @@ def get_signal(grade,criteria,N,trd_dts,iw,cw):
     # args_list=[(grade,criteria,trd_dts,i,N,iw,cw) for i in range(len(trd_dts)-1)]
     args_generator=gen_args(grade,criteria,N,trd_dts,iw,cw)
     # mixed_signal_frags=[_mix_one_slice(args) for args in args_generator]#fixme:
-    mixed_signal_frags=multi_process(_mix_one_slice, args_generator, 20,multi_paramters=False)
+    mixed_signal_frags=multi_process(_mix_one_slice, args_generator, 10,multi_paramters=False)
     signal=pd.concat(mixed_signal_frags)
     return signal
 
@@ -278,40 +278,41 @@ def generate_signal_traverse():
 
 def generate_signal():
     ret=get_strategy_ret()
-    for window in [500,1000]:
+    for window in [500,750,1000]:
         grade=grade_strategy(ret,freq='M',window=window)
         trd_dts = grade.index.get_level_values('trd_dt').unique().sort_values()
-        iw='iw2'
-        cw='cw3'
-        N=5
-        criteria='criteria3'
-        name=f'{window}_{iw}_{cw}_{N}_{criteria}.pkl'
-        path=os.path.join(DIR_MIXED_SIGNAL,name)
-        signal=get_signal(grade,criteria,N,trd_dts,iw,cw)
-        signal.to_pickle(path)
-
+        for iw in ['iw2','iw3']:
+            for cw in ['cw2','cw3']:
+                for N in [3,5,10]:
+                    criteria='criteria3'
+                    name=f'{window}_{iw}_{cw}_{N}_{criteria}.pkl'
+                    path=os.path.join(DIR_MIXED_SIGNAL,name)
+                    if not os.path.exists(path):
+                        signal = get_signal(grade, criteria, N, trd_dts, iw, cw)
+                        signal.to_pickle(path)
+                    print(path)
 
 def _task_bt(fn):
     signal = pd.read_pickle(os.path.join(DIR_MIXED_SIGNAL, fn))
-    for effective_number in [150]:
-        signal_weight_mode=1
-        name = '{}_{}_{}'.format(fn[:-4], effective_number,signal_weight_mode)
-        directory = os.path.join(DIR_MIXED_SIGNAL_BACKTEST, name)
+    for effective_number in [100,150]:
+        for signal_weight_mode in [1,2,3]:
+            name = '{}_{}_{}'.format(fn[:-4], effective_number,signal_weight_mode)
+            directory = os.path.join(DIR_MIXED_SIGNAL_BACKTEST, name)
 
-        cfg = DEFAULT_CONFIG
-        cfg['effective_number'] = effective_number
-        cfg['signal_to_weight_mode'] = signal_weight_mode
-        Backtest(signal, name=name, directory=directory,start='2009',
-                 config=cfg)#TODO: start='2009'
+            cfg = DEFAULT_CONFIG
+            cfg['effective_number'] = effective_number
+            cfg['signal_to_weight_mode'] = signal_weight_mode
+            Backtest(signal, name=name, directory=directory,start='2009',
+                     config=cfg)#TODO: start='2009'
 
 def backtest_mixed_signal():
     fns=os.listdir(DIR_MIXED_SIGNAL)
     # for fn in fns:
     #     _task_bt(fn)
-    multi_process(_task_bt, fns, 5) #fixme:
+    multi_process(_task_bt, fns, 20) #fixme:
 
 
 if __name__ == '__main__':
-    generate_signal()
-    # backtest_mixed_signal()
-    # summarize()
+    # generate_signal()
+    backtest_mixed_signal()
+    summarize()

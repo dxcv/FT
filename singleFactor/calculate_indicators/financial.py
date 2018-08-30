@@ -103,6 +103,7 @@ def parse_equation(equation):
     else:# for example, "tot_assets"
         return get_dataspace(equation)[equation]
 
+td=read_from_sql('trade_date','ftresearch')['dates'].values
 def quarterly_to_daily(df,name,duplicates='last'):
     '''
 
@@ -116,7 +117,6 @@ def quarterly_to_daily(df,name,duplicates='last'):
 
     '''
 
-    td=read_from_sql('trade_date','ftresearch')['dates'].values
     #trick:There are some duplicates (different report_period) even with same stkcd and trd_dt
     # df=df.reset_index().sort_values(['stkcd','trd_dt','report_period'])
     # df = df[~df.duplicated(subset=['stkcd', 'trd_dt'], keep='last')]

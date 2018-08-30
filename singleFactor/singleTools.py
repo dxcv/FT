@@ -19,6 +19,15 @@ from memory_profiler import profile
 
 # @profile(precision=4,stream=fp)
 def convert_indicator_to_signal(df,name):
+    '''
+    convert daily indicator to daily signal
+    Args:
+        df:dataFrame, with index as timestamp and columns as stkcd
+        name:
+
+    Returns:
+
+    '''
     df = df.stack().to_frame().swaplevel().sort_index()
     df.index.names = ['stkcd', 'trd_dt']
     df.columns = [name]
@@ -29,15 +38,11 @@ def convert_indicator_to_signal(df,name):
     df = df.dropna(subset=['wind_indcd', name])
     df = df.groupby('trd_dt').filter(
         lambda x: x.shape[0] > LEAST_CROSS_SAMPLE)
+    # MAD,z-score,neutralized
     df = clean(df, col=name, by='trd_dt')
     signal = pd.pivot_table(df, values=name, index='trd_dt',
                             columns='stkcd').sort_index()
     signal = signal.shift(1)  # trick: we have shift the signal at this place, so 'delay_num' should be 0 in the backtest module!!!!!
     signal=signal.dropna(how='all')
     return signal
-
-# fns=os.listdir(SINGLE_D_INDICATOR)
-# name=fns[-1][:-4]
-# df = pd.read_pickle(os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
-# signal = convert_indicator_to_signal(df, name)
 

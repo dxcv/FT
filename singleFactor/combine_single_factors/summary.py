@@ -59,18 +59,18 @@ def summarize():
 
     # review: 对于任意两个趋势有持续正收益的序列相关性都会很强，这种直接用收益率求相关性的方式不太准确
 
-    # _ca=pd.concat([alpha]+rets,axis=1,keys=['alpha']+fns).dropna()
-    # _c1=pd.concat([s1]+rets,axis=1,keys=['s1']+fns).dropna()
-    # _c2=pd.concat([s2]+rets,axis=1,keys=['s2']+fns).dropna()
-    # summary['corr_alpha']=_ca.corrwith(_ca['alpha'])
-    # summary['corr_s1']=_ca.corrwith(_c1['s1'])
-    # summary['corr_s2']=_ca.corrwith(_c2['s2'])
-    # summary=summary.sort_values('portfolio_total_return',kind='mergesort',ascending=False)
-    # summary.to_csv(os.path.join(DIR_MIXED_SUM,'summary.csv'))
+    _ca=pd.concat([alpha]+rets,axis=1,keys=['alpha']+fns).dropna()
+    _c1=pd.concat([s1]+rets,axis=1,keys=['s1']+fns).dropna()
+    _c2=pd.concat([s2]+rets,axis=1,keys=['s2']+fns).dropna()
+    summary['corr_alpha']=_ca.corrwith(_ca['alpha'])
+    summary['corr_s1']=_ca.corrwith(_c1['s1'])
+    summary['corr_s2']=_ca.corrwith(_c2['s2'])
+    summary=summary.sort_values('portfolio_total_return',kind='mergesort',ascending=False)
+    summary.to_csv(os.path.join(DIR_MIXED_SUM,'summary.csv'))
 
     comb=pd.concat([alpha,s1,s2]+rets,axis=1,keys=['alpha','s1','s2']+fns).dropna()
-    # corr=comb.corr()
-    # corr.to_csv(os.path.join(DIR_MIXED_SUM,'corr.csv'))
+    corr=comb.corr()
+    corr.to_csv(os.path.join(DIR_MIXED_SUM,'corr.csv'))
     comb.to_pickle(os.path.join(DIR_MIXED_SUM,'comb.pkl'))
 
 # summary=pd.read_csv(os.path.join(DIR_MIXED_SUM,'summary.csv'),index_col=0)

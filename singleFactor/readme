@@ -1,0 +1,14 @@
+1. ftresearch/adjust.py
+2. consensus_daily.py
+3. adjust_raw_from_filesync.py
+4. derivetatives.py
+5. financial.py
+6. technical_daily.py
+7. turnover.py
+8. vol_and_beta_daily.py  # this module is really slow!!!
+
+9. indicator2signal.py
+10. read_data_base_new.py
+10. signal_spanning.py    wrong!!!!!!!!!!!!!!!!!!!!!!!!!111
+11. combine_new.py
+

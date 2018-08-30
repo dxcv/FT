@@ -390,7 +390,7 @@ class Backtest:
         self.start=start if start else self.signal.index[0]
         self.end=end if end else self.signal.index[-1]
         self.config=config
-        self.date_range=trade_date[start:end]#fixme: trade_date should be set according to the given signal and indice
+        self.date_range=trade_date[self.start:self.end]#fixme: trade_date should be set according to the given signal and indice
         self.benchmark=zz500[self.start:self.end]
         self.run()
 

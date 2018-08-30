@@ -86,3 +86,12 @@ def run_GRS_test(model,asset):
 
     grs,p=GRS_test(factor,resid,alpha)
     return grs,p
+
+
+def unify_index(df1,df2):
+    common=df1.index.intersection(df2.index)
+    return df1.reindex(index=common),df2.reindex(index=common)
+
+def align_index(df1,df2):
+    ind=df1.index.intersection(df2.index)
+    return df1.loc[ind],df2.loc[ind]

@@ -17,9 +17,7 @@ rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
 
 BENCHS=['capmM','ff3M','ff5M','ff6M','ffcM','hxz4M']
 
-
-def _get_tb(path):
-    return pd.read_pickle(path)['tb']
+_get_tb=lambda path:pd.read_pickle(path)['tb']
 
 def get_raw_factors():
     '''get high-minu-low factors'''
@@ -34,7 +32,7 @@ def get_raw_factors():
     raw_factors = raw_factors.dropna(axis=0,thresh=int(raw_factors.shape[1] * 0.8))
     #trick: delete those factors with too short history
     raw_factors=raw_factors.dropna(axis=1,thresh=int(raw_factors.shape[0]*0.8))
-    raw_factors = raw_factors.fillna(0)
+    raw_factors = raw_factors.fillna(0)#trick:
     return raw_factors
 
 def get_benchmark(name):

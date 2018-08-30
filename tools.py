@@ -113,6 +113,11 @@ def neutralize(df, col, industry, cap='ln_cap'):
 
 def clean(df, col,by='month_end'):
     '''
+    filter out abnormal value
+    s-score
+    industry-neutralized
+    log_cap neutralized
+
     Parameters
     ==========
     df: DataFrame
@@ -159,6 +164,20 @@ def myroll(df, d):
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
 def multi_process(func,args_iter,n=20,multi_paramters=False):
+    '''
+    make sure that all the data needed by "func" should be sent by parameters, try to avoid calling
+    the data outside the "func" since sometimes the processes may be frozen without raising any
+    error.
+
+    Args:
+        func:
+        args_iter:
+        n:
+        multi_paramters:
+
+    Returns:
+
+    '''
     pool = multiprocessing.Pool(n)
     if multi_paramters:
         results = pool.starmap(func, args_iter)
@@ -179,6 +198,6 @@ def multi_process_old(func, args_iter, n=20):
     return results
 
 def multi_thread(func,args_iter,n=50):
-    results=ThreadPool(n).map(func,args_iter)
+    results=ThreadPool(n).starmap(func,args_iter)
     return results
 

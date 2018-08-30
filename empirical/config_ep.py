@@ -20,3 +20,6 @@ CRITICAL=0.05
 #-----------------yan--------------------------------
 DIR_YAN=os.path.join(DIR_EP,'yan')
 
+
+#------------------chordia------------------------------
+DIR_CHORDIA=os.path.join(DIR_EP,'chordia')
