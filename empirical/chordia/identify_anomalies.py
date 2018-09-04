@@ -7,7 +7,8 @@
 from config import DIR_TMP
 from data.dataApi import read_local
 from empirical.bootstrap import pricing_assets
-from empirical.config_ep import DIR_KOGAN, DIR_CHORDIA
+from empirical.config_ep import DIR_CHORDIA, DIR_DM, DIR_DM_INDICATOR, \
+    DIR_DM_NORMALIZED
 import os
 import pandas as pd
 from empirical.get_basedata import get_raw_factors, get_benchmark, BENCHS
@@ -25,7 +26,7 @@ def get_all_return_factors():
     if os.path.exists(path):
         return pd.read_pickle(path)
     else:
-        directory = os.path.join(DIR_KOGAN, 'port_ret', 'eq')
+        directory = os.path.join(DIR_DM, 'port_ret', 'eq')
         fns = os.listdir(directory)
         arg_generator = (os.path.join(directory, fn) for fn in fns)
         # ss=multi_process(_get_tb, arg_generator)
@@ -113,7 +114,7 @@ other=pd.read_pickle(os.path.join(DIR_TMP,'other.pkl'))
 _convert_name=lambda s:s[1:].replace('_','').replace('-','')
 
 def _read_pkl(name):
-    s=pd.read_pickle(os.path.join(DIR_KOGAN,'signal',name+'.pkl')).stack()
+    s=pd.read_pickle(os.path.join(DIR_DM_NORMALIZED,name+'.pkl')).stack()
     s.name=_convert_name(name)
     print(name)
     return s
@@ -121,7 +122,7 @@ def _read_pkl(name):
 
 def _get_fm_tvalue(name):
     signal = pd.read_pickle(
-        os.path.join(DIR_KOGAN, 'signal', name + '.pkl')).stack()
+        os.path.join(DIR_DM_NORMALIZED, name + '.pkl')).stack()
     newname = _convert_name(name)
     signal.name = newname
     comb = pd.concat([other, signal], axis=1)
@@ -133,7 +134,7 @@ def _get_fm_tvalue(name):
     print(name)
 
 def get_fm_tvalues():
-    fns=os.listdir(os.path.join(DIR_KOGAN,'signal'))
+    fns=os.listdir(DIR_DM_NORMALIZED)
     names=[fn[:-4] for fn  in fns]
     print(len(names))
     checked=[fn[:-4] for fn in os.listdir(os.path.join(DIR_CHORDIA,'fm'))]
@@ -171,7 +172,7 @@ def analyze():
     inds4=fm_t[fm_t<-CRITIC].index
 
     indicators=inds1+inds2
-    _get_s=lambda x:pd.read_pickle(os.path.join(DIR_KOGAN,'port_ret','eq',x+'.pkl'))['tb']
+    _get_s=lambda x:pd.read_pickle(os.path.join(DIR_DM,'port_ret','eq',x+'.pkl'))['tb']
 
     df=pd.concat([_get_s(ind) for ind in indicators],axis=1,keys=indicators)
     df.cumsum().plot().get_figure().show()
@@ -204,7 +205,7 @@ def get_prominent_anomalies():
     inds4 = fm_t[fm_t < -CRITIC].index.tolist()
 
     indicators=inds1+inds2
-    _get_s=lambda x:pd.read_pickle(os.path.join(DIR_KOGAN,'port_ret','eq',x+'.pkl'))['tb']
+    _get_s=lambda x:pd.read_pickle(os.path.join(DIR_DM,'port_ret','eq',x+'.pkl'))['tb']
 
     df=pd.concat([_get_s(ind) for ind in indicators],axis=1,keys=indicators)
     # df.cumsum().plot().get_figure().show()
@@ -231,6 +232,39 @@ def get_alpha_t_of_mymodel():
 
 
 #==================method2: PCA=============================
+def get_prominent_anomalies1():
+    alpha_t = pd.concat(
+        [pd.read_pickle(os.path.join(DIR_CHORDIA, f't_{bench}.pkl'))
+         for bench in BENCHS], axis=1,sort=True)
+
+    fm_t = pd.read_csv(os.path.join(DIR_CHORDIA, 'fm_t.csv'), index_col=0,
+                       header=None)
+    fm_t = fm_t.iloc[:, 0]
+    fm_t = fm_t.replace([-np.inf, np.inf], np.nan)
+
+    CRITIC = 3
+
+    inds1 = alpha_t[alpha_t > CRITIC].dropna().index.tolist()
+    inds2 = alpha_t[alpha_t < -CRITIC].dropna().index.tolist()
+    inds3 = fm_t[fm_t > CRITIC].index.tolist()
+    inds4 = fm_t[fm_t < -CRITIC].index.tolist()
+
+    indicators=inds1+inds2
+    _get_s=lambda x:pd.read_pickle(os.path.join(DIR_DM,'port_ret','eq',x+'.pkl'))['tb']
+
+    df=pd.concat([_get_s(ind) for ind in indicators],axis=1,keys=indicators)
+    return df
+
+
+
+def _get_pca_model(n=NUM_FACTOR):
+    pca_factors=_get_pca_factors(n=n - 1)
+    rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
+    pca_model=pd.concat([rpM,pca_factors],axis=1).dropna()
+    return pca_model
+
+
+
 
 
 #=================method3: cluster=========================

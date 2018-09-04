@@ -8,6 +8,8 @@ import os
 
 # empirical directorys
 DIR_EP=r'G:\FT_Users\HTZhang\empirical'
+DIR_BASEDATA=os.path.join(DIR_EP,'basedata')
+
 
 #------------------kogan-----------------------------------------
 DIR_KOGAN=os.path.join(DIR_EP,'kogan')
@@ -23,3 +25,12 @@ DIR_YAN=os.path.join(DIR_EP,'yan')
 
 #------------------chordia------------------------------
 DIR_CHORDIA=os.path.join(DIR_EP,'chordia')
+
+
+
+#--------------------data-mining------------------------
+DIR_DM=os.path.join(DIR_EP,'data_mining')
+DIR_DM_INDICATOR=os.path.join(DIR_DM,'indicator')
+DIR_DM_NORMALIZED=os.path.join(DIR_DM,'normalized')
+PERIOD_THRESH=60
+

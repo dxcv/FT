@@ -170,7 +170,7 @@ def get_port_ret3():
     print(len(names))
     args_generator=((fdmt,cap,indName) for indName in names)
     multi_process(_get_port_ret3, args_generator, 15)
-    # [_get_port_ret3(args) for args in args_generator]
+    # [_task(args) for args in args_generator]
 
 
 from memory_profiler import profile
@@ -258,7 +258,7 @@ def main():
 
 
 if __name__ == '__main__':
-    # get_port_ret3()
+    # get_port_ret()
     clean_indicator()
 
 

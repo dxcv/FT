@@ -111,6 +111,22 @@ def neutralize(df, col, industry, cap='ln_cap'):
     res = y - np.dot(A, beta)
     return res
 
+
+def convert_indicator_to_signal(df, name):
+    '''
+
+    Args:
+        df: DataFrame with multiIndex
+        name: col to apply
+
+    Returns:
+
+    '''
+    df[name]=df[name].groupby('month_end').apply(outlier)
+    df[name]=df[name].groupby('month_end').apply(z_score)
+    return df
+
+
 def clean(df, col,by='month_end'):
     '''
     filter out abnormal value
@@ -163,7 +179,7 @@ def myroll(df, d):
     #trick: filter_obsservations=False
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
-def multi_process(func,args_iter,n=20,multi_paramters=False):
+def multi_process(func, args_iter, n=20, multi_parameters=False):
     '''
     make sure that all the data needed by "func" should be sent by parameters, try to avoid calling
     the data outside the "func" since sometimes the processes may be frozen without raising any
@@ -173,13 +189,13 @@ def multi_process(func,args_iter,n=20,multi_paramters=False):
         func:
         args_iter:
         n:
-        multi_paramters:
+        multi_parameters:
 
     Returns:
 
     '''
     pool = multiprocessing.Pool(n)
-    if multi_paramters:
+    if multi_parameters:
         results = pool.starmap(func, args_iter)
     else:
         results = pool.map(func, args_iter)
@@ -197,7 +213,10 @@ def multi_process_old(func, args_iter, n=20):
     #refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
     return results
 
-def multi_thread(func,args_iter,n=50):
-    results=ThreadPool(n).starmap(func,args_iter)
+def multi_thread(func,args_iter,n=50,multi_parameters=False):
+    if multi_parameters:
+        results=ThreadPool(n).starmap(func,args_iter)
+    else:
+        results=ThreadPool(n).map(func,args_iter)
     return results
 

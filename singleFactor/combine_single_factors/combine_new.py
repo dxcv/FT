@@ -254,7 +254,8 @@ def get_signal(grade,criteria,N,trd_dts,iw,cw):
     # args_list=[(grade,criteria,trd_dts,i,N,iw,cw) for i in range(len(trd_dts)-1)]
     args_generator=gen_args(grade,criteria,N,trd_dts,iw,cw)
     # mixed_signal_frags=[_mix_one_slice(args) for args in args_generator]#fixme:
-    mixed_signal_frags=multi_process(_mix_one_slice, args_generator, 10,multi_paramters=False)
+    mixed_signal_frags=multi_process(_mix_one_slice, args_generator, 10,
+                                     multi_parameters=False)
     signal=pd.concat(mixed_signal_frags)
     return signal
 
@@ -278,7 +279,7 @@ def generate_signal_traverse():
 
 def generate_signal():
     ret=get_strategy_ret()
-    for window in [500,750,1000]:
+    for window in [50,100,150,200,250,300,500,750,1000]:
         grade=grade_strategy(ret,freq='M',window=window)
         trd_dts = grade.index.get_level_values('trd_dt').unique().sort_values()
         for iw in ['iw2','iw3']:
@@ -313,6 +314,6 @@ def backtest_mixed_signal():
 
 
 if __name__ == '__main__':
-    # generate_signal()
+    generate_signal()
     backtest_mixed_signal()
     summarize()

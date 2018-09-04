@@ -19,15 +19,30 @@ def pricing_assets(benchmark, assets):
     use benchmark to pricing the assets and get the relevant parameters including
     betas,alpha stderr, resid
     Args:
-        benchmark:
-        assets: DataFrame, each column represent a realized asset
+        benchmark:DataFrame
+        assets: DataFrame, each column represent a realized asset, NaN is not allowed
 
     Returns:
 
     '''
-    # E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\empirical\kogan_part2.py
-    X=sm.add_constant(benchmark)
-    rs=[sm.OLS(assets[col],X).fit() for col in assets.columns]
+    if assets.isnull().values.any():
+        print('there is NaN appeared in assets')
+        comb=pd.concat([benchmark,assets],axis=1)
+        comb=sm.add_constant(comb)
+        rs=[]
+        for col in assets.columns:# TODO: use multi_process
+            inde=['const']+benchmark.columns.tolist()
+            sub=comb[inde+[col]]
+            sub=sub.dropna()
+            rs.append(sm.OLS(sub[col],sub[inde]).fit())
+            print(col)
+    else:
+        # E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\empirical\kogan_part2.py
+        X=sm.add_constant(benchmark)
+        rs=[sm.OLS(assets[col],X).fit() for col in assets.columns]
+
+
+
 
     alpha=pd.Series([r.params['const'] for r in rs], index=assets.columns)
     alpha_stderr=pd.Series([r.bse['const'] for r in rs], index=assets.columns)

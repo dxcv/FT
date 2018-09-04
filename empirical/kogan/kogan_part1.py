@@ -17,7 +17,7 @@ from empirical.config_ep import NUM_FACTOR
 import os
 from empirical.get_basedata import get_benchmark, get_raw_factors
 from empirical.config_ep import DIR_KOGAN, DIR_KOGAN_RESULT, CRITICAL
-from empirical.utils import run_GRS_test
+from empirical.utils import run_GRS_test, get_pca_factors
 from numpy.linalg import LinAlgError
 from tools import multi_process
 from matplotlib.colors import ListedColormap
@@ -177,16 +177,18 @@ def match_based_on_alpha_pvalue():
     matched.to_pickle(os.path.join(DIR_KOGAN_RESULT,'matched.pkl'))
     return matched
 
-def _get_pca_factors(n=3):
-    raw_factors=get_raw_factors()
-    X=raw_factors.values
-    pca=PCA(n_components=n)
-    pca_factors=pd.DataFrame(pca.fit_transform(X),index=raw_factors.index,
-                             columns=['pca{}'.format(i) for i in range(1,n+1)])
-    return pca_factors
+# def _get_pca_factors(n=3):
+#     raw_factors=get_raw_factors()
+#     X=raw_factors.values
+#     pca=PCA(n_components=n)
+#     pca_factors=pd.DataFrame(pca.fit_transform(X),index=raw_factors.index,
+#                              columns=['pca{}'.format(i) for i in range(1,n+1)])
+#     return pca_factors
 
 def _get_pca_model(n=NUM_FACTOR):
-    pca_factors=_get_pca_factors(n=n - 1)
+    raw_factors=get_raw_factors()
+    pca_factors=get_pca_factors(raw_factors,n-1)
+    # pca_factors=_get_pca_factors(n=n - 1)
     rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
     pca_model=pd.concat([rpM,pca_factors],axis=1).dropna()
     return pca_model

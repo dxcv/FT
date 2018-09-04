@@ -261,6 +261,24 @@ def check_dfs():
             df=pd.read_pickle(os.path.join(d,fn))
             print(fn,df.index.names)
 
+def get_filtered_ret():
+    '''
+    monthly return filtered out young_1year and st stocks
+    Returns:
+
+    '''
+    ret = read_local('trading_m')
+    fdmt_m = read_local('fdmt_m')
+    data = pd.concat([fdmt_m, ret], axis=1, join='inner')
+    data.index.names = ['stkcd', 'month_end']
+    data = data.dropna(subset=['type_st', 'young_1year'])
+    data = data[(~data['type_st']) & (~ data['young_1year'])]  # 剔除st 和上市不满一年的数据
+    s=data['ret_m']
+
+    return s
+
+
+
 
 #-------------------------------20180622---------------------------------------
 

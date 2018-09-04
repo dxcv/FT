@@ -111,6 +111,7 @@ def get_target_df(date=None):
     target_df=new_ann_dt[new_ann_dt!=old_ann_dt]
     return target_df
 
+
 def fetch_data(target_df):
     '''
     get data fromm wind
@@ -139,7 +140,7 @@ def fetch_data(target_df):
             _df.index.names = ['stkcd', 'rpdate']
             _df=_df.swaplevel()
             dfs.append(_df)
-    df = pd.concat(dfs)
+    df = pd.concat(dfs,sort=True)
     return df
 
 def construct_original_data():
@@ -153,24 +154,31 @@ def update(date=None):
     if date is None:
         date=get_today(DATE_FORMAT)
 
-    target_df=get_target_df(date)[:200] #fixme:
-    data=fetch_data(target_df)
-    latest_data=get_latest(date,'data')
-    df=pd.concat([data,latest_data],sort=True).drop_duplicates()
-    df.to_pickle(os.path.join(DIR,f'data_{date}.pkl'))
+    target_df=get_target_df(date) #fixme:
+    if target_df.notnull().sum().sum()>0:
+        data=fetch_data(target_df)
+        latest_data=get_latest(date,'data')
+        df=pd.concat([data,latest_data],sort=True).drop_duplicates()
+        df.to_pickle(os.path.join(DIR,f'data_{date}.pkl'))
+    else:
+        df=get_latest(date,'data')
+        df.to_pickle(os.path.join(DIR,f'data_{date}.pkl'))
 
 def debug():
-    dates=pd.date_range('2018-08-21','2018-08-26')
+    dates=pd.date_range('2018-08-26','2018-08-30')
     dates=[d.strftime('%Y-%m-%d') for d in dates]
     for date in dates:
+        print(f'Updating data for ------>{date}')
         update(date)
-
-if __name__ == '__main__':
-    debug()
 
 
 # if __name__ == '__main__':
-#     update('2018-08-26')
+#     debug()
+
+
+if __name__ == '__main__':
+    update()
+
 
 #TODO: logger and multiprocessing
 

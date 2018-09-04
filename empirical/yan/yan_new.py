@@ -18,7 +18,8 @@ import os
 def simulate(bench,n=100):
     benchmark,assets=get_data(bench)
     realized_result=pricing_assets(benchmark,assets)
-    rs=multi_process(bootstrap_yan,((benchmark,assets,realized_result) for i in range(n)),multi_paramters=True)
+    rs=multi_process(bootstrap_yan, ((benchmark,assets,realized_result) for i in range(n)),
+                     multi_parameters=True)
     result={}
     for ind in ['alpha','alpha_t','alpha_p']:
         df=pd.concat([r[ind] for r in rs],axis=1)

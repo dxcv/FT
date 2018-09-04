@@ -6,10 +6,17 @@
 # NAME:FT_hp-get_basedata.py
 import pandas as pd
 import os
-from empirical.config_ep import DIR_KOGAN
+
+from data.dataApi import read_local
+from empirical.config_ep import DIR_KOGAN, DIR_BASEDATA
+import numpy as np
+
+
+
+
 
 # rpM.pkl is copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_unfiltered
-from tools import multi_process,multi_thread
+from tools import multi_process, multi_thread, convert_indicator_to_signal
 
 rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
 
@@ -46,3 +53,47 @@ def get_data(bench='ff3M'):
     #trick: unify the index
     return benchmark.reindex(base_index),raw_factors.reindex(base_index)
 
+
+
+# ------------------get controlling variables for fama macbeth regression------------------
+CONTROL=['log_size','bm','mom','op','inv']
+
+save_to_basedata=lambda df,name:df.to_pickle(os.path.join(DIR_BASEDATA,'fm_controlling',name+'.pkl'))
+
+# log_size
+def get_log_size():
+    fdmt=read_local('fdmt_m')
+    log_size=np.log(fdmt['cap']).unstack('stkcd')
+    save_to_basedata(log_size,'log_size')
+
+
+'''
+bm:book-to-market
+inv
+op
+
+refer to G:\\backup\code\\assetPricing2\\used_outside_project\\data_for_fm_regression.py
+
+'''
+
+def get_mom():
+    '''the return of time t-12 to t-1'''
+    trading=read_local('trading_m')
+    close=trading['close'].unstack('stkcd')
+    mom11=close.pct_change(periods=11).shift(1)
+    save_to_basedata(mom11,'mom')
+
+def normalize_controlling_variables():
+    save_to_nm=lambda df,name:df.to_pickle(os.path.join(DIR_BASEDATA,'normalized_controlling',name+'.pkl'))
+
+    fns=os.listdir(os.path.join(DIR_BASEDATA,'fm_controlling'))
+    for fn in fns:
+        s=pd.read_pickle(os.path.join(DIR_BASEDATA, 'fm_controlling', fn)).stack()
+        s.name=fn[:-4]
+        s.index.names=['month_end', 'stkcd']
+        s=convert_indicator_to_signal(s.to_frame(), fn[:-4])
+        save_to_nm(s, fn[:-4])
+        print(fn)
+
+
+# normalize_controlling_variables()

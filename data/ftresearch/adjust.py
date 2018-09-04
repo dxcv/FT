@@ -6,7 +6,6 @@
 # NAME:FT-adjust.py
 from datetime import timedelta
 
-import pymysql
 import pandas as pd
 import os
 
@@ -132,12 +131,6 @@ def adjust_equity_selected_indice_ir():
     df['zz500_ret_d']=df['zz500'].pct_change()
     df=df.set_index('trd_dt')
     df.to_pickle(os.path.join(D_FT_ADJ,tbname+'.pkl'))
-
-
-
-
-
-
 
 
 

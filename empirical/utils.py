@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 from scipy import stats
 import pandas as pd
-
+from sklearn.decomposition import PCA
 
 
 def GRS_test(factor,resid,alpha):
@@ -95,3 +95,21 @@ def unify_index(df1,df2):
 def align_index(df1,df2):
     ind=df1.index.intersection(df2.index)
     return df1.loc[ind],df2.loc[ind]
+
+
+def get_pca_factors(df,n):
+    '''
+
+    Args:
+        df:DataFrame
+        n:
+
+    Returns:
+
+    '''
+    X=df.values
+    pca=PCA(n_components=n)
+    pca_factors=pd.DataFrame(pca.fit_transform(X),index=df.index,
+                             columns=['pca{}'.format(i) for i in range(1,n+1)])
+    return pca_factors
+

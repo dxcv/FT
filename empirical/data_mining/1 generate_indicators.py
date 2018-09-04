@@ -3,16 +3,21 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-05-31  16:06
-# NAME:FT-Yan_and_Chordia.py
-import multiprocessing
+# NAME:FT-1 generate_indicators.py
 import os
 
-from config import DIR_DM_RESULT, DIR_DM_TMP
+# from config import DIR_DM_RESULT, DIR_DM_TMP
+from empirical.config_ep import DIR_DM, DIR_DM_INDICATOR
 from singleFactor.calculate_indicators.financial import quarterly_to_daily
-from singleFactor.old.check import check_factor, daily_to_monthly
+from singleFactor.old.check import daily_to_monthly
 from singleFactor.operators import *
 from tools import multi_process
 
+'''
+References:
+    1. Yan, X. (Sterling), and Zheng, L. (2017). Fundamental Analysis and the Cross-Section of Stock Returns: A Data-Mining Approach. The Review of Financial Studies 30, 1382–1423.
+
+'''
 base_variables1=['tot_assets', # total assets
                 'tot_cur_assets',# total current assets
                 'inventories',#inventory
@@ -60,9 +65,9 @@ def get_financial_sheets():
     # cf.to_pickle(os.path.join(r'E:\tmp','cf.pkl'))
     # inc.to_pickle(os.path.join(r'E:\tmp','inc.pkl'))
 
-    bs=pd.read_pickle(os.path.join(DIR_DM_TMP, 'bs.pkl'))
-    cf=pd.read_pickle(os.path.join(DIR_DM_TMP, 'cf.pkl'))
-    inc=pd.read_pickle(os.path.join(DIR_DM_TMP, 'inc.pkl'))
+    bs=pd.read_pickle(os.path.join(DIR_DM, 'bs.pkl'))
+    cf=pd.read_pickle(os.path.join(DIR_DM, 'cf.pkl'))
+    inc=pd.read_pickle(os.path.join(DIR_DM, 'inc.pkl'))
 
     return bs,cf,inc
 
@@ -116,7 +121,7 @@ def combine_financial_sheet():
     cols = a[a > 10000].index
     financial = financial[cols]
 
-    financial.to_pickle(os.path.join(DIR_DM_TMP, 'financial.pkl'))
+    financial.to_pickle(os.path.join(DIR_DM, 'financial.pkl'))
 
 
 def generator_with_single_variable(func,s):
@@ -156,7 +161,7 @@ funcs3=[
 
 # combine_financial_sheet()
 #
-financial = pd.read_pickle(os.path.join(DIR_DM_TMP, 'financial.pkl'))
+financial = pd.read_pickle(os.path.join(DIR_DM, 'financial.pkl'))
 
 def get_arg_list():
     unuseful_cols = ['stkcd', 'report_period', 'trd_dt']
@@ -193,6 +198,7 @@ def get_indicators_monthly(args):
     result=s.to_frame()
     result['trd_dt']=financial['trd_dt']
     daily=quarterly_to_daily(result,name)
+    # daily.to_pickle(os.path.join())
 
     monthly = daily_to_monthly(daily)
     if len(monthly)>0:
@@ -201,7 +207,7 @@ def get_indicators_monthly(args):
         monthly = monthly.sort_index()
         monthly.columns = [name]
 
-        directory = os.path.join(DIR_DM_RESULT, name)
+        directory = os.path.join(DIR_DM_INDICATOR, name)
         if not os.path.exists(directory):
             os.makedirs(directory)
         # daily.to_pickle(os.path.join(directory,'daily.pkl'))
@@ -222,7 +228,7 @@ def get_indicators_monthly(args):
     #     print('{}-------> wrong!'.format(name))
 
 def get_calculated():
-    fns=os.listdir(DIR_DM_RESULT)
+    fns=os.listdir(DIR_DM_INDICATOR)
     handled=[]
     for fn in fns:
         handled.append(tuple(fn.split('-')[1:]))
