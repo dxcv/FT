@@ -56,7 +56,7 @@ def get_data(bench='ff3M'):
 
 
 # ------------------get controlling variables for fama macbeth regression------------------
-CONTROL=['log_size','bm','mom','op','inv']
+CONTROL=['log_size','bm','mom','op','inv','roe']
 
 save_to_basedata=lambda df,name:df.to_pickle(os.path.join(DIR_BASEDATA,'fm_controlling',name+'.pkl'))
 
