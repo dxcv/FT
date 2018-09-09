@@ -7,6 +7,7 @@
 import pandas as pd
 import os
 
+from config import SINGLE_D_INDICATOR
 from data.dataApi import read_local
 from empirical.config_ep import DIR_KOGAN, DIR_BASEDATA
 import numpy as np
@@ -97,3 +98,46 @@ def normalize_controlling_variables():
 
 
 # normalize_controlling_variables()
+
+#================================================get conditional indicators (ivol) =============================
+'''
+get the idio.pkl from E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\empirical\get_basedata.py
+
+'''
+def normalize_conditional_variables():
+    save=lambda df,name:df.to_pickle(os.path.join(DIR_BASEDATA,'normalized_conditional',name+'.pkl'))
+    idio=pd.read_pickle(os.path.join(DIR_BASEDATA,'conditional','idio.pkl'))
+    for col in idio.columns:
+        s=idio[col]
+        s=convert_indicator_to_signal(s.to_frame(),col)
+        save(s,col)
+        print(col)
+
+'''
+turnover
+
+'''
+
+def get_normalized_turnover():
+    days=[10,20,30,60,120,180,300]
+    for _type in ['turnover1', 'turnover2']:
+        for day in days:
+            name = 'T__{}_avg_{}'.format(_type, day)
+            df = pd.read_pickle(os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
+            df = df.resample('M').last()
+            df = df.stack()
+            df.index.names=['month_end','stkcd']
+            df.name = name
+            df = df.to_frame()
+            df=convert_indicator_to_signal(df,name)
+            df.to_pickle(os.path.join(DIR_BASEDATA,'normalized_conditional',name+'.pkl'))
+            print(_type,day)
+
+
+
+
+def main():
+    normalize_controlling_variables()
+    normalize_conditional_variables()
+    get_normalized_turnover()
+

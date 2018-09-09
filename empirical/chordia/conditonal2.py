@@ -11,11 +11,15 @@ import os
 
 from empirical.chordia.identify_anomalies1 import get_prominent_indicators
 from empirical.config_ep import DIR_CHORDIA, DIR_DM, DIR_DM_INDICATOR, \
-    DIR_DM_NORMALIZED
+    DIR_DM_NORMALIZED, DIR_BASEDATA
 from empirical.get_basedata import BENCHS
 from tools import multi_process
 
-CONDITIONAL='ivol'
+# CONDITIONAL='ivol'
+
+
+
+
 
 #conditional on idiosyncratical volatility
 def get_indicator_direction(indname):
@@ -26,27 +30,60 @@ def get_indicator_direction(indname):
     symbol=1 if at.at[indname,'capmM']>0 else -1
     return symbol
 
-def get_comb():
+def get_comb(cond_variable):
     ind_names = get_prominent_indicators(critic=2)
     indicators = pd.concat([pd.read_pickle(
         os.path.join(DIR_DM_NORMALIZED, ind + '.pkl')).stack()*get_indicator_direction(ind) for ind in
-                    ind_names], axis=1, keys=ind_names)
+                    ind_names], axis=1, keys=ind_names) #trick：revert the negative signal
 
-    conditional = pd.read_pickle(r'G:\FT_Users\HTZhang\haitong\standardized\{}.pkl'.format(CONDITIONAL)).stack()
-    conditional.name= 'conditional'
+    conditional=pd.read_pickle(os.path.join(DIR_BASEDATA,'normalized_conditional',cond_variable+'.pkl'))
+    # conditional = pd.read_pickle(r'G:\FT_Users\HTZhang\haitong\standardized\{}.pkl'.format(CONDITIONAL)).stack()
+    # conditional.name= cond_variable
 
     ret=get_filtered_ret().swaplevel()
 
     indicators=indicators.groupby('stkcd').shift(1)#trick: use the indicators of time t
     comb=pd.concat([indicators, ret, conditional], axis=1)
-    comb=comb.dropna(subset=['ret_m','conditional'])
+    comb=comb.dropna(subset=['ret_m',cond_variable])
+    comb=comb.groupby('month_end').filter(lambda df:df.shape[0]>300)#trick: filter out months with too small sample
     comb=comb.fillna(0)
+    print(cond_variable,len(comb.index.get_level_values('month_end').unique()))
     return comb
 
+
+def debug():
+    ind_names = get_prominent_indicators(critic=2)
+
+    ind=ind_names[0]
+    df=pd.read_pickle(os.path.join(DIR_DM_NORMALIZED,ind+'.pkl')).stack()*get_indicator_direction(ind)
+
+
+    # indicators = pd.concat([pd.read_pickle(
+    #     os.path.join(DIR_DM_NORMALIZED,
+    #                  ind + '.pkl')).stack() * get_indicator_direction(ind) for
+    #                         ind in
+    #                         ind_names], axis=1, keys=ind_names)
+    #
+
+
+
+''''
+conditional on market status, sentiment,size?
+market wide uncertainty
+
+
+price of quality
+
+'''
+
+
+
 def _conditional_anomaly_return(args):
-    comb,col=args
-    comb['gc']=comb.groupby('month_end',group_keys=False).apply(lambda df:pd.qcut(df['conditional'],5,
+    comb,col,cond_variable=args
+    comb['gc']=comb.groupby('month_end',group_keys=False).apply(lambda df:pd.qcut(df[cond_variable],5,
                                                           labels=[f'g{i}' for i in range(1,6)]))
+    # comb['gc']=comb.groupby('month_end',group_keys=False).apply(lambda df:pd.qcut(df[cond_variable].rank(method='first'),5,
+    #                                                       labels=[f'g{i}' for i in range(1,6)]))
     comb['gf']=comb.groupby(['month_end','gc'],group_keys=False).apply(lambda df:pd.qcut(df[col].rank(method='first'),10,
                                 labels=[f'g{i}' for i in range(1,11)]))
 
@@ -61,25 +98,82 @@ def _conditional_anomaly_return(args):
     t=panel.mean()/panel.sem() #trick: tvalue = mean / stderr,   stderr = std / sqrt(n-1) ,pd.Series.sem() = pd.Series.std()/pow(len(series),0.5)
 
     table=pd.concat([alpha,t],axis=1,keys=['alpha','t']).T
-    print(col)
+    # print(col)
     return table
 
-def get_conditional_anomaly_return():
-    comb = get_comb()
+def get_conditional_anomaly_return(cond_variable):
+
+    comb = get_comb(cond_variable)
+
 
     indicators = [col for col in comb.columns if
-                  col not in ['ret_m', 'conditional']]
+                  col not in ['ret_m', cond_variable]]
 
-    args_generator=((comb,col) for col in indicators)
+    args_generator=((comb,col,cond_variable) for col in indicators)
+
+    # tables=[]
+    # for args in args_generator:
+    #     tables.append(_conditional_anomaly_return(args))#fixme:
     tables=multi_process(_conditional_anomaly_return,args_generator,20)
     table5=pd.concat(tables,axis=0,keys=indicators)
-    table5.to_csv(os.path.join(DIR_CHORDIA,'table5.csv'))
+    table5.to_csv(os.path.join(DIR_CHORDIA, f'table5_{cond_variable}.csv'))
 
-def run():
-    get_conditional_anomaly_return()
+def run_with_ivol():
+    fns = os.listdir(os.path.join(DIR_BASEDATA, 'normalized_conditional'))
+    conds = [fn[:-4] for fn in fns]
+    for cond in conds:
+        get_conditional_anomaly_return(cond)
+        print(cond)
 
-if __name__ == '__main__':
-    run()
+def analyze_ivol():
+    fns=os.listdir(DIR_CHORDIA)
+    fns=[fn for fn in fns if fn.startswith('table5_')]
+    dfs=[pd.read_csv(os.path.join(DIR_CHORDIA,fn),index_col=0) for fn in fns]
+    df=pd.concat(dfs,keys=[fn[:-4] for fn in fns])
+    df=df[df.iloc[:,0]=='t']
+    df['abs']=df['high-low'].abs()
+    df=df.sort_values('abs',ascending=False)
+    df=df.iloc[:,1:]
+    df.index.names=['cond_variable','indicator']
+    lt2=df.groupby('cond_variable').apply(lambda df:df[df['abs']>=2].shape[0]).sort_values(ascending=False)
+    target=df.loc[(lt2.index[0],slice(None)),:]
+    target.to_csv(os.path.join(DIR_TMP,'target.csv'))
 
+
+    df.to_csv(os.path.join(DIR_CHORDIA,'table5_all.csv'))
+
+def run_with_turnover():
+    fns = os.listdir(os.path.join(DIR_BASEDATA, 'normalized_conditional'))
+    conds = [fn[:-4] for fn in fns if fn.startswith('T__')]
+    for cond in conds:
+        get_conditional_anomaly_return(cond)
+        print(cond)
+
+def analyze_turnover():
+    fns=os.listdir(DIR_CHORDIA)
+    fns=[fn for fn in fns if fn.startswith('table5_T')]
+    dfs = [pd.read_csv(os.path.join(DIR_CHORDIA, fn), index_col=0) for fn in
+           fns]
+    df = pd.concat(dfs, keys=[fn[:-4] for fn in fns[6:]])
+    df = df[df.iloc[:, 0] == 't']
+    df['abs'] = df['high-low'].abs()
+    df = df.sort_values('abs', ascending=False)
+    df = df.iloc[:, 1:]
+    df.index.names = ['cond_variable', 'indicator']
+    lt2 = df.groupby('cond_variable').apply(
+        lambda df: df[df['abs'] >= 2].shape[0]).sort_values(ascending=False)
+    target = df.loc[(lt2.index[0], slice(None)), :]
+    target.to_csv(os.path.join(DIR_TMP,'target1.csv'))
+
+
+
+
+def main():
+    run_with_ivol()
+    run_with_turnover()
+
+
+# if __name__ == '__main__':
+#     run_with_turnover()
 
 
