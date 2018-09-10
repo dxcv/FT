@@ -133,6 +133,16 @@ def get_normalized_turnover():
             df.to_pickle(os.path.join(DIR_BASEDATA,'normalized_conditional',name+'.pkl'))
             print(_type,day)
 
+'''
+size
+'''
+
+def get_normalzied_size():
+    fdmt=read_local('fdmt_m').swaplevel()
+    log_size=np.log(fdmt['cap']).to_frame()
+    log_size.columns=['log_size']
+    df=convert_indicator_to_signal(log_size,'log_size')
+    df.to_pickle(os.path.join(DIR_BASEDATA,'normalized_conditional','log_size.pkl'))
 
 
 
@@ -140,4 +150,5 @@ def main():
     normalize_controlling_variables()
     normalize_conditional_variables()
     get_normalized_turnover()
+    get_normalzied_size()
 

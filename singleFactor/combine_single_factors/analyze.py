@@ -28,7 +28,8 @@ def average_signals():
     combs=list(combinations(sets,1))+list(combinations(sets,2))+list(combinations(sets,3))
 
 
-    rets=[]
+    rets1=[]
+    rets2=[]
     for comb in combs:
         name='_'.join(comb)
         ss=[]
@@ -38,22 +39,35 @@ def average_signals():
             # s.name = c
             ss.append(s)
         df=pd.concat(ss,axis=1)
-        comret=((1+df).cumprod().mean(axis=1)-1)
-        comret.index=pd.to_datetime(comret.index)
-        comret.name=name
-        rets.append(comret)
 
-    rets=pd.concat(rets,axis=1)
-    rets.plot().get_figure().show()
+        comret1=((1+df).cumprod().mean(axis=1)-1)
+        comret1.index=pd.to_datetime(comret1.index)
+        comret1.name=name
+
+        comret2=((1+df.mean(axis=1)).cumprod()-1)
+        comret2.index=pd.to_datetime(comret2.index)
+        comret2.name=name
+
+        rets1.append(comret1)
+        rets2.append(comret2)
+
+    rets1=pd.concat(rets1,axis=1)
+    rets1.plot().get_figure().show()
+
+    rets2=pd.concat(rets2,axis=1)
+    rets2.plot().get_figure().show()
+
+    rets1.to_csv(os.path.join(DIR_TMP,'rets1.csv'))
+    rets2.to_csv(os.path.join(DIR_TMP,'rets2.csv'))
 
 
 
-    ss=[]
-    for c in [short_window,long_window]:
-        s = pd.read_csv(os.path.join(directory, c, 'hedged_returns.csv'),
-                        index_col=0, header=None).iloc[:, 0]
-        ss.append(s)
-    pd.concat(ss,axis=1).corr()
+    # ss=[]
+    # for c in [short_window,long_window]:
+    #     s = pd.read_csv(os.path.join(directory, c, 'hedged_returns.csv'),
+    #                     index_col=0, header=None).iloc[:, 0]
+    #     ss.append(s)
+    # pd.concat(ss,axis=1).corr()
 
 
 def average_the_portfolio():
@@ -75,6 +89,7 @@ def average_the_portfolio():
     Backtest(signal, name=name, directory=directory, start='2009',
              config=cfg)  # TODO: start='2009'
 
+average_signals()
 
-if __name__ == '__main__':
-    average_the_portfolio()
+# if __name__ == '__main__':
+#     average_the_portfolio()

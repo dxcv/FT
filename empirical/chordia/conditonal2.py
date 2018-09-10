@@ -4,6 +4,8 @@
 # Email:13163385579@163.com
 # TIME:2018-09-03  14:13
 # NAME:FT_hp-conditonal2.py
+from functools import reduce
+
 import pandas as pd
 from config import DIR_TMP
 from data.dataApi import get_filtered_ret
@@ -30,16 +32,25 @@ def get_indicator_direction(indname):
     symbol=1 if at.at[indname,'capmM']>0 else -1
     return symbol
 
+def get_comb_indicators():
+    path=os.path.join(DIR_TMP,'dafj3e3ncsv.pkl')
+    if os.path.exists(path):
+        return pd.read_pickle(path)
+    else:
+        ind_names = get_prominent_indicators(critic=2)
+        indicators = pd.concat([pd.read_pickle(
+            os.path.join(DIR_DM_NORMALIZED,
+                         ind + '.pkl')).stack() * get_indicator_direction(ind) for
+                                ind in
+                                ind_names], axis=1,
+                               keys=ind_names)  # trick：revert the negative signal
+        indicators.to_pickle(path)
+        return indicators
+
 def get_comb(cond_variable):
-    ind_names = get_prominent_indicators(critic=2)
-    indicators = pd.concat([pd.read_pickle(
-        os.path.join(DIR_DM_NORMALIZED, ind + '.pkl')).stack()*get_indicator_direction(ind) for ind in
-                    ind_names], axis=1, keys=ind_names) #trick：revert the negative signal
+    indicators=get_comb_indicators()
 
     conditional=pd.read_pickle(os.path.join(DIR_BASEDATA,'normalized_conditional',cond_variable+'.pkl'))
-    # conditional = pd.read_pickle(r'G:\FT_Users\HTZhang\haitong\standardized\{}.pkl'.format(CONDITIONAL)).stack()
-    # conditional.name= cond_variable
-
     ret=get_filtered_ret().swaplevel()
 
     indicators=indicators.groupby('stkcd').shift(1)#trick: use the indicators of time t
@@ -49,21 +60,6 @@ def get_comb(cond_variable):
     comb=comb.fillna(0)
     print(cond_variable,len(comb.index.get_level_values('month_end').unique()))
     return comb
-
-
-def debug():
-    ind_names = get_prominent_indicators(critic=2)
-
-    ind=ind_names[0]
-    df=pd.read_pickle(os.path.join(DIR_DM_NORMALIZED,ind+'.pkl')).stack()*get_indicator_direction(ind)
-
-
-    # indicators = pd.concat([pd.read_pickle(
-    #     os.path.join(DIR_DM_NORMALIZED,
-    #                  ind + '.pkl')).stack() * get_indicator_direction(ind) for
-    #                         ind in
-    #                         ind_names], axis=1, keys=ind_names)
-    #
 
 
 
@@ -80,10 +76,13 @@ price of quality
 
 def _conditional_anomaly_return(args):
     comb,col,cond_variable=args
+    #groupby conditional variable
     comb['gc']=comb.groupby('month_end',group_keys=False).apply(lambda df:pd.qcut(df[cond_variable],5,
                                                           labels=[f'g{i}' for i in range(1,6)]))
     # comb['gc']=comb.groupby('month_end',group_keys=False).apply(lambda df:pd.qcut(df[cond_variable].rank(method='first'),5,
     #                                                       labels=[f'g{i}' for i in range(1,6)]))
+
+    #groupby factor
     comb['gf']=comb.groupby(['month_end','gc'],group_keys=False).apply(lambda df:pd.qcut(df[col].rank(method='first'),10,
                                 labels=[f'g{i}' for i in range(1,11)]))
 
@@ -149,12 +148,19 @@ def run_with_turnover():
         get_conditional_anomaly_return(cond)
         print(cond)
 
+def run_with_size():
+    cond='log_size'
+    get_conditional_anomaly_return(cond)
+
+
+
+
 def analyze_turnover():
     fns=os.listdir(DIR_CHORDIA)
     fns=[fn for fn in fns if fn.startswith('table5_T')]
     dfs = [pd.read_csv(os.path.join(DIR_CHORDIA, fn), index_col=0) for fn in
            fns]
-    df = pd.concat(dfs, keys=[fn[:-4] for fn in fns[6:]])
+    df = pd.concat(dfs, keys=[fn[:-4] for fn in fns]) #fixme:
     df = df[df.iloc[:, 0] == 't']
     df['abs'] = df['high-low'].abs()
     df = df.sort_values('abs', ascending=False)
@@ -171,9 +177,12 @@ def analyze_turnover():
 def main():
     run_with_ivol()
     run_with_turnover()
+    run_with_size()
 
 
 # if __name__ == '__main__':
-#     run_with_turnover()
+    # run_with_turnover()
+    # run_with_size()
+
 
 
