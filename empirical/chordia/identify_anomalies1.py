@@ -6,16 +6,18 @@
 # NAME:FT_hp-identify_anomalies1.py
 import shutil
 from collections import OrderedDict
+import statsmodels.formula.api as sm
 
 from config import DIR_TMP
 from data.dataApi import read_local, get_filtered_ret
 from empirical.bootstrap import pricing_assets
 from empirical.config_ep import DIR_DM, DIR_CHORDIA, DIR_DM_NORMALIZED, \
-    PERIOD_THRESH, DIR_BASEDATA
+    PERIOD_THRESH, DIR_BASEDATA, DIR_YAN
 import os
 import pandas as pd
-from empirical.get_basedata import BENCHS, get_benchmark, CONTROL
+from empirical.get_basedata import BENCHS, get_benchmark, CONTROL, get_data
 from empirical.utils import align_index, get_pca_factors
+from empirical.yan.yan_new import get_realized
 from tools import multi_process, z_score
 import numpy as np
 import pickle
@@ -49,13 +51,12 @@ def get_alpha_t_for_all_bm():
         bench=get_benchmark(bname).dropna()#.ffill()
         if isinstance(bench, pd.Series):
             bench = bench.to_frame()
-        s=pricing_all_factors(bench,bname)
+        s=pricing_all_factors(bench)
         s.to_pickle(os.path.join(DIR_CHORDIA,f'at_{bname}.pkl'))#alpha t value
 
 
 #--------------------------------FM regression-------------------------------
 def famaMacBeth(formula, time_label, df, lags=5):
-    import statsmodels.formula.api as sm
     res = df.groupby(time_label,sort=True).apply(lambda x: sm.ols(
         formula, data=x).fit())
     p=pd.DataFrame([x.params for x in res],index=res.index)
@@ -264,3 +265,18 @@ def main():
 2. fm 中的指标
 
 '''
+
+#===========================method5: bootstrap==================================
+bench='ff3M'
+benchmark, assets = get_data(bench)
+simulated=pickle.load(open(os.path.join(DIR_YAN,f'{bench}_100.pkl'),'rb'))
+for bench in BENCHS:
+    if bench not in ['ffcM']:
+        get_realized(bench)
+        print(bench)
+
+
+
+# bt=simulated['alpha_t']
+
+

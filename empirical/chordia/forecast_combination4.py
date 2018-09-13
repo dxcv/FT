@@ -8,9 +8,9 @@ import os
 import pandas as pd
 
 
-from empirical.chordia.aggregation_with_fm3 import fm_predict, \
+from empirical.chordia_and_yan.aggregation_with_fm3 import fm_predict, \
     tmb_with_fm_predicted
-from empirical.chordia.identify_anomalies1 import get_prominent_indicators
+from empirical.chordia_and_yan.identify_anomalies1 import get_prominent_indicators
 from empirical.config_ep import DIR_DM_NORMALIZED, DIR_CHORDIA
 from tools import z_score, multi_process
 import matplotlib.pyplot as plt

@@ -12,7 +12,7 @@ import random
 
 import numpy as np
 from empirical.bootstrap import bootstrap_kogan, pricing_assets
-from empirical.config_ep import CRITICAL, DIR_KOGAN
+from empirical.config_ep import CRITICAL, DIR_KOGAN, DIR_EP
 from scipy import stats
 import pandas as pd
 from numba import jit
@@ -54,7 +54,7 @@ def get_matched_number(X,Y):
     MSE = ((Y - predictions).T @ (Y - predictions)).diagonal() / (X.shape[0] - X.shape[1])
     A = np.linalg.inv(X.T @ X).diagonal()
     var_b=A.T @ MSE
-    sd_b = np.sqrt(var_b)
+    sd_b = np.sqrt(var_b)#fixme: standard error if not standard deviation
     ts_b = params / sd_b
     cal_pvalue = lambda t: 2 * (1 - stats.t.cdf(np.abs(t), X.shape[0] - 1))
 
@@ -101,6 +101,7 @@ def get_realized_result():
     raw_factors['const']=1
     realized=match_with_all_possible_three_factor_models(raw_factors)
     realized.to_pickle(os.path.join(DIR_KOGAN,'realized.pkl'))
+
 
 def simulate_onetime(_id,benchmark,raw_factors,realized_result,anomaly_num):
     simulated_factors = bootstrap_kogan(benchmark, raw_factors, realized_result,

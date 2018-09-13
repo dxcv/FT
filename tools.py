@@ -183,7 +183,7 @@ def myroll(df, d):
     #trick: filter_obsservations=False
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
-def multi_process(func, args_iter, n=20, multi_parameters=False):
+def multi_process(func, args_iter, n=10, multi_parameters=False):
     '''
     make sure that all the data needed by "func" should be sent by parameters, try to avoid calling
     the data outside the "func" since sometimes the processes may be frozen without raising any

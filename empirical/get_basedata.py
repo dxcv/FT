@@ -7,9 +7,9 @@
 import pandas as pd
 import os
 
-from config import SINGLE_D_INDICATOR
+from config import SINGLE_D_INDICATOR, DIR_TMP
 from data.dataApi import read_local
-from empirical.config_ep import DIR_KOGAN, DIR_BASEDATA
+from empirical.config_ep import DIR_BASEDATA, DIR_DM, DIR_EP
 import numpy as np
 
 
@@ -19,7 +19,7 @@ import numpy as np
 # rpM.pkl is copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_unfiltered
 from tools import multi_process, multi_thread, convert_indicator_to_signal
 
-rpM=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata','rpM.pkl'))
+rpM=pd.read_pickle(os.path.join(DIR_EP,'benchmarks','rpM.pkl'))
 
 #benchmark models are all copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_unfiltered
 
@@ -29,22 +29,25 @@ _get_tb=lambda path:pd.read_pickle(path)['tb']
 
 def get_raw_factors():
     '''get high-minu-low factors'''
-    directory = os.path.join(DIR_KOGAN, 'port_ret', 'eq')
-    fns = os.listdir(directory)
-    arg_generator=(os.path.join(directory,fn) for fn in fns)
-    # ss=multi_process(_get_tb, arg_generator)
-    # ss=multi_thread(_get_tb,arg_generator)
-    ss=[_get_tb(arg) for arg in arg_generator]
-    raw_factors = pd.concat(ss, axis=1, keys=[fn[:-4] for fn in fns])
-    #trick: delete those months with too small sample
-    raw_factors = raw_factors.dropna(axis=0,thresh=int(raw_factors.shape[1] * 0.8))
-    #trick: delete those factors with too short history
-    raw_factors=raw_factors.dropna(axis=1,thresh=int(raw_factors.shape[0]*0.8))
-    raw_factors = raw_factors.fillna(0)#trick:
-    return raw_factors
+    path=os.path.join(DIR_TMP,'d09dgfe.pkl')
+    if os.path.exists(path):
+        return pd.read_pickle(path)
+    else:
+        directory = os.path.join(DIR_DM, 'port_ret', 'eq')
+        fns = os.listdir(directory)
+        arg_generator=(os.path.join(directory,fn) for fn in fns)
+        ss=[_get_tb(arg) for arg in arg_generator]
+        raw_factors = pd.concat(ss, axis=1, keys=[fn[:-4] for fn in fns])
+        #trick: delete those months with too small sample
+        raw_factors = raw_factors.dropna(axis=0,thresh=int(raw_factors.shape[1] * 0.8))
+        #trick: delete those factors with too short history
+        raw_factors=raw_factors.dropna(axis=1,thresh=int(raw_factors.shape[0]*0.8))
+        raw_factors = raw_factors.fillna(0)#trick:
+        raw_factors.to_pickle(path)
+        return raw_factors
 
 def get_benchmark(name):
-    df=pd.read_pickle(os.path.join(DIR_KOGAN,'basedata',name+'.pkl'))
+    df=pd.read_pickle(os.path.join(DIR_EP,'benchmarks',name+'.pkl'))
     return df
 
 def get_data(bench='ff3M'):

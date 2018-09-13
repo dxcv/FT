@@ -7,7 +7,7 @@
 import pandas as pd
 import os
 
-from empirical.chordia.identify_anomalies1 import pricing_all_factors, \
+from empirical.chordia_and_yan.identify_anomalies1 import pricing_all_factors, \
     get_prominent_indicators
 from empirical.config_ep import DIR_CHORDIA, DIR_DM
 from empirical.get_basedata import BENCHS, get_benchmark

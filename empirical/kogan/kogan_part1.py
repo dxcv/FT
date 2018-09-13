@@ -350,7 +350,7 @@ def get_factor_model_performance():
 
     plt.savefig(os.path.join(DIR_KOGAN_RESULT,'factor model performance.pdf'))
 
-def run():
+def main():
     build_models()
     pricing_with_grs_all()
     match_based_on_alpha_pvalue()
@@ -362,4 +362,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    main()

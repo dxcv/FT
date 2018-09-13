@@ -20,9 +20,6 @@ from tools import multi_process
 # CONDITIONAL='ivol'
 
 
-
-
-
 #conditional on idiosyncratical volatility
 def get_indicator_direction(indname):
     at = pd.concat(
@@ -32,12 +29,14 @@ def get_indicator_direction(indname):
     symbol=1 if at.at[indname,'capmM']>0 else -1
     return symbol
 
-def get_comb_indicators():
-    path=os.path.join(DIR_TMP,'dafj3e3ncsv.pkl')
+def get_comb_indicators(critic=2):
+    iid='oepwqfaldagha'
+    path=os.path.join(DIR_TMP,f'{iid}{critic}.pkl')
+    # path=os.path.join(DIR_TMP,'dafj3e3ncsv.pkl')
     if os.path.exists(path):
         return pd.read_pickle(path)
     else:
-        ind_names = get_prominent_indicators(critic=2)
+        ind_names = get_prominent_indicators(critic)
         indicators = pd.concat([pd.read_pickle(
             os.path.join(DIR_DM_NORMALIZED,
                          ind + '.pkl')).stack() * get_indicator_direction(ind) for
@@ -53,25 +52,15 @@ def get_comb(cond_variable):
     conditional=pd.read_pickle(os.path.join(DIR_BASEDATA,'normalized_conditional',cond_variable+'.pkl'))
     ret=get_filtered_ret().swaplevel()
 
+    conditional=conditional.groupby('stkcd').shift(1)
     indicators=indicators.groupby('stkcd').shift(1)#trick: use the indicators of time t
+
     comb=pd.concat([indicators, ret, conditional], axis=1)
     comb=comb.dropna(subset=['ret_m',cond_variable])
     comb=comb.groupby('month_end').filter(lambda df:df.shape[0]>300)#trick: filter out months with too small sample
     comb=comb.fillna(0)
     print(cond_variable,len(comb.index.get_level_values('month_end').unique()))
     return comb
-
-
-
-''''
-conditional on market status, sentiment,size?
-market wide uncertainty
-
-
-price of quality
-
-'''
-
 
 
 def _conditional_anomaly_return(args):
@@ -117,43 +106,14 @@ def get_conditional_anomaly_return(cond_variable):
     table5=pd.concat(tables,axis=0,keys=indicators)
     table5.to_csv(os.path.join(DIR_CHORDIA, f'table5_{cond_variable}.csv'))
 
-def run_with_ivol():
+
+
+def test_all_conditional_indicators():
     fns = os.listdir(os.path.join(DIR_BASEDATA, 'normalized_conditional'))
     conds = [fn[:-4] for fn in fns]
     for cond in conds:
         get_conditional_anomaly_return(cond)
         print(cond)
-
-def analyze_ivol():
-    fns=os.listdir(DIR_CHORDIA)
-    fns=[fn for fn in fns if fn.startswith('table5_')]
-    dfs=[pd.read_csv(os.path.join(DIR_CHORDIA,fn),index_col=0) for fn in fns]
-    df=pd.concat(dfs,keys=[fn[:-4] for fn in fns])
-    df=df[df.iloc[:,0]=='t']
-    df['abs']=df['high-low'].abs()
-    df=df.sort_values('abs',ascending=False)
-    df=df.iloc[:,1:]
-    df.index.names=['cond_variable','indicator']
-    lt2=df.groupby('cond_variable').apply(lambda df:df[df['abs']>=2].shape[0]).sort_values(ascending=False)
-    target=df.loc[(lt2.index[0],slice(None)),:]
-    target.to_csv(os.path.join(DIR_TMP,'target.csv'))
-
-
-    df.to_csv(os.path.join(DIR_CHORDIA,'table5_all.csv'))
-
-def run_with_turnover():
-    fns = os.listdir(os.path.join(DIR_BASEDATA, 'normalized_conditional'))
-    conds = [fn[:-4] for fn in fns if fn.startswith('T__')]
-    for cond in conds:
-        get_conditional_anomaly_return(cond)
-        print(cond)
-
-def run_with_size():
-    cond='log_size'
-    get_conditional_anomaly_return(cond)
-
-
-
 
 def analyze_turnover():
     fns=os.listdir(DIR_CHORDIA)
@@ -171,18 +131,26 @@ def analyze_turnover():
     target = df.loc[(lt2.index[0], slice(None)), :]
     target.to_csv(os.path.join(DIR_TMP,'target1.csv'))
 
-
+def analyze_ivol():
+    fns=os.listdir(DIR_CHORDIA)
+    fns=[fn for fn in fns if fn.startswith('table5_')]
+    dfs=[pd.read_csv(os.path.join(DIR_CHORDIA,fn),index_col=0) for fn in fns]
+    df=pd.concat(dfs,keys=[fn[:-4] for fn in fns])
+    df=df[df.iloc[:,0]=='t']
+    df['abs']=df['high-low'].abs()
+    df=df.sort_values('abs',ascending=False)
+    df=df.iloc[:,1:]
+    df.index.names=['cond_variable','indicator']
+    lt2=df.groupby('cond_variable').apply(lambda df:df[df['abs']>=2].shape[0]).sort_values(ascending=False)
+    target=df.loc[(lt2.index[0],slice(None)),:]
+    target.to_csv(os.path.join(DIR_TMP,'target.csv'))
+    df.to_csv(os.path.join(DIR_CHORDIA,'table5_all.csv'))
 
 
 def main():
-    run_with_ivol()
-    run_with_turnover()
-    run_with_size()
+    test_all_conditional_indicators()
 
-
-# if __name__ == '__main__':
-    # run_with_turnover()
-    # run_with_size()
-
+if __name__ == '__main__':
+    main()
 
 

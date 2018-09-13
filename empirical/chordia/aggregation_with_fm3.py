@@ -9,7 +9,7 @@ import os
 import numpy as np
 import statsmodels.api as sm
 from data.dataApi import get_filtered_ret
-from empirical.chordia.identify_anomalies1 import get_prominent_indicators, \
+from empirical.chordia_and_yan.identify_anomalies1 import get_prominent_indicators, \
     pricing_all_factors
 from empirical.config_ep import DIR_DM_NORMALIZED, DIR_CHORDIA
 from empirical.get_basedata import get_benchmark
@@ -145,7 +145,12 @@ def analyze():
         tmb_fm=pd.read_pickle(os.path.join(DIR_CHORDIA,f'tmb_fm_augmented_{indicator_number}.pkl'))[f'tmb_12_{indicator_number}']
         ss.append(tmb_fm)
     df=pd.concat(ss,axis=1)
-    df.cumsum().plot().get_figure().show()
+    fig=df.cumsum().plot().get_figure()
+    fig.savefig(os.path.join(DIR_CHORDIA,'tmb_fm_augmented.png'))
+
+def main():
+    traverse_indicator_numbers()
+    analyze()
 
 if __name__ == '__main__':
-    traverse_indicator_numbers()
+    main()
