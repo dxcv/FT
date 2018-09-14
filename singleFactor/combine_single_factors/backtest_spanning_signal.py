@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-07-28  22:47
-# NAME:FT_hp-signal_spanning.py
+# NAME:FT_hp-backtest_spanning_signal.py
 import multiprocessing
 import os
 import pandas as pd
@@ -42,7 +42,7 @@ def _bt_one_set(fn):
 
 def bt_all_spanning_signal():
     fns=os.listdir(DIR_SIGNAL)
-    multi_process(_bt_one_set, fns, 20, multi_parameters=False)
+    multi_process(_bt_one_set, fns, 10)
     # multiprocessing.Pool(20).map(_bt_one_set,fns)
 
 def debug():

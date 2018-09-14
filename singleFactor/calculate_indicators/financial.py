@@ -13,7 +13,7 @@ import os
 import re
 
 from singleFactor.operators import *
-from tools import daily2monthly, multi_process
+from tools import daily2monthly, multi_process, mytiming
 
 
 def save_indicator(df,name):
@@ -163,26 +163,15 @@ def parse_a_row(s):
     else:
         pass
 
-
-# path=r'indicators.xlsx'
-# df=pd.read_excel(path,sheet_name='equation',index_col=0)
-# s=df.loc[25]
-# parse_a_row(s)
-
-def debug():
-    path = r'indicators.xlsx'
-    df = pd.read_excel(path, sheet_name='equation', index_col=0)
-    parse_a_row(df.loc[19])
-
-
 def cal_sheet_equation():
     path=r'indicators.xlsx'
     df=pd.read_excel(path,sheet_name='equation',index_col=0)
-    pool=multiprocessing.Pool(10)
-    pool.map(parse_a_row,(s for _,s in df.iterrows()))
+    multi_process(parse_a_row,(s for _,s in df.iterrows()))
+
+    # pool=multiprocessing.Pool(10)
+    # pool.map(parse_a_row,(s for _,s in df.iterrows()))
     # for _,s in df.iterrows():
     #     parse_a_row(s)
-
 
 def task(args):
     func_id,func,kwarg,indicator=args
@@ -194,29 +183,10 @@ def task(args):
         daily = quarterly_to_daily(df, name)
         save_indicator(daily, name)
 
-def multi_cal_sheet_growth():
-    func_id = {'x_pct_chg': 'pct',
-               'x_history_compound_growth': 'hcg',
-               'x_history_std': 'std',
-               'x_history_growth_std':'hgstd'}
-
-    path = 'indicators.xlsx'
-    df = pd.read_excel(path, sheet_name='growth', index_col=0)
-    indicators = df['indicator']
-    args_list=[]
-    for _,s in df[['function','kwarg']].dropna().iterrows():
-        func = s['function']
-        kwarg = parse_args(s['kwarg'])
-        for indicator in indicators:
-            args_list.append((func_id,func,kwarg,indicator))
-
-    multi_process(task,args_list,30)
-
-
 def cal_sheet_growth():
     func_id={'x_pct_chg':'pct',
              'x_history_compound_growth':'hcg',
-             'x_history_std':'std'}
+             'x_history_growth_std':'std'}
 
     path = 'indicators.xlsx'
     df = pd.read_excel(path, sheet_name='growth', index_col=0)
@@ -234,8 +204,32 @@ def cal_sheet_growth():
                 save_indicator(daily, name)
             print(func,indicator,kwarg['q'])
 
+def multi_cal_sheet_growth():
+    func_id = {'x_pct_chg': 'pct',
+               'x_history_compound_growth': 'hcg',
+               'x_history_std': 'std',
+               'x_history_growth_std':'hgstd'}
+
+    path = 'indicators.xlsx'
+    df = pd.read_excel(path, sheet_name='growth', index_col=0)
+    indicators = df['indicator']
+    args_list=[]
+    for _,s in df[['function','kwarg']].dropna().iterrows():
+        func = s['function']
+        kwarg = parse_args(s['kwarg'])
+        for indicator in indicators:
+            args_list.append((func_id,func,kwarg,indicator))
+
+    multi_process(task,args_list,20)
+
+def debug():
+    multi_cal_sheet_growth()
+
+@mytiming
+def main():
+    cal_sheet_equation()
+    multi_cal_sheet_growth()
 
 if __name__ == '__main__':
-    # cal_sheet_equation()
-    # cal_sheet_growth()
-    multi_cal_sheet_growth()
+    main() # 436 seconds
+

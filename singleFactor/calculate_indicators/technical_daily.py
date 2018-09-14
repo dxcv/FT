@@ -9,6 +9,9 @@ from data.dataApi import read_local
 import pandas as pd
 import os
 
+from tools import mytiming
+
+
 def save_indicator(df,name):
     df.to_pickle(os.path.join(SINGLE_D_INDICATOR,name+'.pkl'))
 
@@ -48,10 +51,14 @@ def get_mom_maxRet_20():
     g=ret.rolling(day).max()
     save_indicator(g,name)
 
-if __name__ == '__main__':
+@mytiming
+def main():
     get_mom()
     get_mom_maxRet_20()
     get_mom_mc()
     get_mom_maxRet_20()
 
+
+if __name__ == '__main__':
+    main() #184
 

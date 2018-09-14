@@ -11,8 +11,7 @@ from data.dataApi import read_local
 import pandas as pd
 from pandas.tseries.offsets import MonthEnd
 import numpy as np
-from tools import myroll
-
+from tools import myroll, multi_process, mytiming
 
 DAYS=[10, 20, 60, 120, 250]
 
@@ -56,21 +55,56 @@ def idioVol(df, d):
     resid_std=np.std(resid,axis=0)
     return pd.Series(resid_std,index=df.columns[1:],name='idiovol')
 
+def _task(args):
+    func,d,name=args
+    results=myroll(df,d).apply(func,d)
+    save_indicator(results.unstack(),name)
+    print(func.__name__,d)
+
+def cal_betas_and_idioVol():
+    ds=[30,60,180,300]
+
+    args_list=[]
+    for func in [beta,idioVol]:
+        for d in ds:
+            name=f'T__{func.__name__}_{d}'
+            args_list.append((func,d,name))
+
+    multi_process(_task,args_list,len(args_list))
+
+def _task_cal_betas(d):
+    name='T__beta_{}'.format(d)
+    results=myroll(df, d).apply(beta, d)
+    save_indicator(results.unstack(),name)
+    print(d)
+
 def cal_betas():
     #TODO: employ multiprocessing
-    for d in [30,60,180,300]:
-        name='T__beta_{}'.format(d)
-        results=myroll(df, d).apply(beta, d)
-        save_indicator(results.unstack(),name)
-        print(d)
+    ds=[30,60,180,300]
+    multi_process(_task_cal_betas,ds,len(ds))
+
+    # for d in [30,60,180,300]:
+    #     name='T__beta_{}'.format(d)
+    #     results=myroll(df, d).apply(beta, d)
+    #     save_indicator(results.unstack(),name)
+    #     print(d)
+
+def _task_cal_idioVol(d):
+    name='T__idioVol_{}'.format(d)
+    results=myroll(df, d).apply(idioVol, d)
+    save_indicator(results.unstack(),name)
+    print(d)
 
 def cal_idioVol():
     #fixme: shape is (154,1223), missing value problem
-    for d in [30,60,180,300]:
-        name='T__idioVol_{}'.format(d)
-        results=myroll(df, d).apply(idioVol, d)
-        save_indicator(results.unstack(),name)
-        print(d)
+    ds=[30,60,180,300]
+    multi_process(_task_cal_idioVol,ds,len(ds))
+
+    # for d in [30,60,180,300]:
+    #     name='T__idioVol_{}'.format(d)
+    #     results=myroll(df, d).apply(idioVol, d)
+    #     save_indicator(results.unstack(),name)
+    #     print(d)
 
 def get_high_minus_low():
     trading = read_local('equity_selected_trading_data')
@@ -83,6 +117,7 @@ def get_high_minus_low():
         high_minus_low=window_adjhigh-window_adjlow
         name='T__vol_high_minus_low_{}'.format(day)
         save_indicator(high_minus_low,name)
+        print(day)
 
 def get_std():
     trading = read_local('equity_selected_trading_data')
@@ -104,9 +139,17 @@ def get_vol_amount():#TODO： std/mean    idiosyncratic
         save_indicator(vol_amount,name)
         print(day)
 
-if __name__ == '__main__':
-    cal_betas()
-    cal_idioVol()
+# @mytiming
+def main():
+    # cal_betas()
+    # cal_idioVol()
+    # cal_betas_and_idioVol()
     get_high_minus_low()
     get_std()
     get_vol_amount()
+
+if __name__ == '__main__':
+    main()
+
+    #start at 12:18
+

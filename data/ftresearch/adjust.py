@@ -5,15 +5,19 @@
 # TIME:2018-06-15  09:30
 # NAME:FT-adjust.py
 from datetime import timedelta
-
 import pandas as pd
 import os
 
 from config import D_FT_ADJ, D_FT_RAW
 from data.dataApi import read_from_sql
-from tools import number2dateStr
+from tools import number2dateStr, multi_process, mytiming, run_in_parallel
 import numpy as np
 
+def _create_cache(tbname):
+    path=os.path.join(D_FT_RAW,tbname+'.pkl')
+    df=read_from_sql(tbname,database='ftresearch')
+    df.to_pickle(path)
+    print(tbname)
 
 def create_cache():
     tbnames = [
@@ -33,15 +37,35 @@ def create_cache():
     ]
     #TODO: unify the trd_dt of different tables
     #TODO: calculate my own q sheets
+    multi_process(_create_cache,tbnames,len(tbnames))
 
-    for tbname in tbnames:
-        print(tbname)
-        df=read_from_sql(tbname,database='ftresearch')
-        df.to_pickle(os.path.join(D_FT_RAW,tbname+'.pkl'))
+
+    # for tbname in tbnames:
+    #     print(tbname)
+    #     df=read_from_sql(tbname,database='ftresearch')
+    #     df.to_pickle(os.path.join(D_FT_RAW,tbname+'.pkl'))
 
 def read_cache(tbname):
     df=pd.read_pickle(os.path.join(D_FT_RAW,tbname+'.pkl'))
     return df
+
+def _adjust_financial_sheet(tbname):
+    print(tbname)
+    df = read_cache(tbname)
+    date_cols = ['trd_dt', 'ann_dt', 'report_period']
+    for dc in date_cols:
+        if dc in df.columns:
+            df[dc] = pd.to_datetime(df[dc].map(number2dateStr))
+
+    df = df.sort_values(['stkcd', 'report_period', 'trd_dt'])
+    df = df[~df.duplicated(subset=['stkcd', 'report_period'],
+                           keep='last')]  # trick:keep the latest item
+    df = df.groupby('stkcd').apply(
+        lambda x: x.set_index('report_period').resample('Q').asfreq()
+    )
+
+    df = df.drop(['stkcd', 'create_time', 'update_time'], axis=1)
+    df.to_pickle(os.path.join(D_FT_ADJ, tbname + '.pkl'))
 
 def adjust_three_sheets():
     '''
@@ -64,23 +88,23 @@ def adjust_three_sheets():
 
     #TODO: unify the trd_dt of different tables
     #TODO: calculate my own q sheets
-
-    for tbname in tbnames:
-        print(tbname)
-        df=read_cache(tbname)
-        date_cols=['trd_dt','ann_dt','report_period']
-        for dc in date_cols:
-            if dc in df.columns:
-                df[dc]=pd.to_datetime(df[dc].map(number2dateStr))
-
-        df=df.sort_values(['stkcd','report_period','trd_dt'])
-        df=df[~df.duplicated(subset=['stkcd','report_period'],keep='last')]#trick:keep the latest item
-        df=df.groupby('stkcd').apply(
-            lambda x:x.set_index('report_period').resample('Q').asfreq()
-        )
-
-        df=df.drop(['stkcd','create_time','update_time'],axis=1)
-        df.to_pickle(os.path.join(D_FT_ADJ, tbname + '.pkl'))
+    multi_process(_adjust_financial_sheet,tbnames,len(tbnames))
+    # for tbname in tbnames:
+    #     print(tbname)
+    #     df=read_cache(tbname)
+    #     date_cols=['trd_dt','ann_dt','report_period']
+    #     for dc in date_cols:
+    #         if dc in df.columns:
+    #             df[dc]=pd.to_datetime(df[dc].map(number2dateStr))
+    #
+    #     df=df.sort_values(['stkcd','report_period','trd_dt'])
+    #     df=df[~df.duplicated(subset=['stkcd','report_period'],keep='last')]#trick:keep the latest item
+    #     df=df.groupby('stkcd').apply(
+    #         lambda x:x.set_index('report_period').resample('Q').asfreq()
+    #     )
+    #
+    #     df=df.drop(['stkcd','create_time','update_time'],axis=1)
+    #     df.to_pickle(os.path.join(D_FT_ADJ, tbname + '.pkl'))
 
 def adjust_equity_cash_dividend():
     tbname='equity_cash_dividend'
@@ -132,13 +156,31 @@ def adjust_equity_selected_indice_ir():
     df=df.set_index('trd_dt')
     df.to_pickle(os.path.join(D_FT_ADJ,tbname+'.pkl'))
 
+@mytiming
+def main():
+    create_cache()
+    adjust_three_sheets()
+
+    # 2 minutes
+    run_in_parallel([adjust_equity_cash_dividend,
+                     adjust_equity_fundamental_info,
+                     adjust_equity_selected_trading_data,
+                     adjust_equity_selected_indice_ir])
+
+    # adjust_equity_cash_dividend()
+    # adjust_equity_fundamental_info()
+    # adjust_equity_selected_trading_data()
+    # adjust_equity_selected_indice_ir()
+
+@mytiming
+def debug():
+    run_in_parallel([adjust_equity_cash_dividend,
+                     adjust_equity_fundamental_info,
+                     adjust_equity_selected_trading_data,
+                     adjust_equity_selected_indice_ir])
 
 
 if __name__ == '__main__':
-    create_cache()
-    adjust_three_sheets()
-    adjust_equity_cash_dividend()
-    adjust_equity_fundamental_info()
-    adjust_equity_selected_trading_data()
-    adjust_equity_selected_indice_ir()
-
+    main()
+    # 1052 seconds
+    # debug()

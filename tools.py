@@ -9,6 +9,7 @@ import time
 from multiprocessing.pool import ThreadPool
 
 import pandas as pd
+from multiprocessing import Process
 from pandas.tseries.offsets import MonthEnd
 import numpy as np
 
@@ -183,7 +184,7 @@ def myroll(df, d):
     #trick: filter_obsservations=False
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
-def multi_process(func, args_iter, n=10, multi_parameters=False):
+def multi_process(func, args_iter, n=15, multi_parameters=False):
     '''
     make sure that all the data needed by "func" should be sent by parameters, try to avoid calling
     the data outside the "func" since sometimes the processes may be frozen without raising any
@@ -208,7 +209,6 @@ def multi_process(func, args_iter, n=10, multi_parameters=False):
     # refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
     return results
 
-
 def multi_process_old(func, args_iter, n=20):
     pool=multiprocessing.Pool(n)
     results=pool.map(func, args_iter)
@@ -217,6 +217,23 @@ def multi_process_old(func, args_iter, n=20):
     #refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
     return results
 
+def run_in_parallel(funcs):
+    '''
+    run multiple functions in parallel
+    Args:
+        funcs: a list of function
+
+    Returns:
+
+    '''
+    proc=[]
+    for f in funcs:
+        p=Process(target=f)
+        p.start()
+        proc.append(p)
+    for p in proc:
+        p.join()
+
 def multi_thread(func,args_iter,n=50,multi_parameters=False):
     if multi_parameters:
         results=ThreadPool(n).starmap(func,args_iter)
@@ -224,7 +241,16 @@ def multi_thread(func,args_iter,n=50,multi_parameters=False):
         results=ThreadPool(n).map(func,args_iter)
     return results
 
+def mytiming(func):
+    def wrapper(*args,**kwargs):
+        t1 = time.time()
+        result=func(*args,**kwargs)
+        t2=time.time()
+        print(f'{func.__name__}----{t2-t1} seconds')
+        return result
+    return wrapper
 
+#--------------------------------------------------------------------------
 def premium_ic(x, y, f, retn, t, s):
     '''
         Parameters

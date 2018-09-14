@@ -3,7 +3,7 @@
 # Author:Zhang Haitao
 # Email:13163385579@163.com
 # TIME:2018-07-23  14:52
-# NAME:FT_hp-signal_spanning.py
+# NAME:FT_hp-backtest_spanning_signal.py
 
 import multiprocessing
 from functools import partial

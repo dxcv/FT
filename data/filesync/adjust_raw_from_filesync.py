@@ -11,7 +11,7 @@ import numpy as np
 
 from config import DRAW,D_FILESYNC_ADJ
 from data.dataApi import read_raw, read_local_pkl, read_local_sql, read_from_sql
-from tools import number2dateStr
+from tools import number2dateStr, mytiming
 
 from sqlalchemy import create_engine
 from sqlalchemy.types import VARCHAR
@@ -229,12 +229,14 @@ def calculate_q_sheet():
         #TODO: float type rather than str
     single_q=df.groupby(['stkcd',df['report_period'].dt.year]).apply(_adjust)
 
-
-if __name__ == '__main__':
+@mytiming
+def main():
     adjust_asharefinancialindicator()
 
+if __name__ == '__main__':
+    main() #53 seconds
 
-# calculate_q_sheet()
+
 
 
 #TODO: compare my data with ftresearch

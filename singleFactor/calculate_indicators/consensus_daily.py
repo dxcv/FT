@@ -9,6 +9,7 @@ from data.dataApi import read_raw, read_local
 import pandas as pd
 import os
 
+from tools import mytiming
 
 FORWARD_LIMIT=20
 SMOOTH_PERIOD=30
@@ -35,8 +36,6 @@ def cal():
     trading = read_local('equity_selected_trading_data')
     comb = pd.merge(trading.reset_index()[['trd_dt', 'stkcd', 'close']],con,
                     on=['stkcd', 'trd_dt'], how='left')  # 使用未复权的收盘价
-
-
     types = ['est_net_profit', 'est_oper_revenue', 'est_bookvalue']
     lengths = ['FTTM', 'FT24M']
     days=[20,60,180]
@@ -45,6 +44,8 @@ def cal():
         for type in types:
             numerator='_'.join([type,l])
             for denominator in ['est_baseshare_{}'.format(l),'close']:
+
+
                 indName='{}_to_{}'.format(numerator,denominator)
                 comb[indName]=comb[numerator]/comb[denominator]
                 d=pd.pivot_table(comb, values=indName, index='trd_dt', columns='stkcd')
@@ -60,8 +61,11 @@ def cal():
                     save_indicator(chg,'C__{}'.format(nameC))
                     print(numerator,denominator,day)
 
-if __name__ == '__main__':
+@mytiming
+def main():
     cal()
 
+if __name__ == '__main__':
+    main() #418 seconds
 
 

@@ -17,11 +17,15 @@ from config import DIR_BACKTEST
 
 import backtest.database_api as dbi
 from sqlalchemy import create_engine
+from tools import mytiming
 
 filesync_engine = create_engine('mysql+pymysql://ftresearch:FTResearch@192.168.1.140/filesync?charset=utf8')
 
 START = '2005-01-01'
-END = '2018-12-31'
+# END = '2018-12-31'
+END=None
+
+
 
 def get_zz500(start_date, end_date):
     zz500 = dbi.get_index_data('zz500', start_date, end_date)['zz500']
@@ -30,6 +34,7 @@ def get_zz500(start_date, end_date):
     return zz500
 
 def get_backtest_stocks_trade_data(start_date, end_date):
+
     stocks_trade_data = dbi.get_stocks_data(
         'equity_selected_trading_data',
         ['open', 'close', 'avgprice', 'adjfactor'],
@@ -122,9 +127,9 @@ def update_data():
     zz500=get_zz500(START,END)
     stocks_trade_data=get_backtest_stocks_trade_data(START,END)
     stocks_trade_status = get_stocks_trade_status(START,END)
-    stocks_is_ST = get_stocks_is_ST(START,END)
+    # stocks_is_ST = get_stocks_is_ST(START,END)
     stocks_ready_delist = get_stocks_ready_delist(START, END, 10)
-    stocks_sub_new = get_stocks_sub_new(START, END, 260)
+    # stocks_sub_new = get_stocks_sub_new(START, END, 260)
 
     stk_univ = slice(None)
     unpack = lambda x: stocks_trade_data[x].unstack().loc[:, stk_univ]
@@ -141,8 +146,14 @@ def update_data():
         eval(dn).to_pickle(os.path.join(DIR_BACKTEST,dn+'.pkl'))
 
 
-if __name__ == '__main__':
+
+@mytiming
+def main():
     update_data()
+
+
+if __name__ == '__main__':
+    main()
 
 
 # def get_stocks_industry_L4(start_date, end_date):

@@ -32,9 +32,9 @@ def run():
     checked=[fn[:-4] for fn in os.listdir(DIR_SIGNAL)]
     names=[n for n in names if n not in checked]
     print('unchecked: {}'.format(len(names)))
-    multi_process(indicator2signal,names,5)
-    for name in names:
-        indicator2signal(name)
+    multi_process(indicator2signal,names,10)
+    # for name in names:
+    #     indicator2signal(name)
 
     # pool=multiprocessing.Pool(1)
     # pool.map(indicator2signal,names)

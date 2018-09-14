@@ -8,11 +8,13 @@ import multiprocessing
 import os
 from functools import partial
 
+import time
 from config import SINGLE_D_INDICATOR
 from data.dataApi import read_local
 import pandas as pd
 from pandas.tseries.offsets import MonthEnd
 import numpy as np
+from tools import mytiming
 
 DAYS=[10,20,30,60,120,180,300]
 
@@ -92,12 +94,14 @@ def run_parallel():
     for fname in ['avg','std','relative_avg','relative_std','corrRetTurnover']:
         p=multiprocessing.Process(target=eval(fname))
         p.start()
+        # p.join()
 
 
-if __name__ == '__main__':
+def main():
     run_parallel()
 
-
+if __name__ == '__main__':
+    main()#13 minutes
 
 
 

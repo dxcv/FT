@@ -16,7 +16,7 @@ from backtest_zht.main_class import Backtest, DEFAULT_CONFIG
 from config import DIR_BACKTEST_SPANNING, DIR_TMP, DIR_MIXED_SIGNAL_BACKTEST, \
     DIR_MIXED_SIGNAL
 from scipy.stats import rankdata
-from singleFactor.combine_single_factors.signal_spanning import \
+from singleFactor.combine_single_factors.backtest_spanning_signal import \
     get_derive_signal
 from singleFactor.combine_single_factors.summary import summarize
 from tools import outlier, z_score, multi_process

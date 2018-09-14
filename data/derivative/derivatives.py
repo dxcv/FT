@@ -13,7 +13,7 @@ from config import D_DRV,D_FILESYNC_ADJ
 from data.dataApi import read_local, get_dataspace, read_from_sql
 import numpy as np
 from pandas.tseries.offsets import MonthEnd
-from tools import daily2monthly
+from tools import daily2monthly, mytiming
 
 
 def _ttm(s):
@@ -225,7 +225,8 @@ def get_mould_index():
     with open(os.path.join(D_DRV,'mould_index.pkl'),'wb') as f:
         pickle.dump(mould.index,f)
 
-if __name__ == '__main__':
+@mytiming
+def main():
     cal_ebitda()
     cal_netAsset()
     cal_netNonOI()
@@ -238,6 +239,9 @@ if __name__ == '__main__':
     get_monthly_indice_ir()
     get_fdmt_m()
 
+
+if __name__ == '__main__':
+    main() #158
 
 # fdmt=read_local('equity_fundamental_info')
 # trading=read_local('equity_selected_trading_data')

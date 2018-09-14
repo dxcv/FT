@@ -1,14 +1,18 @@
-1. ftresearch/adjust.py
-2. consensus_daily.py
-3. adjust_raw_from_filesync.py
-4. derivetatives.py
-5. financial.py
-6. technical_daily.py
-7. turnover.py
-8. vol_and_beta_daily.py  # this module is really slow!!!
+1. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\data\ftresearch\adjust.py   20 minutes
+3. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\data\filesync\adjust_raw_from_filesync.py  1 minute
+4. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\data\derivative\derivatives.py  3 minutes
+10. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\backtest_zht\read_data_base_new.py  20 minutes
 
-9. indicator2signal.py
-10. read_data_base_new.py
-10. signal_spanning.py    wrong!!!!!!!!!!!!!!!!!!!!!!!!!111
-11. combine_new.py
+
+2. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\calculate_indicators\consensus_daily.py 7 minutes
+5. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\calculate_indicators\financial.py 7 minutes
+6. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\calculate_indicators\technical_daily.py 3 minutes
+7. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\calculate_indicators\turnover.py  13 minutes
+8. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\calculate_indicators\vol_and_beta_daily.py  5 minutes or 1 day# this module is really slow!!!
+
+9. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\indicator2signal.py
+
+10. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\combine_single_factors\backtest_spanning_signal.py
+
+11. E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\singleFactor\combine_single_factors\combine_new.py
 

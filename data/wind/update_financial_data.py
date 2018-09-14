@@ -13,12 +13,22 @@ import numpy as np
 import pandas as pd
 import os
 
-DIR=r'G:\FT_Users\HTZhang\FT\database\wind'
+DIR=r'E:\Share\Alpha\FYang\wind'
 DIR_CACHE=os.path.join(DIR,'cache')
 
 w.start()
 
+
+
+
 DATE_FORMAT='%Y-%m-%d'
+
+def test_wind():
+    print(w.isconnected())
+    data=w.wss("000001.SZ,000002.SZ,000004.SZ,000005.SZ", "trade_code")
+    return
+
+
 
 def get_today(format=DATE_FORMAT):
     '''
@@ -39,10 +49,9 @@ def get_stkcd_list(date=None):
         pickle.dump(codes,f)
         return codes
 
-
-def get_ann_dt_df(date=None):
-    if date is None:
-        date=get_today(DATE_FORMAT)
+def get_ann_dt_df(date):
+    # if date is None:
+    #     date=get_today(DATE_FORMAT)
     path = os.path.join(DIR, 'ann_dt_{}.pkl'.format(date))
     if os.path.exists(path):
         return pickle.load(open(path, 'rb'))
@@ -86,7 +95,7 @@ def get_data_for_one_stk(stkcd, rpdate, indicators):
         s.to_csv(path)#trick: cache
     return s
 
-def get_target_df(date=None):
+def get_target_df(date):
     '''
         get the df to be updated at the given date
     Returns:DataFrame, index is report period and the columns is stock codes, the
@@ -98,8 +107,8 @@ def get_target_df(date=None):
     Returns:
 
     '''
-    if date is None:
-        date=get_today()
+    # if date is None:
+    #     date=get_today()
     new_ann_dt=get_ann_dt_df(date)
     old_ann_dt=get_latest(date,'ann_dt')
 
@@ -118,7 +127,7 @@ def fetch_data(target_df):
     Args:
         target_df: DataFrame,
 
-    Returns:
+    Returns:DataFrame
 
     '''
     name_df = pd.read_excel(os.path.join(DIR,'indicators_name.xlsx'), sheet_name='financial')
@@ -141,6 +150,7 @@ def fetch_data(target_df):
             _df=_df.swaplevel()
             dfs.append(_df)
     df = pd.concat(dfs,sort=True)
+
     return df
 
 def construct_original_data():
@@ -164,6 +174,9 @@ def update(date=None):
         df=get_latest(date,'data')
         df.to_pickle(os.path.join(DIR,f'data_{date}.pkl'))
 
+    w.close()
+
+
 def debug():
     dates=pd.date_range('2018-08-26','2018-08-30')
     dates=[d.strftime('%Y-%m-%d') for d in dates]
@@ -176,10 +189,16 @@ def debug():
 #     debug()
 
 
-if __name__ == '__main__':
-    update()
+
+
+# if __name__ == '__main__':
+#     update()
+
+
 
 
 #TODO: logger and multiprocessing
 
+
+#TODO: change the indictor names
 
