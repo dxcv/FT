@@ -41,9 +41,6 @@ def pricing_assets(benchmark, assets):
         X=sm.add_constant(benchmark)
         rs=[sm.OLS(assets[col],X).fit() for col in assets.columns]
 
-
-
-
     alpha=pd.Series([r.params['const'] for r in rs], index=assets.columns)
     alpha_stderr=pd.Series([r.bse['const'] for r in rs], index=assets.columns)
     alpha_t=pd.Series([r.tvalues['const'] for r in rs], index=assets.columns)
@@ -127,12 +124,18 @@ def bootstrap_ff(benchmark,assets,realized_result):
     '''
     adjusted_assets=assets-realized_result['alpha']
     sampled_index=get_random_index()
+
+    '''
+    If there are NaNs in assets, the bootstrapped sample may all be NaNs.
+    To alliviate this situation, we can fillna with 0. 
+    '''
     pseudo_assets=adjusted_assets.loc[sampled_index]
     pseudo_benchmark=benchmark.loc[sampled_index]
     pseudo_assets.reset_index(drop=True,inplace=True) #trick:handle the problem of duplicated index
     pseudo_benchmark.reset_index(drop=True,inplace=True)
     re=pricing_assets(pseudo_benchmark,pseudo_assets)
     return re
+
 
 def bootstrap_both_factor_and_model(benchmark,assets):
     '''

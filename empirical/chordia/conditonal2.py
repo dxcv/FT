@@ -127,7 +127,7 @@ def analyze_turnover():
     df = df.iloc[:, 1:]
     df.index.names = ['cond_variable', 'indicator']
     lt2 = df.groupby('cond_variable').apply(
-        lambda df: df[df['abs'] >= 2].shape[0]).sort_values(ascending=False)
+        lambda df: df[df['abs'] >= 2].shape[0]).sort_value+s(ascending=False)
     target = df.loc[(lt2.index[0], slice(None)), :]
     target.to_csv(os.path.join(DIR_TMP,'target1.csv'))
 
@@ -147,8 +147,12 @@ def analyze_ivol():
     df.to_csv(os.path.join(DIR_CHORDIA,'table5_all.csv'))
 
 
+
+
+
 def main():
     test_all_conditional_indicators()
+
 
 if __name__ == '__main__':
     main()

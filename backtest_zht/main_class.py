@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
-import backtest_zht.base_func as bf
 from collections import OrderedDict
 
 from config import DIR_BACKTEST
@@ -638,7 +637,7 @@ class Backtest:
                                   names=['tradeDate'])
         transactions_record = pd.concat(transactions_record,
                                         axis=1).stack().swaplevel().sort_index(
-            level=0)
+            level=0,sort=True)
 
         # for quantopia format
         positions_record = positions_record.unstack()

@@ -7,7 +7,7 @@
 import pandas as pd
 import os
 
-from config import SINGLE_D_INDICATOR, DIR_TMP
+from config import SINGLE_D_INDICATOR
 from data.dataApi import read_local
 from empirical.config_ep import DIR_BASEDATA, DIR_DM, DIR_EP
 import numpy as np
@@ -17,7 +17,8 @@ import numpy as np
 
 
 # rpM.pkl is copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_unfiltered
-from tools import multi_process, multi_thread, convert_indicator_to_signal
+from empirical.data_mining.dm_api import get_raw_factors
+from tools import convert_indicator_to_signal
 
 rpM=pd.read_pickle(os.path.join(DIR_EP,'benchmarks','rpM.pkl'))
 
@@ -25,42 +26,38 @@ rpM=pd.read_pickle(os.path.join(DIR_EP,'benchmarks','rpM.pkl'))
 
 BENCHS=['capmM','ff3M','ff5M','ff6M','ffcM','hxz4M']
 
+def get_benchmark(name):
+    #TODO: some months are lost for benchmarka
+    bench=pd.read_pickle(os.path.join(DIR_EP,'benchmarks',name+'.pkl')).dropna()
+    if isinstance(bench,pd.Series):
+        bench=bench.to_frame()
+    return bench
+
+
 _get_tb=lambda path:pd.read_pickle(path)['tb']
 
-def get_raw_factors():
-    '''get high-minu-low factors'''
-    path=os.path.join(DIR_TMP,'d09dgfe.pkl')
-    if os.path.exists(path):
-        return pd.read_pickle(path)
-    else:
-        directory = os.path.join(DIR_DM, 'port_ret', 'eq')
-        fns = os.listdir(directory)
-        arg_generator=(os.path.join(directory,fn) for fn in fns)
-        ss=[_get_tb(arg) for arg in arg_generator]
-        raw_factors = pd.concat(ss, axis=1, keys=[fn[:-4] for fn in fns])
-        #trick: delete those months with too small sample
-        raw_factors = raw_factors.dropna(axis=0,thresh=int(raw_factors.shape[1] * 0.8))
-        #trick: delete those factors with too short history
-        raw_factors=raw_factors.dropna(axis=1,thresh=int(raw_factors.shape[0]*0.8))
-        raw_factors = raw_factors.fillna(0)#trick:
-        raw_factors.to_pickle(path)
-        return raw_factors
-
-def get_benchmark(name):
-    df=pd.read_pickle(os.path.join(DIR_EP,'benchmarks',name+'.pkl'))
-    return df
-
-def get_data(bench='ff3M'):
-    benchmark = get_benchmark(bench)
-    raw_factors = get_raw_factors()
-    base_index=benchmark.index.intersection(raw_factors.index)
-    #trick: unify the index
-    return benchmark.reindex(base_index),raw_factors.reindex(base_index)
+# def get_raw_factors():
+    # '''get high-minu-low factors'''
+    # path=os.path.join(DIR_TMP,'d09dgfe.pkl')
+    # if os.path.exists(path):
+    #     return pd.read_pickle(path)
+    # else:
+    #     directory = os.path.join(DIR_DM, 'port_ret', 'eq')
+    #     fns = os.listdir(directory)
+    #     arg_generator=(os.path.join(directory,fn) for fn in fns)
+    #     ss=[_get_tb(arg) for arg in arg_generator]
+    #     raw_factors = pd.concat(ss, axis=1, keys=[fn[:-4] for fn in fns])
+    #     #trick: delete those months with too small sample
+    #     raw_factors = raw_factors.dropna(axis=0,thresh=int(raw_factors.shape[1] * 0.8))
+    #     #trick: delete those factors with too short history
+    #     raw_factors=raw_factors.dropna(axis=1,thresh=int(raw_factors.shape[0]*0.8))
+    #     raw_factors = raw_factors.fillna(0)#trick:
+    #     raw_factors.to_pickle(path)
+    #     return raw_factors
 
 
 
 # ------------------get controlling variables for fama macbeth regression------------------
-CONTROL=['log_size','bm','mom','op','inv','roe']
 
 save_to_basedata=lambda df,name:df.to_pickle(os.path.join(DIR_BASEDATA,'fm_controlling',name+'.pkl'))
 

@@ -264,7 +264,7 @@ def check_dfs():
 def get_filtered_ret():
     '''
     monthly return filtered out young_1year and st stocks
-    Returns:
+    Returns:pd.Series with multiIndex
 
     '''
     ret = read_local('trading_m')

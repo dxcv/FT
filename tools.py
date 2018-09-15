@@ -112,7 +112,7 @@ def neutralize(df, col, industry, cap='ln_cap'):
     a = np.array(df.loc[:, industry + [cap]])
     A = np.hstack([a, np.ones([len(a), 1])])
     y = df.loc[:, col]
-    beta = np.linalg.lstsq(A, y)[0] #fixme: rcond=None?
+    beta = np.linalg.lstsq(A, y,rcond=-1)[0] #fixme: rcond=None?
     res = y - np.dot(A, beta)
     return res
 

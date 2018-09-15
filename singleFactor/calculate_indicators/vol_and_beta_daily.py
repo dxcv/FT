@@ -143,10 +143,10 @@ def get_vol_amount():#TODO： std/mean    idiosyncratic
 def main():
     # cal_betas()
     # cal_idioVol()
-    # cal_betas_and_idioVol()
-    get_high_minus_low()
-    get_std()
-    get_vol_amount()
+    cal_betas_and_idioVol()
+    # get_high_minus_low()
+    # get_std()
+    # get_vol_amount()
 
 if __name__ == '__main__':
     main()

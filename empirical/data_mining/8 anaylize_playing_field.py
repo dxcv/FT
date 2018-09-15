@@ -2,14 +2,9 @@
 # Python 3.6
 # Author:Zhang Haitao
 # Email:13163385579@163.com
-# TIME:2018-08-30  16:59
-# NAME:FT_hp-identify_anomalies1.py
-from collections import OrderedDict
-import statsmodels.formula.api as sm
+# TIME:2018-09-15  19:54
+# NAME:FT_hp-8 anaylize_playing_field.py
 
-from config import DIR_TMP
-from data.dataApi import read_local, get_filtered_ret
-from empirical.bootstrap import pricing_assets
 from empirical.config_ep import DIR_DM, DIR_CHORDIA, DIR_DM_NORMALIZED, \
     PERIOD_THRESH, DIR_BASEDATA, DIR_YAN
 import os
@@ -20,41 +15,7 @@ from empirical.yan.yan_new import get_realized
 from tools import multi_process
 import numpy as np
 import pickle
-import matplotlib.pyplot as plt
 
-
-#--------------------pricing hedged portfolio--------------------------
-
-#--------------------------------FM regression-------------------------------
-
-
-
-#===========================method5: bootstrap==================================
-def hurdle_boostrap():
-    bench_name= 'capmM'
-    # benchmark, assets = get_data(bench_name)
-    simulated=pickle.load(open(os.path.join(DIR_YAN, f'{bench_name}_1000.pkl'), 'rb'))
-
-    b_at=simulated['alpha_t']
-
-    realized=get_realized(bench_name)
-    r_at=realized['alpha_t']
-    c5=b_at.quantile(0.05,axis=1)
-    c95=b_at.quantile(0.95,axis=1)
-    target=r_at[(r_at<c5) | (c95<r_at)]
-
-    target=target[abs(target)>3]
-    len(target)
-
-    indicators=get_prominent_indicators()
-    len(indicators)
-    len([ind for ind in indicators if ind in target.index])
-
-
-# if __name__ == '__main__':
-#     get_fmt()
-
-#============================================================================================================================
 
 def get_prominent_indicators(critic=3):
     at = pd.concat(
@@ -79,8 +40,6 @@ def get_prominent_indicators(critic=3):
 
     # cr=df.corr().stack().sort_values()
     return inds
-
-#-----------------------------aggregate anomalies------------------------------------------
 
 #=================method 0: select manually=================================
 def get_prominent_anomalies0():
@@ -109,21 +68,7 @@ def get_prominent_anomalies0():
     myfactors=df[list(test_indicators)]
     return myfactors
 
-def get_at_manuallymodel():
-    ff3=get_benchmark('ff3M')
-    myfactors=get_prominent_anomalies0()
-    manually=pd.concat([ff3,myfactors],axis=1).dropna()
 
-    results=pricing_all_factors(manually,'manually')
-    results.to_pickle(os.path.join(DIR_CHORDIA,'at_manually.pkl'))
-
-    #compare
-    alpha_t = pd.concat(
-        [pd.read_pickle(os.path.join(DIR_CHORDIA, f'at_{bench}.pkl'))
-         for bench in BENCHS], axis=1,sort=True)
-    at_my=pd.read_pickle(os.path.join(DIR_CHORDIA,'at_mymodel.pkl'))
-    (abs(alpha_t)>3).sum()
-    (abs(at_my)>3).sum()
 
 #=================method3: cluster=========================
 
@@ -138,17 +83,3 @@ def get_at_manuallymodel():
 2. fm 中的指标
 
 '''
-
-
-
-
-
-
-def main():
-    # get_alpha_t_for_all_bm()
-    calculate_fmt()
-    get_fmt()
-
-
-
-

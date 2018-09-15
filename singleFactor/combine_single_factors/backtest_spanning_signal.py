@@ -42,7 +42,7 @@ def _bt_one_set(fn):
 
 def bt_all_spanning_signal():
     fns=os.listdir(DIR_SIGNAL)
-    multi_process(_bt_one_set, fns, 10)
+    multi_process(_bt_one_set, fns, 15)
     # multiprocessing.Pool(20).map(_bt_one_set,fns)
 
 def debug():

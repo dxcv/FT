@@ -1,2 +1,8 @@
 1. build_playing_field.py
 2. get_basedata.py
+
+
+
+
+Problems:
+1. some months are lost for benchmarks
