@@ -119,7 +119,7 @@ def _adjust_dtypes(df):
 
     for dcol in dateFields:
         if dcol in df.columns:
-            df[dcol]=pd.to_datetime(df[dcol].map(number2dateStr ))
+            df[dcol]=pd.to_datetime(df[dcol].map(number2dateStr))
     return df
 
 
@@ -188,7 +188,7 @@ def _parse(name, q=False):
     df=read_local_sql(name,database='filesync')
     #adjust data type
     # refer to this link:https://stackoverflow.com/questions/15891038/change-data-type-of-columns-in-pandas
-    df=df.apply(pd.to_numeric,errors='ignore')
+    # df=df.apply(pd.to_numeric,errors='ignore')
 
     df = _adjust_dtypes(df)
     df=_adjust_ann_dt(df, q)

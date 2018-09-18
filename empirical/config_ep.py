@@ -34,3 +34,8 @@ DIR_DM_INDICATOR=os.path.join(DIR_DM,'indicator')
 DIR_DM_NORMALIZED=os.path.join(DIR_DM,'normalized')
 PERIOD_THRESH=60
 
+
+DIR_DM_GTA=os.path.join(DIR_DM,'based_on_gta')
+
+
+CROSS_LEAST=300

@@ -61,7 +61,7 @@ def ind2sig_once(indicator_s):
     # ind=indicator_s.loc[date]
     # ind.name=name
 
-    ft= fdmt.loc[(slice(None), date), :]
+    ft= fdmt.loc[(slice(None), date), :] #fixme:KeyError: Timestamp('2018-09-06 00:00:00')
     ft.index=ft.index.droplevel(level=1)
     comb=pd.concat([ft, indicator_s], axis=1, join='inner').dropna()
     if comb.shape[0]>=LEAST_CROSS_SAMPLE:
@@ -115,15 +115,14 @@ def initialize():
                 signal.to_pickle(signal_path)
                 print(name)
 
-def update(date=None):
-    fns = os.listdir(SINGLE_D_INDICATOR)
-    names = [fn[:-4] for fn in fns][:2]  # fixme:
-    for name in names:
-        print(f'updating {name}')
-        indicator = pd.read_pickle(
-            os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
-        signal_path = os.path.join(DIR_ROOT, 'singleFactor', 'signal_pit',
-                                   name + '.pkl')
+def update_one_signal(args):
+    name,date=args
+    print(f'updating {name}')
+    indicator = pd.read_pickle(
+        os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
+    signal_path = os.path.join(DIR_ROOT, 'singleFactor', 'signal_pit',
+                               name + '.pkl')
+    if os.path.exists(signal_path):
         signal_history=pd.read_pickle(signal_path)
         if date is None:
             for date,row in indicator[indicator.index>signal_history.index[-1]].iterrows():
@@ -133,12 +132,38 @@ def update(date=None):
             signal_history.loc[date]=ind2sig_once(indicator.loc[date])
 
         signal_history.to_pickle(signal_path)
+    else:
+        pass #TODO：
+
+def update(date=None):
+    fns = os.listdir(SINGLE_D_INDICATOR)
+    names = [fn[:-4] for fn in fns] # fixme:
+    args_list=((name,date) for name in names)
+    multi_process(update_one_signal,args_list,20)
+    # for args in args_list:
+    #     update_one_signal(args)
+
+    # for name in names:
+    #     print(f'updating {name}')
+    #     indicator = pd.read_pickle(
+    #         os.path.join(SINGLE_D_INDICATOR, name + '.pkl'))
+    #     signal_path = os.path.join(DIR_ROOT, 'singleFactor', 'signal_pit',
+    #                                name + '.pkl')
+    #     signal_history=pd.read_pickle(signal_path)
+    #     if date is None:
+    #         for date,row in indicator[indicator.index>signal_history.index[-1]].iterrows():
+    #             s=ind2sig_once(row)
+    #             signal_history.loc[date]=s
+    #     else:
+    #         signal_history.loc[date]=ind2sig_once(indicator.loc[date])
+    #
+    #     signal_history.to_pickle(signal_path)
 
 if __name__ == '__main__':
-    initialize()
+    # initialize()
     update()
 
-
+#fixme: signal shift(1)?
 
 #
 # df=pd.read_pickle(r'G:\FT_Users\HTZhang\FT\singleFactor\signal_pit\C__est_bookvalue_FT24M_to_close_chg_20.pkl')

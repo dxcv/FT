@@ -46,8 +46,6 @@ def get_raw_factors():
     path=os.path.join(DIR_DM,'raw_factors.pkl')
     return pd.read_pickle(path)
 
-
-
 def get_data(bench='ff3M'):
     benchmark = get_benchmark(bench)
     raw_factors = get_raw_factors()

@@ -6,6 +6,7 @@
 # NAME:FT-utils.py
 import multiprocessing
 import time
+from itertools import chain, islice
 from multiprocessing.pool import ThreadPool
 
 import pandas as pd
@@ -84,7 +85,13 @@ def outlier(s, k=4.5):
         原始因子值
     k = 3 * (1 / stats.norm.isf(0.75))
     '''
-    med = np.median(s) #debug: NaN should be removed before apply this function
+    med = np.median(s)
+    '''
+    trick: NaN should be removed before apply this function,
+    to skip this warning, we can stack the panel dataframe and 
+    then use groupby().apply(), since stacking procedure will 
+    dropna by default.
+    '''
     mad = np.median(np.abs(s - med))
     uplimit = med + k * mad
     lwlimit = med - k * mad
@@ -184,21 +191,31 @@ def myroll(df, d):
     #trick: filter_obsservations=False
     return panel.to_frame(filter_observations=False).unstack().T.groupby(level=0)
 
-def multi_process(func, args_iter, n=15, multi_parameters=False):
+def chunks(iterable, size=500):
+    '''chunks an iterable into n smaller generator with the given maximium size for each generator,
+    The function will keep the initial order.
+
+    refer to https://stackoverflow.com/questions/24527006/split-a-generator-into-chunks-without-pre-walking-it
     '''
-    make sure that all the data needed by "func" should be sent by parameters, try to avoid calling
-    the data outside the "func" since sometimes the processes may be frozen without raising any
-    error.
+    iterator = iter(iterable)
+    for first in iterator:
+        yield chain([first], islice(iterator, size - 1))
 
-    Args:
-        func:
-        args_iter:
-        n:
-        multi_parameters:
-
-    Returns:
-
+def _multi_p(func,args_iter,n,multi_parameters):
     '''
+        make sure that all the data needed by "func" should be sent by parameters, try to avoid calling
+        the data outside the "func" since sometimes the processes may be frozen without raising any
+        error.
+
+        Args:
+            func:
+            args_iter:
+            n:
+            multi_parameters:
+
+        Returns:
+
+        '''
     pool = multiprocessing.Pool(n)
     if multi_parameters:
         results = pool.starmap(func, args_iter)
@@ -208,6 +225,29 @@ def multi_process(func, args_iter, n=15, multi_parameters=False):
     pool.join()
     # refer to https://stackoverflow.com/questions/38271547/when-should-we-call-multiprocessing-pool-join
     return results
+
+def multi_process(func, args_iter, n=15, multi_parameters=False, size_in_each_group=None):
+    '''
+
+    Args:
+        func:
+        args_iter:
+        n:
+        multi_parameters:
+        size_in_each_group:None or int, the times of the task being called in each _multi_p function,
+        by default it is None. This parameters can be set in case "_multi_p" will consume more and
+        more memory when the 'task' is called over and over again. With 'size_in_each_group" set
+        '_multi_p' will be ended and start again each time it has finished the given number of task to save momery.
+
+
+    Returns:
+
+    '''
+    if size_in_each_group is None:
+        _multi_p(func, args_iter, n, multi_parameters)
+    else:
+        for sub_args_iter in chunks(args_iter, size_in_each_group):
+            _multi_p(func,sub_args_iter,n,multi_parameters)
 
 def multi_process_old(func, args_iter, n=20):
     pool=multiprocessing.Pool(n)

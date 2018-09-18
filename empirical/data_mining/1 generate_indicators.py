@@ -159,8 +159,8 @@ funcs3=[
 
 
 
-# combine_financial_sheet()
-#
+combine_financial_sheet()
+
 financial = pd.read_pickle(os.path.join(DIR_DM, 'financial.pkl'))
 
 def get_arg_list():
@@ -245,7 +245,7 @@ def get_all_indicators_monthly():
     # for al in alist:
     #     get_indicators_monthly(al)
 #
-if __name__ == '__main__':
-    get_all_indicators_monthly()
+# if __name__ == '__main__':
+#     get_all_indicators_monthly()
 
 

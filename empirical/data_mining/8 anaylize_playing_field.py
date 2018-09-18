@@ -10,18 +10,26 @@ from empirical.config_ep import DIR_DM, DIR_CHORDIA, DIR_DM_NORMALIZED, \
 import os
 import pandas as pd
 from empirical.get_basedata import BENCHS, get_benchmark
-from empirical.utils import align_index
-from empirical.yan.yan_new import get_realized
-from tools import multi_process
-import numpy as np
-import pickle
+
+
+
 
 
 def get_prominent_indicators(critic=3):
-    at = pd.concat(
-        [pd.read_pickle(os.path.join(DIR_CHORDIA, f'at_{bench}.pkl'))
-         for bench in BENCHS], axis=1,sort=True)
+    at=pd.read_pickle(os.path.join(DIR_CHORDIA,'at.pkl'))
     fmt=pd.read_pickle(os.path.join(DIR_CHORDIA,'fmt.pkl'))
+
+    tp=pd.concat([pd.read_pickle(os.path.join(DIR_YAN,f'{bench_name}_bp.pkl')) for bench_name in BENCHS],
+                 axis=1,keys=BENCHS,sort=True)
+
+    inds1=at[abs(at)>critic].dropna().index
+    inds2=fmt[abs(fmt)>critic].dropna().index
+    inds=[ind for ind in inds1 if ind in inds2]
+
+    tp[tp>0.99].notnull().sum()
+    tp[tp<0.01].notnull().sum()
+
+
 
     inds1=at[abs(at)>critic].dropna().index.tolist()
     inds2=fmt[abs(fmt)>critic].dropna().index.tolist()

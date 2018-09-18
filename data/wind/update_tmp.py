@@ -52,9 +52,11 @@ def get_stkcd_list(date=None):
 def get_ann_dt_df(date):
     # if date is None:
     #     date=get_today(DATE_FORMAT)
-    path = os.path.join(DIR, 'ann_dt_{}.pkl'.format(date))
+    path = os.path.join(DIR, 'ann_dt_{}.csv'.format(date))
     if os.path.exists(path):
-        return pickle.load(open(path, 'rb'))
+        df=pd.read_csv(path,parse_dates=True,index_col=0)
+        df=df.astype('datetime64[ns]')
+        return df
     else:
         # codes = get_today_stkcd_list()
         codes=get_stkcd_list(date)
@@ -62,8 +64,9 @@ def get_ann_dt_df(date):
                        "Period=Q;Days=Alldays")
         ann_dt = pd.DataFrame(result.Data, index=result.Codes,
                               columns=result.Times).T
-        f = open(path, 'wb')
-        pickle.dump(ann_dt, f)
+        ann_dt.to_csv(path)
+        # f = open(path, 'wb')
+        # pickle.dump(ann_dt, f)
         return ann_dt
 
 def get_latest(date,prefix):
@@ -77,10 +80,16 @@ def get_latest(date,prefix):
 
     '''
     anns = [an for an in os.listdir(os.path.join(DIR)) if
-            an.startswith(prefix) and pd.to_datetime(an[-14:-4]) < pd.to_datetime(date) and an.endswith('.pkl')]
+            an.startswith(prefix) and pd.to_datetime(an[-14:-4]) < pd.to_datetime(date)]
 
     anns = sorted(anns, key=lambda x: pd.to_datetime(x[-14:-4]))
-    return pd.read_pickle(os.path.join(DIR, anns[-1]))
+    if prefix=='ann_dt':
+        df=pd.read_csv(os.path.join(DIR,anns[-1]),parse_dates=True,index_col=0)
+        df=df.astype('datetime64[ns]')
+        return df
+    elif prefix=='data':
+        df=pd.read_csv(os.path.join(DIR,anns[-1]),parse_dates=True,index_col=0)
+        return df
 
 def get_data_for_one_stk(stkcd, rpdate, indicators):
     path=os.path.join(DIR_CACHE,f'{rpdate}_{stkcd}.csv') #trick: do not use .pkl,sometimes it may be malformed
@@ -158,9 +167,10 @@ def construct_original_data():
     for i in [10,17,18]:
         ann=ann_dt.iloc[:,:i]
         df=fetch_data(ann)
-        df.to_pickle(os.path.join(DIR,'data_2018-08-{}.pkl'.format(i)))
+        df.to_csv(os.path.join(DIR,'data_2018-08-{}.csv'.format(i)))
 
 def update(date=None):
+    w.start()
     if date is None:
         date=get_today(DATE_FORMAT)
 
@@ -169,27 +179,33 @@ def update(date=None):
         data=fetch_data(target_df)
         latest_data=get_latest(date,'data')
         df=pd.concat([data,latest_data],sort=True).drop_duplicates()
+        df.to_csv(os.path.join(DIR,f'data_{date}.csv'))
     else:
         df=get_latest(date,'data')
+        df.to_csv(os.path.join(DIR,f'data_{date}.csv'))
 
-    df.to_pickle(os.path.join(DIR,f'data_{date}.pkl'))
-    df.to_csv(os.path.join(DIR,f'data_{date}.csv'))
 
 def debug():
-    dates=pd.date_range('2018-08-17','2018-09-11')
+    dates=pd.date_range('2018-08-26','2018-08-30')
     dates=[d.strftime('%Y-%m-%d') for d in dates]
     for date in dates:
-        try:
-            print(f'Updating data for ------>{date}')
-            update(date)
-        except:
-            pass
+        print(f'Updating data for ------>{date}')
+        update(date)
+
+# fns=os.listdir(DIR)
+# data_fns=[fn for fn in fns if (fn[:3] in ['dat','ann']) and fn.endswith('.pkl')]
+#
+# for fn in data_fns:
+#     df=pd.read_pickle(os.path.join(DIR,fn))
+#     df.to_csv(os.path.join(DIR,fn[:-4]+'.csv'))
+#     print(fn)
+#
 
 
-if __name__ == '__main__':
-    debug()
+# if __name__ == '__main__':
+#     debug()
 
-
+df=pd.read_csv()
 
 
 # if __name__ == '__main__':
@@ -202,5 +218,4 @@ if __name__ == '__main__':
 
 
 #TODO: change the indictor names
-#TODO: only update in trading date
 

@@ -5,9 +5,6 @@
 # TIME:2018-09-15  19:52
 # NAME:FT_hp-7 bootstrap.py
 
-from empirical.config_ep import DIR_DM, DIR_CHORDIA, DIR_DM_NORMALIZED, \
-    PERIOD_THRESH, DIR_BASEDATA, DIR_YAN
-import os
 import pandas as pd
 from empirical.data_mining.dm_api import get_data
 from empirical.get_basedata import BENCHS
@@ -31,6 +28,10 @@ def get_realized(bench_name):
 
 
 def simulate(bench_name, n):
+    path=os.path.join(DIR_YAN, f'{bench_name}_{n}.pkl')
+    if os.path.exists(path):
+        return
+
     benchmark,assets=get_data(bench_name)
     # realized_result=pricing_assets(benchmark,assets)
     realized=get_realized(bench_name)
@@ -40,7 +41,7 @@ def simulate(bench_name, n):
     #     r=bootstrap_yan(benchmark,assets,realized)
     #     rs.append(r)
 
-    rs=multi_process(bootstrap_yan, ((benchmark,assets,realized) for i in range(n)),30,
+    rs=multi_process(bootstrap_yan, ((benchmark,assets,realized) for i in range(n)),15,
                      multi_parameters=True) #review:
 
     result={}
@@ -48,7 +49,7 @@ def simulate(bench_name, n):
         df=pd.concat([r[ind] for r in rs],axis=1)
         # df.to_pickle(os.path.join(DIR_YAN,ind+'.pkl'))
         result[ind]=df
-    pickle.dump(result, open(os.path.join(DIR_YAN, f'{bench_name}_{n}.pkl'), 'wb'))
+    pickle.dump(result, open(path, 'wb'))
 
 
 def get_bootstrap_pvalue(bench_name, n=1000):
@@ -82,33 +83,47 @@ def get_bootstrap_pvalue(bench_name, n=1000):
     df=pd.concat(ss,axis=1)
     df.to_csv(os.path.join(DIR_YAN, f'result_{bench_name}.csv'))
 
-def hurdle_boostrap():
-    bench_name= 'capmM'
+def bootstrap_t_pvalue(bench_name):
     # benchmark, assets = get_data(bench_name)
     simulated=pickle.load(open(os.path.join(DIR_YAN, f'{bench_name}_1000.pkl'), 'rb'))
 
     b_at=simulated['alpha_t']
 
     realized=get_realized(bench_name)
-    r_at=realized['alpha_t']
-    c5=b_at.quantile(0.05,axis=1)
-    c95=b_at.quantile(0.95,axis=1)
-    target=r_at[(r_at<c5) | (c95<r_at)]
 
-    target=target[abs(target)>3]
-    len(target)
+    r_at=realized['alpha_t']
+
+    b_p=pd.Series([stats.percentileofscore(b_at.loc[ind],r_at[ind])/100.0 for ind in r_at.index],index=r_at.index)
+    b_p.to_pickle(os.path.join(DIR_YAN,f'{bench_name}_bp.pkl'))
+
+    # c5=b_at.quantile(0.05,axis=1)
+    # c95=b_at.quantile(0.95,axis=1)
+    # target=r_at[(r_at<c5) | (c95<r_at)]
+    #
+    # target=target[abs(target)>3]
+    # len(target)
 
     # indicators=get_prominent_indicators()
     # len(indicators)
     # len([ind for ind in indicators if ind in target.index])
 
-def main():
-    for bench in BENCHS:
-        get_bootstrap_pvalue(bench)
+# for bench_name in BENCHS:
+#     bootstrap_t_pvalue(bench_name)
+#     print(bench_name)
 
+def debug():
+    bench_name='hxz4M'
+    get_bootstrap_pvalue(bench_name,1000)
+
+
+def main():
+    for bench_name in BENCHS:
+        # get_bootstrap_pvalue(bench_name)
+        bootstrap_t_pvalue(bench_name)
 
 if __name__ == '__main__':
-    main()
+    # main()
+    debug()
 
 
 

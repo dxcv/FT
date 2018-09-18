@@ -9,4 +9,20 @@ import os
 
 from config import DIR_TMP
 
-df=pd.read_pickle(os.path.join(DIR_TMP,'grade_strategy__M_100.pkl'))
+from itertools import islice, chain
+
+
+def chunks(iterable, size=10):
+    iterator = iter(iterable)
+    for first in iterator:
+        yield chain([first], islice(iterator, size - 1))
+
+it=range(33)
+test=chunks(it,5)
+
+for i,chunk in enumerate(test):
+    for c in chunk:
+        print(i,c)
+
+
+

@@ -8,11 +8,23 @@ import random
 
 import pandas as pd
 import statsmodels.api as sm
-from empirical.get_basedata import get_benchmark, get_data
+# from empirical.get_basedata import get_benchmark, get_data
 
 
 # from empirical.kogan.kogan_part1 import get_raw_factors
+from tools import multi_process
 
+
+def _pricing_task1(args):
+    benchmark,comb,col=args
+    inde = ['const'] + benchmark.columns.tolist()
+    sub = comb[inde + [col]]
+    sub = sub.dropna()
+    return sm.OLS(sub[col],sub[inde]).fit()
+
+def _pricing_task2(args):
+    assets,col,X=args
+    return sm.OLS(assets[col],X).fit()
 
 def pricing_assets(benchmark, assets):
     '''
@@ -29,6 +41,10 @@ def pricing_assets(benchmark, assets):
         print('there is NaN appeared in assets')
         comb=pd.concat([benchmark,assets],axis=1)
         comb=sm.add_constant(comb)
+        args_list=((benchmark,comb,col) for col in assets.columns)
+
+        # rs=multi_process(_pricing_task1,args_list)
+
         rs=[]
         for col in assets.columns:# TODO: use multi_process
             inde=['const']+benchmark.columns.tolist()
@@ -39,6 +55,8 @@ def pricing_assets(benchmark, assets):
     else:
         # E:\FT_Users\HTZhang\software\python\HTZhang\FT_hp\empirical\kogan_part2.py
         X=sm.add_constant(benchmark)
+        # args_list=((assets,col,X) for col in assets.columns)
+        # rs=multi_process(_pricing_task2,args_list)
         rs=[sm.OLS(assets[col],X).fit() for col in assets.columns]
 
     alpha=pd.Series([r.params['const'] for r in rs], index=assets.columns)
@@ -184,14 +202,14 @@ def bootstrap_kogan(benchmark, assets, realized_result, anomaly_num):
 def bootstrap_yan(benchmark,assets,realized_result):
     return bootstrap_ff(benchmark,assets,realized_result)
 
-if __name__ == '__main__':
-    benchmark,raw_factors=get_data()
-    realized_result=pricing_assets(benchmark,raw_factors)
+# if __name__ == '__main__':
+    # benchmark,raw_factors=get_data()
+    # realized_result=pricing_assets(benchmark,raw_factors)
     # re=bootstrap_residual_independently(benchmark,raw_factors)
     # re1=bootstrap_residual_and_factor(benchmark,raw_factors)
     # re2=bootstrap_cross_sectional(benchmark,raw_factors)
     # re3=bootstrap_ff(benchmark,raw_factors)
-    re4=bootstrap_kogan(benchmark,raw_factors,realized_result,100)
+    # re4=bootstrap_kogan(benchmark,raw_factors,realized_result,100)
 
 
 

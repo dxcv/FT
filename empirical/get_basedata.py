@@ -17,7 +17,6 @@ import numpy as np
 
 
 # rpM.pkl is copied from D:\zht\database\quantDb\researchTopics\assetPricing2_new\data\pkl_unfiltered
-from empirical.data_mining.dm_api import get_raw_factors
 from tools import convert_indicator_to_signal
 
 rpM=pd.read_pickle(os.path.join(DIR_EP,'benchmarks','rpM.pkl'))

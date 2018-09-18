@@ -11,6 +11,7 @@ from empirical.data_mining.dm_api import get_raw_factors
 from empirical.get_basedata import BENCHS, get_benchmark
 from empirical.utils import align_index
 import os
+import pandas as pd
 
 
 def pricing_all_factors(bench_name):
@@ -31,9 +32,17 @@ def get_alpha_t_for_all_bm():
         s=pricing_all_factors(bench)
         s.to_pickle(os.path.join(DIR_CHORDIA,f'at_{bname}.pkl'))#alpha t value
 
+def combine_at():
+    at = pd.concat(
+        [pd.read_pickle(os.path.join(DIR_CHORDIA, f'at_{bench}.pkl'))
+         for bench in BENCHS], axis=1,keys=BENCHS,sort=True)
+    at.to_pickle(os.path.join(DIR_CHORDIA,'at.pkl'))
+
 
 def main():
     get_alpha_t_for_all_bm()
+    combine_at()
+
 
 if __name__ == '__main__':
     main()
