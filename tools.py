@@ -244,10 +244,12 @@ def multi_process(func, args_iter, n=15, multi_parameters=False, size_in_each_gr
 
     '''
     if size_in_each_group is None:
-        _multi_p(func, args_iter, n, multi_parameters)
+        return _multi_p(func, args_iter, n, multi_parameters)
     else:
+        rs=[]
         for sub_args_iter in chunks(args_iter, size_in_each_group):
-            _multi_p(func,sub_args_iter,n,multi_parameters)
+            rs+=_multi_p(func,sub_args_iter,n,multi_parameters)
+        return rs
 
 def multi_process_old(func, args_iter, n=20):
     pool=multiprocessing.Pool(n)

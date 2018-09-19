@@ -185,6 +185,12 @@ def debug():
         except:
             pass
 
+'''
+w.wss("600000.SH,600004.SH,600006.SH,600007.SH,600008.SH,600009.SH", "west_netprofit_FY1,west_netprofit_FY2,west_netprofit_FY3,west_sales_FY1,west_sales_FY2,west_sales_FY3,west_avgbps_FY1,west_avgbps_FY2,west_avgbps_FY3,west_avgshares","unit=1;tradeDate=20180918;year=2018;westPeriod=180")
+
+
+'''
+
 
 if __name__ == '__main__':
     debug()

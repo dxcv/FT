@@ -7,22 +7,9 @@
 import pandas as pd
 import os
 
-from config import DIR_TMP
 
-from itertools import islice, chain
-
-
-def chunks(iterable, size=10):
-    iterator = iter(iterable)
-    for first in iterator:
-        yield chain([first], islice(iterator, size - 1))
-
-it=range(33)
-test=chunks(it,5)
-
-for i,chunk in enumerate(test):
-    for c in chunk:
-        print(i,c)
+directory=r'G:\FT_Users\HTZhang\empirical\basedata\normalized_conditional'
 
 
+df=pd.read_pickle(r'G:\FT_Users\HTZhang\empirical\data_mining\based_on_gta\idio_12M.pkl')
 
