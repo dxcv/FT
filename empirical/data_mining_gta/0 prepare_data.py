@@ -119,10 +119,11 @@ def get_turnover():
     df['turnover']=df['turnover'].astype(float)
     turnover=df['turnover'].unstack('symbol').sort_index()
     for day in [10,20,30,60,120,180,300]:
-        turnover=turnover.rolling(day).mean()
-        turnover=turnover.resample('M').last()
-        save_df(turnover,f'turnover_{day}')
+        tr=turnover.rolling(day,min_periods=int(day/2)).mean()
+        tr=tr.resample('M').last()
+        save_df(tr,f'turnover_{day}')
         print(day)
+
 
 def get_mkt_ret():
     df=pd.read_csv(os.path.join(DIR_DM_GTA,'other_data','TRD_Cndalym.txt'),sep='\t',encoding='gbk')
@@ -165,16 +166,17 @@ def get_comb_for_ivol():
     comb=comb.dropna(subset=['cdretwdos'])
     return comb
 
-ivol_comb=get_comb_for_ivol()
 
 def _task_ivol(args):
-    month,window=args
+    ivol_comb,month,window=args
     sub = ivol_comb[:month].last(window)
     print(month)
     return idioVol(sub)
 
 
 def get_ivol():
+    ivol_comb=get_comb_for_ivol()
+
     fdmt_d=read_df('fdmt_d')
     adjclose=fdmt_d['adjclose'].unstack('stkcd')
     ret_d=adjclose.pct_change()
@@ -188,15 +190,9 @@ def get_ivol():
     windows=['3M','6M','12M','24M','36M','60M']
 
     for window in windows:
-        args_generator=((month,window) for month in month_ends)
+        args_generator=((ivol_comb,month,window) for month in month_ends)
         idio=pd.concat(multi_process(_task_ivol,args_generator,5),axis=1,sort=True,keys=month_ends).T
         save_df(idio,f'idio_{window}')
-
-
-
-if __name__ == '__main__':
-    get_ivol()
-
 
 
 

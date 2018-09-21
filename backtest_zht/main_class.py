@@ -382,13 +382,14 @@ def format_hedged_year_performance(returns, benchmark_ind):
 
 
 class Backtest:
-    def __init__(self,signal, name, directory, start=None, end=None,config=DEFAULT_CONFIG):
+    def __init__(self,signal, name, directory, start=None, end=None,config=DEFAULT_CONFIG,log=True):
         self.signal=signal
         self.name=name
         self.directory=directory
         self.start=start if start else self.signal.index[0]
         self.end=end if end else self.signal.index[-1]
         self.config=config
+        self.log=log
         self.date_range=trade_date[self.start:self.end]#fixme: trade_date should be set according to the given signal and indice
         self.benchmark=zz500[self.start:self.end]
         self.run()
@@ -561,7 +562,8 @@ class Backtest:
         new_hold_shares = pd.Series()
         today_market_value = self.config['capital']
         for day in self.date_range:  # 在策略第一天运行的时候肯定不能直接这样在第一天建仓100只股票，会造成市场冲击，所以，策略在高换手率期间应该有所优化
-            # print('backtesting: {}'.format(day))
+            if self.log:
+                print('backtesting: {}'.format(day))
             # 记录昨日持仓权重和股数，以及昨日收盘价
             last_hold_shares = new_hold_shares
             last_market_value = today_market_value
@@ -635,9 +637,7 @@ class Backtest:
                                      names=['tradeDate'])
         shares_record = pd.concat(shares_record, keys=self.date_range,
                                   names=['tradeDate'])
-        transactions_record = pd.concat(transactions_record,
-                                        axis=1).stack().swaplevel().sort_index(
-            level=0,sort=True)
+        transactions_record = pd.concat(transactions_record,axis=1,sort=True).stack().swaplevel().sort_index(level=0)
 
         # for quantopia format
         positions_record = positions_record.unstack()

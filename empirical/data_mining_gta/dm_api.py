@@ -8,8 +8,10 @@ import pandas as pd
 import os
 import pickle
 
+from empirical.bootstrap import pricing_assets
 from empirical.config_ep import DIR_DM_GTA, PERIOD_THRESH
 from empirical.get_basedata import get_benchmark
+from empirical.utils import align_index
 from tools import multi_process
 
 
@@ -65,6 +67,20 @@ def get_data(bench='ff3M'):
     #trick: unify the index
     return benchmark.reindex(base_index),raw_factors.reindex(base_index)
 
+def pricing_all_factors(bench_name):
+    '''
+    get all the tvalue of alpha based on a given benchmark
+    Args:
+        bench_name:
+
+    Returns:
+
+    '''
+    raw_factors=get_raw_factors()
+    bench_name, assets=align_index(bench_name, raw_factors)
+    result=pricing_assets(bench_name, assets)
+    s=result['alpha_t'].sort_values()
+    return s
 
 # factors=get_raw_factors()
 # factors.shape

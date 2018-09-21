@@ -40,6 +40,9 @@ def get_prominent_indicators(mode=1,critic=2):
         prominent=inds2
     elif mode==3:
         prominent=inds
+    elif mode==4:
+        prominent=at.index.tolist()
+
 
 
     # _get_s=lambda x:pd.read_pickle(os.path.join(DIR_DM_GTA,'port_ret','eq',x+'.pkl'))['tb']

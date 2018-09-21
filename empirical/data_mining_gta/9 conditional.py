@@ -28,6 +28,7 @@ def get_indicator_direction(indname):
     symbol=1 if at.at[indname,'capmM']>0 else -1
     return symbol
 
+
 def get_comb_indicators(critic=2):
     iid='oepwqfaldagha'
     path=os.path.join(DIR_COND,f'{iid}{critic}.pkl')
@@ -64,11 +65,6 @@ def get_comb(cond_variable):
     print(cond_variable,len(comb.index.get_level_values('month_end').unique()))
     return comb
 
-indicators.notnull().sum()
-
-
-conditional.shape
-
 
 def _conditional_anomaly_return(args):
     comb,col,cond_variable=args
@@ -101,11 +97,11 @@ def get_conditional_anomaly_return(cond_variable):
 
     args_generator=((comb,col,cond_variable) for col in indicators)
 
-    tables=[]
-    for args in args_generator:
-        print(args[1])
-        tables.append(_conditional_anomaly_return(args))#fixme:
-    # tables=multi_process(_conditional_anomaly_return,args_generator,20)
+    # tables=[]
+    # for args in args_generator:
+    #     print(args[1])
+    #     tables.append(_conditional_anomaly_return(args))#fixme:
+    tables=multi_process(_conditional_anomaly_return,args_generator,20)
     table5=pd.concat(tables,axis=0,keys=indicators)
     table5.to_csv(os.path.join(DIR_COND, f'table5_{cond_variable}.csv'))
 
@@ -114,7 +110,7 @@ def get_conditional_anomaly_return(cond_variable):
 def test_all_conditional_indicators():
     fns = os.listdir(os.path.join(DIR_DM_GTA, 'conditional'))
     conds = [fn[:-4] for fn in fns]
-    for cond in conds:
+    for cond in conds[7:]:#fixme:
         get_conditional_anomaly_return(cond)
         print(cond)
 
@@ -124,14 +120,11 @@ def debug():
     # get_conditional_anomaly_return(cond)
 
 
-if __name__ == '__main__':
-    debug()
-
 
 def analyze_turnover():
-    fns=os.listdir(DIR_CHORDIA)
-    fns=[fn for fn in fns if fn.startswith('table5_T')]
-    dfs = [pd.read_csv(os.path.join(DIR_CHORDIA, fn), index_col=0) for fn in
+    fns=os.listdir(os.path.join(DIR_DM_GTA,'analyse','conditional'))
+    fns=[fn for fn in fns if fn.startswith('table5_turnover')]
+    dfs = [pd.read_csv(os.path.join(DIR_DM_GTA,'analyse','conditional', fn), index_col=0) for fn in
            fns]
     df = pd.concat(dfs, keys=[fn[:-4] for fn in fns]) #fixme:
     df = df[df.iloc[:, 0] == 't']
@@ -139,28 +132,33 @@ def analyze_turnover():
     df = df.sort_values('abs', ascending=False)
     df = df.iloc[:, 1:]
     df.index.names = ['cond_variable', 'indicator']
+
     lt2 = df.groupby('cond_variable').apply(
-        lambda df: df[df['abs'] >= 2].shape[0]).sort_value+s(ascending=False)
+        lambda df: df[df['abs'] >= 2].shape[0]).sort_values(ascending=False)
     target = df.loc[(lt2.index[0], slice(None)), :]
-    target.to_csv(os.path.join(DIR_TMP,'target1.csv'))
-
-def analyze_ivol():
-    fns=os.listdir(DIR_CHORDIA)
-    fns=[fn for fn in fns if fn.startswith('table5_')]
-    dfs=[pd.read_csv(os.path.join(DIR_CHORDIA,fn),index_col=0) for fn in fns]
-    df=pd.concat(dfs,keys=[fn[:-4] for fn in fns])
-    df=df[df.iloc[:,0]=='t']
-    df['abs']=df['high-low'].abs()
-    df=df.sort_values('abs',ascending=False)
-    df=df.iloc[:,1:]
-    df.index.names=['cond_variable','indicator']
-    lt2=df.groupby('cond_variable').apply(lambda df:df[df['abs']>=2].shape[0]).sort_values(ascending=False)
-    target=df.loc[(lt2.index[0],slice(None)),:]
-    target.to_csv(os.path.join(DIR_TMP,'target.csv'))
-    df.to_csv(os.path.join(DIR_CHORDIA,'table5_all.csv'))
+    target.to_csv(os.path.join(DIR_DM_GTA,'analyse','conditional','turnover.csv'))
 
 
+def analyze_idio():
+    fns=os.listdir(os.path.join(DIR_DM_GTA,'analyse','conditional'))
+    fns=[fn for fn in fns if fn.startswith('table5_idio')]
+    dfs = [pd.read_csv(os.path.join(DIR_DM_GTA,'analyse','conditional', fn), index_col=0) for fn in
+           fns]
+    df = pd.concat(dfs, keys=[fn[:-4] for fn in fns]) #fixme:
+    df = df[df.iloc[:, 0] == 't']
+    df['abs'] = df['high-low'].abs()
+    df = df.sort_values('abs', ascending=False)
+    df = df.iloc[:, 1:]
+    df.index.names = ['cond_variable', 'indicator']
 
+    lt2 = df.groupby('cond_variable').apply(
+        lambda df: df[df['abs'] >= 2].shape[0]).sort_values(ascending=False)
+    target = df.loc[(lt2.index[0], slice(None)), :]
+    target.to_csv(os.path.join(DIR_DM_GTA,'analyse','conditional','idio.csv'))
+
+
+if __name__ == '__main__':
+    analyze_idio()
 
 
 def main():
